@@ -1,0 +1,332 @@
+{% extends 'main.html' %}
+{% block main_content %}
+{% load static %}
+
+<div class="grid grid-cols-12 gap-x-4">
+    <!-- Start Bread Crumb Section -->
+    <div class="col-span-full card flex-center-btween">
+        <h5 class="card-title">Saikyo Junior high school</h5>
+        <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
+            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two">
+                <a href="index.html">Home</a>
+            </li>
+            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two current-page">
+                <a href="#">Dashboard</a>
+            </li>
+        </ul>
+    </div>
+    <!-- End Bread Crumb Section -->
+    <!-- Start Short Progress Card Section -->
+    <div class="col-span-full grid grid-cols-12 gap-4 card">
+        <!-- Overall revenue Progress Card -->
+        <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+            <div class="flex-center-between">
+                <h6 class="leading-none text-gray-500 dark:text-white font-semibold">Total Students</h6>
+                <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">07 Days</div>
+            </div>
+            <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                <div class="pb-8 shrink-0">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="card-title">
+                            {% if students_count %}
+                            <span class="counter-value" data-value="{{ students_count }}">0</span>
+                            {% else %} 
+                            <span class="counter-value" data-value="0">0</span>
+                            {% endif %}
+                            
+                        </div>
+                        <div class="flex-center text-primary-500 size-5 rounded-50 border border-primary-500">
+                            <i class="ri-arrow-up-line text-inherit text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="leading-none text-gray-900 dark:text-dark-text font-semibold">
+                        <span class="text-primary-500">09%</span>
+                        Below Target
+                    </div>
+                </div>
+                <div class="grow self-center pb-3">
+                    <div id="admin-overall-revenue-chart"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Total registrations Progress Card -->
+        <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+            <div class="flex-center-between">
+                <h6 class="leading-none text-gray-500 dark:text-white font-semibold">Total Courses</h6>
+                <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">07 Days</div>
+            </div>
+            <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                <div class="pb-8 shrink-0">
+                    <div class="flex items-center gap-2 mb-3">
+                        {% if courses_count %}
+                        <div class="counter-value card-title" data-value="{{ courses_count }}">0</div>
+                        {% else %}
+                        <div class="counter-value card-title" data-value="0">0</div>
+                        {% endif %}
+                        <div class="flex-center text-danger size-5 rounded-50 border border-danger">
+                            <i class="ri-arrow-down-line text-inherit text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="leading-none text-gray-900 dark:text-dark-text font-semibold">
+                        <span class="text-danger">05%</span>
+                        Below Target
+                    </div>
+                </div>
+                <div class="grow self-center pb-3">
+                    <div id="admin-total-registration-chart"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Total Courses Progress Card -->
+        <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+            <div class="flex-center-between">
+                <h6 class="leading-none text-gray-500 dark:text-white font-semibold">Total Contents</h6>
+                <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">07 Days</div>
+            </div>
+            <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                <div class="pb-8 shrink-0">
+                    <div class="flex items-center gap-2 mb-3">
+                        {% if contents_count %}
+                        <div class="counter-value card-title" data-value="{{ contents_count }}">0</div>
+                        {% else %}
+                        <div class="counter-value card-title" data-value="0">0</div>
+                        {% endif %}
+                        <div class="flex-center text-primary-500 size-5 rounded-50 border border-primary-500">
+                            <i class="ri-arrow-up-line text-inherit text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="leading-none text-gray-900 dark:text-dark-text font-semibold">
+                        <span class="text-primary-500">50%</span>
+                        Below Target
+                    </div>
+                </div>
+                <div class="grow self-center pb-3">
+                    <div id="admin-total-course-chart"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Average review Progress Card -->
+        <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+            <div class="flex-center-between">
+                <h6 class="leading-none text-gray-500 dark:text-white font-semibold">Active Students</h6>
+                <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">07 Days</div>
+            </div>
+            <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                <div class="pb-8 shrink-0">
+                    <div class="flex items-center gap-2 mb-3">
+                        {% if active_students %}
+                        <div class="counter-value card-title" data-value="{{active_students}}">0</div>
+                        {% else %}
+                        <div class="counter-value card-title" data-value="0">0</div>
+                        {% endif %}
+                        <div class="flex-center text-primary-500 size-5 rounded-50 border border-primary-500">
+                            <i class="ri-arrow-up-line text-inherit text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="leading-none text-gray-900 dark:text-dark-text font-semibold">
+                        <span class="text-primary-500">05%</span>
+                        Below Target
+                    </div>
+                </div>
+                <div class="grow self-center pb-3">
+                    <div id="admin-average-review-chart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Short Progress Card Section -->
+    <!-- Start Average Registration rate Chart Section -->
+    <div class="col-span-full 3xl:col-span-8 cards">
+        <div class="card"> 
+        <div class="flex-center-between">            
+            <h6 class="card-title">Daily Active Students</h6>
+            <select class="form-input form-select">
+                <option value="this-month">This Year</option>
+                <option value="last-month">This Month</option>
+            </select>
+        </div>
+        <script id="dailyActiveUsersData" type="application/json">
+            {{ daily_active_users|safe }}
+        </script>
+        <div id="daily-active-users-chart" ></div>
+        </div>
+        <div class="card"> 
+        <div class="flex-center-between">
+            <h6 class="card-title">Daily Activities</h6>
+            <select class="form-input form-select">
+                <option value="this-month">This Year</option>
+                <option value="last-month">This Month</option>
+            </select>
+        </div>
+        <script id="dailyActivitiesData" type="application/json">
+            {{ daily_activities|safe }}
+        </script>
+        <div id="daily-activities-chart"></div>
+        </div>
+    </div>
+    <!-- End Average Registration rate Chart Section -->
+    <!-- Start Highest rated courses Section -->
+    <div class="col-span-full lg:col-span-6 3xl:col-span-4 card">
+        <div class="flex-center-between">
+            <h6 class="card-title">Most Active Contents</h6>
+            <a href="#" class="btn b-solid btn-primary-solid btn-sm">See all</a>
+        </div>      
+
+        <!-- Content Table -->
+        <div class="overflow-x-auto scrollbar-table">
+            <table class="table-auto w-full whitespace-nowrap text-left text-xs text-gray-500 dark:text-dark-text font-semibold leading-none">
+                <thead class="border-b border-dashed border-gray-900/40 dark:border-dark-border-three">
+                    <tr>
+                        <th class="px-3.5 py-4">Content Name</th>
+                        <th class="px-3.5 py-4">Activities</th>                       
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dashed divide-gray-900/40 dark:divide-dark-border-three">
+                    {% if most_active_contents %}
+                    {% for content in most_active_contents %}    
+                    <tr>
+                        <td class="flex items-center gap-2 px-3.5 py-2">
+                            <a href="#" class="size-10 rounded-50 overflow-hidden dk-theme-card-square">
+                                <img src="{% static 'images/admin/top-course/top-course-1.png' %}" alt="thumb">
+                            </a>
+                            <div>
+                                <h6 class="text-heading font-semibold mb-1.5 line-clamp-1">
+                                    <a href="{{content.object_id}}" target="_blank">{{content.contents_name}}</a>
+                                </h6>
+                            </div>
+                        </td>
+                        <td class="px-3.5 py-4">{{content.total_activities}}</td>
+                        
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+                    
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!-- End Highest rated courses Section -->
+    <!-- Start Popular marked contents -->
+    <div class="col-span-full lg:col-span-6 3xl:col-span-4 card">
+        <div class="flex-center-between">
+            <h6 class="card-title">Most Highlighted Content</h6>
+            <a href="#" class="btn b-solid btn-primary-solid btn-sm">See all</a>
+        </div>      
+
+        <!-- Content Table -->
+        <div class="overflow-x-auto scrollbar-table">
+            <table class="table-auto w-full whitespace-nowrap text-left text-xs text-gray-500 dark:text-dark-text font-semibold leading-none">
+                <thead class="border-b border-dashed border-gray-900/40 dark:border-dark-border-three">
+                    <tr>
+                        <th class="px-3.5 py-4">Content Name</th>
+                        <th class="px-3.5 py-4"># of Highlights</th>                       
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dashed divide-gray-900/40 dark:divide-dark-border-three">
+                    {% if most_marked_contents %}
+                    {% for content in most_marked_contents %}    
+                    <tr>
+                        <td class="flex items-center gap-2 px-3.5 py-2">
+                            <a href="#" class="size-10 rounded-50 overflow-hidden dk-theme-card-square">
+                                <img src="{% static 'images/admin/top-course/top-course-1.png' %}" alt="thumb">
+                            </a>
+                            <div>
+                                <h6 class="text-heading font-semibold mb-1.5 line-clamp-1">
+                                    <a href="{{content.object_id}}" target="_blank">{{content.contents_name}}</a>
+                                </h6>
+                            </div>
+                        </td>
+                        <td class="px-3.5 py-4">{{content.total_marks}}</td>
+                        
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+                    
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!-- End Popular categories Section -->
+    <!-- Start Course Activity Chart Section -->
+    <div class="col-span-full lg:col-span-6 3xl:col-span-4 card">
+        <div class="flex-center-between">
+            <h6 class="card-title">Most Memoed Content</h6>
+            <a href="#" class="btn b-solid btn-primary-solid btn-sm">See all</a>
+        </div>      
+
+        <!-- Content Table -->
+        <div class="overflow-x-auto scrollbar-table">
+            <table class="table-auto w-full whitespace-nowrap text-left text-xs text-gray-500 dark:text-dark-text font-semibold leading-none">
+                <thead class="border-b border-dashed border-gray-900/40 dark:border-dark-border-three">
+                    <tr>
+                        <th class="px-3.5 py-4">Content Name</th>
+                        <th class="px-3.5 py-4"># of Memos</th>                       
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dashed divide-gray-900/40 dark:divide-dark-border-three">
+                    {% if most_memo_contents %}
+                    {% for content in most_memo_contents %}    
+                    <tr>
+                        <td class="flex items-center gap-2 px-3.5 py-2">
+                            <a href="#" class="size-10 rounded-50 overflow-hidden dk-theme-card-square">
+                                <img src="{% static 'images/admin/top-course/top-course-1.png' %}" alt="thumb">
+                            </a>
+                            <div>
+                                <h6 class="text-heading font-semibold mb-1.5 line-clamp-1">
+                                    <a href="{{content.object_id}}" target="_blank">{{content.contents_name}}</a>
+                                </h6>
+                            </div>
+                        </td>
+                        <td class="px-3.5 py-4">{{content.total_memos}}</td>
+                        
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+                    
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!-- End Course Activity Chart Section -->
+
+
+    <!-- Start Recent Support Tickets Section -->
+    <div class="col-span-full lg:col-span-6 3xl:col-span-4 card">
+        <div class="flex-center-between">
+            <h6 class="card-title">Most Active Students</h6>
+            <a href="#" class="btn b-solid btn-primary-solid btn-sm">See all</a>
+        </div> 
+        <div class="overflow-x-auto scrollbar-table">        
+            <table class="table-auto w-full whitespace-nowrap text-left text-xs text-gray-500 dark:text-dark-text font-semibold leading-none">
+                <thead class="border-b border-dashed border-gray-900/40 dark:border-dark-border-three">
+                    <tr>
+                        <th class="px-5 py-4">Student Name</th>
+                        <th class="px-5 py-4">Activities</th>                       
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-dashed divide-gray-900/40 dark:divide-dark-border-three">
+                    {% if most_active_students %}
+                    {% for student in most_active_students %}  
+                    <tr>
+                        <td class="flex items-center gap-2 px-5 py-2">
+                            <div>
+                                <h6 class="text-heading font-semibold mb-1.5 line-clamp-1">
+                                    <a href="{{content.object_id}}" target="_blank">{{student.name}}</a>
+                                </h6>
+                            </div>
+                        </td>
+                        <td class="px-3.5 py-4">{{student.total_activities}}</td>                        
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+                    
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!-- End Recent Support Tickets Section -->
+</div>
+
+
+
+{% endblock %}

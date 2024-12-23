@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: school_dashboard_db
+    restart: always
+    environment:
+      POSTGRES_DB: school_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: $m8.Z&81Tr$B
+    volumes:
+      - .volumes/postgresql/data:/var/lib/postgresql/data
+    networks:
+      - newleaf_analysis_db_net
+      - newleaf_bookroll_db_net
+      - newleaf_moodle_db_net
+      - school_dashboard_net
+    ports:
+      - "5432:5432"
+  school_dashboard:
+    build:
+      context: .
+    container_name: school_dashboard
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "5000:8000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgres://db:$m8.Z&81Tr$B@db:5432/school_db
+    networks:
+      - newleaf_analysis_db_net
+      - newleaf_bookroll_db_net
+      - newleaf_moodle_db_net
+      - school_dashboard_net
+      - moodle_db_net
+
+
+networks:
+  school_dashboard_net:
+  newleaf_analysis_db_net:
+  newleaf_bookroll_db_net:
+  newleaf_moodle_db_net:
+  moodle_db_net:
+

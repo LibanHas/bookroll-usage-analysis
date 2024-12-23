@@ -1,0 +1,55 @@
+.envrc
+.volumes
+
+# General Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.swp
+*.swo
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+
+# Virtualenv
+env/
+venv/
+ENV/
+.venv/
+
+# Django
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
+*.pot
+
+# Secrets
+*.env
+.env.*
+
+# direnv
+.envrc
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# IDEs
+.idea/
+*.iml
+
+# Node.js (if applicable)
+node_modules/
+npm-debug.log
+yarn-error.log
