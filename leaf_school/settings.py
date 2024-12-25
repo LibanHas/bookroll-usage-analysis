@@ -25,22 +25,25 @@ SECRET_KEY = 'django-insecure-g$m4*j)xs_v8*e8u6^0ia^if05+l_-w3@p(zdaz2e*a$68z^d_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['10.236.173.129']
+ALLOWED_HOSTS = ['10.236.173.129', '0.0.0.0', '127.0.0.1']
 INTERNAL_IPS = [
     '127.0.0.1',
     'localhost',
-    '172.17.0.1',  
+    '172.17.0.1',
+    'school_dashboard',  
 ]
 CSRF_TRUSTED_ORIGINS = ['http://10.236.173.129',]
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
+    'channels',
+    'django.contrib.staticfiles',    
     'debug_toolbar',
     'crispy_forms',
     'crispy_tailwind',
@@ -212,6 +215,10 @@ LOGGING = {
             'handlers': ['console', 'file'],
             'level': 'INFO',
         },
+        'django.channels.server': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
         # Add custom logger for authentication events
         'core.views': {
             'handlers': ['console', 'file'],
@@ -254,3 +261,9 @@ CACHES = {
         }
     }
 }
+
+
+
+ASGI_APPLICATION = "leaf_school.asgi.application"
+
+

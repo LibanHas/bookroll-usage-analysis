@@ -133,11 +133,19 @@ class MostActiveContents(models.Model):
     @classmethod
     def get_most_active_contents(cls):
         query = """
-        SELECT contents_id, contents_name, COUNT(*) AS total_activities, object_id
-        FROM leaf_newleaf.statements_mv
-        GROUP BY contents_id, contents_name, object_id
-        ORDER BY total_activities DESC
-        LIMIT 10
+            SELECT 
+                contents_id, 
+                contents_name, 
+                uniqExact(id) AS total_activities,
+                object_id
+            FROM statements_mv
+            GROUP BY 
+                contents_id, 
+                contents_name, 
+                object_id
+            ORDER BY 
+                total_activities DESC
+            LIMIT 10
         """
         with clickhouse_connection() as connection:
             with connection.cursor() as cursor:
@@ -190,11 +198,13 @@ class DailyActivities(models.Model):
     @classmethod
     def get_daily_activities(cls):
         query = """
-        SELECT toDate(timestamp) AS date, COUNT(*) AS total_activities
-        FROM statements_mv
-        WHERE timestamp >= today() - 30
-        GROUP BY date
-        ORDER BY date
+            SELECT 
+                toDate(timestamp) AS date, 
+                uniqExact(id) AS total_activities
+            FROM statements_mv
+            WHERE timestamp >= today() - 30
+            GROUP BY date
+            ORDER BY date
         """
         with clickhouse_connection() as connection:
             with connection.cursor() as cursor:
@@ -219,18 +229,19 @@ class MostActiveStudents(models.Model):
     @classmethod
     def get_most_active_students(cls):
         query = """
-        SELECT actor_account_name, COUNT(*) AS total_activities
+        SELECT 
+            actor_account_name,
+            uniqExact(id) AS total_activities
         FROM statements_mv
-        WHERE actor_role == 'student' 
+        WHERE actor_role = 'student'
         GROUP BY actor_account_name
-        ORDER BY total_activities ASC
+        ORDER BY total_activities DESC
         LIMIT 10
         """
         with clickhouse_connection() as connection:
             with connection.cursor() as cursor:
                 cursor.execute(query)
                 rows = cursor.fetchall()
-
         return [
             {
                 "actor_account_name": row[0],
@@ -288,13 +299,21 @@ class MostMemoContents(models.Model):
     @classmethod
     def get_most_memo_contents(cls):
         query = """
-        SELECT contents_id, contents_name, COUNT(*) AS total_memos, object_id
-        FROM statements_mv
-        WHERE operation_name == 'ADD_HW_MEMO'
-        AND actor_role == 'student'
-        GROUP BY contents_id, contents_name, object_id
-        ORDER BY total_memos DESC
-        LIMIT 10
+            SELECT 
+                contents_id, 
+                contents_name, 
+                uniqExact(id) AS total_memos,
+                object_id
+            FROM statements_mv
+            WHERE operation_name = 'ADD_HW_MEMO'
+                AND actor_role = 'student'
+            GROUP BY 
+                contents_id, 
+                contents_name, 
+                object_id
+            ORDER BY 
+                total_memos DESC
+            LIMIT 10
         """
         with clickhouse_connection() as connection:
             with connection.cursor() as cursor:

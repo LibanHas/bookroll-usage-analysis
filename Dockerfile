@@ -17,7 +17,8 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libffi-dev \
     wget \
-    curl \    
+    curl \   
+    npm \ 
     && rm -rf /var/lib/apt/lists/*
 
 # Install pip and ensure it's the latest version
@@ -26,6 +27,7 @@ RUN python -m pip install --upgrade pip setuptools wheel
 # Copy requirements file and install dependencies
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+RUN npm install -g wscat
 
 # Copy application code to the container
 COPY . .
@@ -37,9 +39,16 @@ USER appuser
 # Expose the application port
 EXPOSE 8000
 
+
 # Set the entry point for the container
 # CMD ["gunicorn", "--bind", "0.0.0.0:8000", "your_project.wsgi:application"]
 # CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--threads", "2", "your_project.wsgi:application"]
 
+# For development with auto-reload
+CMD ["daphne", "leaf_school.asgi:application", "-b", "0.0.0.0", "-p", "8000", "--reload"]
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Uncomment the lines below for production
+# CMD ["gunicorn", "--bind", "0.0.0.0:8000", "your_project.wsgi:application"]
+# CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--threads", "2", "your_project.wsgi:application"]
+
+# CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

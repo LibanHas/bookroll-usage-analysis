@@ -24,7 +24,9 @@
     <script src="{% static 'js/vendor/apexcharts.min.js' %}"></script>
     <script src="{% static 'js/vendor/flowbite.min.js' %}"></script>
     <script src="{% static 'js/vendor/smooth-scrollbar/smooth-scrollbar.min.js' %}"></script>
-    <script src="{% static 'js/pages/dashboard-admin-lms.js' %}"></script>
+    
+    {% block page_specific_js %}{% endblock %}
+    
     <script src="{% static 'js/component/app-menu-bar.js' %}"></script>
     <script src="{% static 'js/switcher.js' %}"></script>
     <script src="{% static 'js/layout.js' %}"></script>

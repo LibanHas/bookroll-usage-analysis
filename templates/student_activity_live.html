@@ -1,0 +1,828 @@
+{% extends 'main.html' %}
+{% load static %}
+{% block main_content %}
+<script type="application/json" id="initial-activities-data">
+    {{ initial_activities|safe }}
+</script>
+<div class="timeline-container">
+    <div class="timeline-card">        
+        <div class="col-span-full lg:col-span-4 card p-0">
+            <div class="bg-white dark:bg-dark-card rounded-15 overflow-hidden dk-theme-card-square">
+                <div class="relative w-full h-[42px]">
+                   
+                    <label for="thumbnailsrc" class="file-container bg-white bg-no-repeat bg-cover absolute left-1/2 -translate-x-1/2 -bottom-[calc(theme('spacing.ins-pro-img')_/_2)] w-[calc(theme('spacing.ins-pro-img')_+_5px)] h-[theme('spacing.ins-pro-img')] border-2 border-white dark:border-dark-border-two rounded-20 dk-theme-card-square"
+                        style="background-image: url('{% static 'images/user/profile-img.png' %}');">
+                        <input type="file" id="thumbnailsrc" hidden class="img-src peer/file">   
+                        <span class="absolute bottom-0 right-0 flex-center size-5 rounded-50 border border-white dark:border-dark-border-two text-primary-500 bg-primary-200">             
+                            {% if last_action_time.is_online %}
+                                <i class="ri-circle-fill text-success text-[5px]"></i>
+                            {% else %}
+                                <i class="ri-circle-fill text-muted text-[5px]"></i>
+                            {% endif %}
+                        </span>              
+                    </label>
+    
+                </div>
+                <div class="mt-7 px-6 text-center">
+                    <div class="py-5">
+                        <div class="flex-center">
+                            <h4 class="text-[22px] leading-none text-heading font-semibold relative">
+                                {{ basic_info.lastname }} {{ basic_info.firstname }} 
+                            </h4>                       
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card border-b pt-0">
+            <h1 class="timeline-title flex-center">Live Activity Timeline</h1>
+            <p class="font-spline_sans dark:!text-gray-text mt-2.5 flex-center text-center ri-1x">
+                This live view enables seamless monitoring of students' real-time activities and actions.
+            </p>
+        </div>
+        <div class="timeline-events py-5">
+            <svg class="timeline-connection-layer"></svg>
+            <div id="events-container"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+class ActivityTimeline {
+    constructor(containerId, initialActivities = []) {
+        this.container = document.getElementById(containerId);
+        this.events = [];
+        this.svg = document.querySelector('.timeline-connection-layer');
+        this.maxEvents = 1000;
+        this.lastHistoricalEventTime = null;
+        this.firstLiveEventTime = null;
+        this.isInitialDataLoaded = false;
+        
+        // Add initial activities if provided
+        if (initialActivities && initialActivities.length > 0) {
+            // Sort initial activities by timestamp in descending order
+            const sortedActivities = [...initialActivities].sort((a, b) => 
+                new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            );
+            
+            sortedActivities.forEach(activity => {
+                this.addEvent(activity);
+            });
+            
+            this.isInitialDataLoaded = true;
+            // Store the timestamp of the most recent historical event
+            if (this.events.length > 0) {
+                this.lastHistoricalEventTime = new Date(this.events[0].timestamp).getTime();
+            }
+        }
+        
+        this.setupWebSocket();
+    }
+
+    setupWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/ws/activity/{{user_id}}`);
+        
+        ws.onopen = () => {
+            console.log('WebSocket connection established');
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'new_activity' && data.activity) {
+                    this.addEvent(data.activity);
+                }
+            } catch (error) {
+                console.error('Error processing WebSocket message:', error);
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        ws.onclose = (event) => {
+            console.log('WebSocket connection closed:', event.code, event.reason);
+            // Attempt to reconnect after 5 seconds
+            setTimeout(() => this.setupWebSocket(), 5000);
+        };
+    }
+
+    addEvent(activity) { // Modify to accept activity directly
+        try {
+            // Add the new event to the beginning of the array
+            this.events.unshift(activity);
+            
+            // Keep only the maximum number of events
+            if (this.events.length > this.maxEvents) {
+                this.events = this.events.slice(0, this.maxEvents);
+            }
+            
+            this.render();
+        } catch (error) {
+            console.error('Error adding event:', error);
+        }
+    }
+    getIconSVG(type) {
+        console.log('type----------ttt----', type)
+        const icons = {
+        // Existing Icons
+        OPEN: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                </svg>`,
+        OPEN_QUIZ: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #22c55e">
+                    <polyline points="9 11 12 14 22 4"></polyline>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>`,
+        NEXT: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #6366f1">
+                    <path d="M5 12h14M12 5l7 7-7 7"></path>
+                </svg>`,
+        CLOSE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                    <path d="M18 6L6 18M6 6l12 12"></path>
+                </svg>`,
+        CLOSE_QUIZ: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                    <path d="M18 6L6 18M6 6l12 12"></path>
+                </svg>`,
+        
+        // Custom Icons
+        ZOOM_FIT: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #8b5cf6">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <path d="M16 16l5 5"></path>
+                    <circle cx="11" cy="11" r="8"></circle>
+                </svg>`,
+        ADD_MEMO: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #10b981">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    <path d="M8 12h8M8 16h8"></path>
+                </svg>`,
+        ADD_QUIZ: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #10b981">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <line x1="12" y1="15" x2="12" y2="17"></line>
+                </svg>`,
+        ZOOM_IN: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #6366f1">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                </svg>`,
+        PREV: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #6366f1">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>`,
+        ZOOM_OUT: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #6366f1">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                </svg>`,
+        SEARCH: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>`,
+        AUDIO_START: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        <line x1="19" y1="12" x2="9" y2="12"></line>
+                        <line x1="9" y1="12" x2="9" y2="19"></line>
+                    </svg>`,
+        AUDIO_NEXT: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        <line x1="19" y1="12" x2="9" y2="12"></line>
+                        <polygon points="16 5 16 19 20 12 16 5"></polygon>
+                    </svg>`,
+        CHANGE_SVG_TEXT: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            <text x="8" y="15" font-size="4" fill="currentColor">SVG</text>
+                        </svg>`,
+        ADD_HW_MEMO: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #10b981">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        <path d="M8 12h8M8 16h8"></path>
+                        <path d="M4 4h16v16H4V4z"></path>
+                    </svg>`,
+        PAGE_JUMP: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                        <path d="M4 4v16h16V4H4z"></path>
+                        <path d="M12 8v8"></path>
+                        <path d="M8 12h8"></path>
+                    </svg>`,
+        CLEAR_HW_QUIZ: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                            <path d="M3 3l18 18"></path>
+                            <path d="M9 9h6v6H9z"></path>
+                        </svg>`,
+        ERASE_HW_MEMO: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                            <path d="M3 17.25V21h3.75l11-11-3.75-3.75L3 17.25z"></path>
+                            <path d="M16 4l4 4"></path>
+                        </svg>`,
+        MEMO_JUMP: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        <path d="M12 8l4 4-4 4"></path>
+                    </svg>`,
+        ADD_BOOKMARK: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #10b981">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                            <path d="M12 12v9"></path>
+                        </svg>`,
+        DELETE_MEMO: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6l-1 14H6L5 6"></path>
+                            <path d="M10 11v6"></path>
+                            <path d="M14 11v6"></path>
+                            <path d="M9 6V4h6v2"></path>
+                        </svg>`,
+        CHANGE_HW_CANVAS: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <path d="M3 9h18"></path>
+                                <path d="M9 3v18"></path>
+                                <path d="M12 12l6 6"></path>
+                            </svg>`,
+        EDIT_CONTENTS: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            <path d="M4 15h16"></path>
+                        </svg>`,
+        CLOSE_FILL_BLANK: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <path d="M9 9l6 6"></path>
+                                <path d="M15 9l-6 6"></path>
+                            </svg>`,
+        ADD_HW_CANVAS: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #10b981">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <path d="M9 9h6v6H9z"></path>
+                            <path d="M12 12l6 6"></path>
+                        </svg>`,
+        ADD_MARKER: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #10b981">
+                        <path d="M12 21s-8-4.35-8-10a8 8 0 1 1 16 0c0 5.65-8 10-8 10z"></path>
+                        <path d="M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"></path>
+                        <path d="M16 16l4 4"></path>
+                    </svg>`,
+        ANSWER_QUIZ: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 16 10 12 14"></polyline>
+                        <line x1="8" y1="10" x2="16" y2="10"></line>
+                    </svg>`,
+        REMOVE_FAVORITE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                        </svg>`,
+        AUDIO_PREV: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        <polyline points="12 19 19 12 12 5"></polyline>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>`,
+        ADD_HW_QUIZ: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #10b981">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <line x1="12" y1="15" x2="12" y2="17"></line>
+                    </svg>`,
+        START_FILL_BLANK: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <path d="M9 9h6v6H9z"></path>
+                            <path d="M12 12l6 6"></path>
+                        </svg>`,
+        DELETE_CONTENTS: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6l-1 14H6L5 6"></path>
+                            <path d="M10 11v6"></path>
+                            <path d="M14 11v6"></path>
+                            <path d="M9 6V4h6v2"></path>
+                        </svg>`,
+        EDIT_QUIZ: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        <path d="M4 15h16"></path>
+                        <path d="M4 9h16"></path>
+                        <path d="M12 12l6 6"></path>
+                    </svg>`,
+        AUDIO_SEEK: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                        <path d="M5 12h14"></path>
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 8v8"></path>
+                        <path d="M8 12h8"></path>
+                    </svg>`,
+        CHANGE_SVG_PATH: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            <path d="M4 4h16v16H4V4z"></path>
+                            <path d="M6 6l12 12"></path>
+                        </svg>`,
+        CLICK_LINK: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                        <path d="M10 13a5 5 0 0 1 7 7"></path>
+                        <path d="M14 11a5 5 0 0 0-7-7"></path>
+                        <line x1="8.5" y1="15.5" x2="15.5" y2="8.5"></line>
+                        <line x1="15.5" y1="15.5" x2="8.5" y2="8.5"></line>
+                    </svg>`,
+        DELETE_QUIZ: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6l-1 14H6L5 6"></path>
+                        <path d="M10 11v6"></path>
+                        <path d="M14 11v6"></path>
+                        <path d="M9 6V4h6v2"></path>
+                        <path d="M3 6l18 0"></path>
+                        <path d="M3 6l0 0"></path>
+                        <path d="M3 6l0 0"></path>
+                        <path d="M12 12l6 6"></path>
+                    </svg>`,
+        DELETE_HW_CANVAS: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                                <path d="M3 6h18"></path>
+                                <path d="M19 6l-1 14H6L5 6"></path>
+                                <path d="M10 11v6"></path>
+                                <path d="M14 11v6"></path>
+                                <path d="M9 6V4h6v2"></path>
+                                <path d="M12 12l6 6"></path>
+                            </svg>`,
+        CHANGE_MEMO: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        <path d="M8 12h8"></path>
+                        <path d="M8 16h8"></path>
+                    </svg>`,
+        UNDO_SVG_PATH: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                            <path d="M12 3v6l4-4-4-2z"></path>
+                            <path d="M5 12a7 7 0 0 1 7-7"></path>
+                        </svg>`,
+        REDO_SVG_PATH: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                            <path d="M12 3v6l-4-4 4-2z"></path>
+                            <path d="M19 12a7 7 0 0 1-7 7"></path>
+                        </svg>`,
+        AUDIO_PAUSE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                        <rect x="6" y="5" width="4" height="14"></rect>
+                        <rect x="14" y="5" width="4" height="14"></rect>
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>`,
+        DELETE_SVG_TEXT: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6l-1 14H6L5 6"></path>
+                            <path d="M10 11v6"></path>
+                            <path d="M14 11v6"></path>
+                            <path d="M9 6V4h6v2"></path>
+                            <text x="8" y="16" font-size="4" fill="currentColor">SVG</text>
+                            <path d="M12 12l6 6"></path>
+                        </svg>`,
+        AUDIO_END: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                    </svg>`,
+        ZOOM_FULL: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #6366f1">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        <path d="M8 12h8"></path>
+                        <path d="M12 8v8"></path>
+                    </svg>`,
+        DELETE_MARKER: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                            <path d="M12 21s-8-4.35-8-10a8 8 0 1 1 16 0c0 5.65-8 10-8 10z"></path>
+                            <path d="M12 12l6 6"></path>
+                        </svg>`,
+        DELETE_BOOKMARK: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                            <path d="M19 5l-7 5-7-5"></path>
+                            <path d="M12 8l0 13"></path>
+                        </svg>`,
+        SEARCH_JUMP: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        <path d="M12 12l6 6"></path>
+                    </svg>`,
+        DELETE_SVG_PATH: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                                <path d="M3 6h18"></path>
+                                <path d="M19 6l-1 14H6L5 6"></path>
+                                <path d="M10 11v6"></path>
+                                <path d="M14 11v6"></path>
+                                <path d="M9 6V4h6v2"></path>
+                                <path d="M12 12l6 6"></path>
+                            </svg>`,
+        ADD_SVG_TEXT: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #10b981">
+                            <path d="M12 20h9"></path>
+                            <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            <text x="8" y="16" font-size="4" fill="currentColor">SVG</text>
+                            <path d="M12 12l6 6"></path>
+                        </svg>`,
+        ADD_FAVORITE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #10b981">
+                            <path d="M12 21l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21z"></path>
+                            <path d="M16 8l-4 4-4-4"></path>
+                        </svg>`,
+        // Continue adding all other icons below following the same pattern
+
+        OPEN_RECOMMENDATION: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                                <path d="M5 12h14"></path>
+                                <path d="M12 5l7 7-7 7"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>`,
+        CLOSE_RECOMMENDATION: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                                <path d="M18 6L6 18"></path>
+                                <path d="M6 6l12 12"></path>
+                            </svg>`,
+        CLICK_RECOMMENDATION: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                                <path d="M10 14l2-2-2-2"></path>
+                                <rect x="5" y="5" width="14" height="14" rx="2" ry="2"></rect>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>`,
+        ANSWER_FILL_BLANK: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #22c55e">
+                                <rect x="3" y="11" width="18" height="2"></rect>
+                                <path d="M12 4v16"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>`,
+        DELETE_RECOMMENDATION: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M19 6l-1 14H6L5 6"></path>
+                                    <path d="M10 11v6"></path>
+                                    <path d="M14 11v6"></path>
+                                    <path d="M9 6V4h6v2"></path>
+                                    <path d="M12 12l6 6"></path>
+                                </svg>`,
+        DELETE_QUESTIONNAIRE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M19 6l-1 14H6L5 6"></path>
+                                    <path d="M10 11v6"></path>
+                                    <path d="M14 11v6"></path>
+                                    <path d="M9 6V4h6v2"></path>
+                                    <path d="M12 12l6 6"></path>
+                                </svg>`,
+        REGISTER_CONTENTS: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #10b981">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                <path d="M5 15h14"></path>
+                                <path d="M5 19h14"></path>
+                            </svg>`,
+        ADD_RECOMMENDATION: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #10b981">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                <path d="M12 12l6 6"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>`,
+        OPEN_QUESTIONNAIRE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
+                                <path d="M5 12h14"></path>
+                                <path d="M12 5l7 7-7 7"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>`,
+        CLOSE_QUESTIONNAIRE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                                <path d="M18 6L6 18"></path>
+                                <path d="M6 6l12 12"></path>
+                            </svg>`,
+        ANSWER_QUESTIONNAIRE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #22c55e">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 16 10 12 14"></polyline>
+                                    <line x1="8" y1="10" x2="16" y2="10"></line>
+                                </svg>`,
+        EDIT_RECOMMENDATION: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                                    <path d="M12 20h9"></path>
+                                    <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                    <path d="M5 15h14"></path>
+                                    <path d="M5 19h14"></path>
+                                    <path d="M12 12l6 6"></path>
+                                </svg>`,
+        UNDO_HW_MEMO: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                        <path d="M12 3v6l4-4-4-2z"></path>
+                        <path d="M5 12a7 7 0 0 1 7-7"></path>
+                        <path d="M9 9l0 0"></path>
+                    </svg>`,
+        REDO_HW_MEMO: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                        <path d="M12 3v6l-4-4 4-2z"></path>
+                        <path d="M19 12a7 7 0 0 1-7 7"></path>
+                        <path d="M15 15l0 0"></path>
+                    </svg>`,
+        ADD_SVG_PATH: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #10b981">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        <path d="M4 4h16v16H4V4z"></path>
+                        <path d="M8 8l8 8"></path>
+                    </svg>`,
+        ERASE_HW_QUIZ: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6l-1 14H6L5 6"></path>
+                            <path d="M10 11v6"></path>
+                            <path d="M14 11v6"></path>
+                            <path d="M9 6V4h6v2"></path>
+                            <path d="M12 12l6 6"></path>
+                            <path d="M8 8l8 8"></path>
+                        </svg>`,
+        MEMO_TEXT_CHANGE_HISTORY: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                                        <path d="M12 4v6l4-4-4-2z"></path>
+                                        <path d="M12 14v6"></path>
+                                        <path d="M5 12h14"></path>
+                                        <path d="M12 14l-4 4"></path>
+                                    </svg>`,
+        EDIT_QUESTIONNAIRE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #f59e0b">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                <path d="M5 15h14"></path>
+                                <path d="M5 19h14"></path>
+                                <path d="M12 12l6 6"></path>
+                            </svg>`,
+        ADD_QUESTIONNAIRE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #10b981">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <line x1="12" y1="15" x2="12" y2="17"></line>
+                            </svg>`,
+        // Add more icons following the above patterns
+    };
+        return icons[type] || icons.OPEN;
+    }
+
+    formatTimeGap(start, end) {
+        if (!start || !end) return '';
+        
+        try {
+            const startDate = new Date(start);
+            const endDate = new Date(end);
+            
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                return '';
+            }
+            
+            const startTime = startDate.getTime();
+            const endTime = endDate.getTime();
+            
+            // Special handling for the transition between historical and live data
+            if (this.isInitialDataLoaded && this.firstLiveEventTime) {
+                // If this gap spans the transition point
+                if (startTime >= this.firstLiveEventTime && endTime <= this.lastHistoricalEventTime) {
+                    const diff = Math.abs(startTime - this.lastHistoricalEventTime);
+                    const minutes = Math.floor(diff / 60000);
+                    const seconds = Math.floor((diff % 60000) / 1000);
+                    
+                    return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                }
+            }
+            
+            const diff = Math.abs(startTime - endTime);
+            const maxTimeGap = 30 * 60 * 1000; // 30 minutes in milliseconds
+            
+            if (diff > maxTimeGap) {
+                return '';
+            }
+            
+            const minutes = Math.floor(diff / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+            
+            return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        } catch (error) {
+            console.error('Error formatting time gap:', error);
+            return '';
+        }
+    }
+
+    formatTimestamp(timestamp) {
+        try {
+            const date = new Date(timestamp);
+            if (isNaN(date.getTime())) return '';
+            
+            return date.toLocaleTimeString(undefined, {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        } catch (error) {
+            console.error('Error formatting timestamp:', error);
+            return '';
+        }
+    }
+
+
+    updateConnections() {
+        try {
+            this.svg.innerHTML = '';
+            
+            this.events.forEach((event, idx) => {
+                if (idx === 0) return;
+                
+                const startY = (idx - 1) * 88 + 16;
+                const endY = idx * 88 + 16;
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', '16');
+                line.setAttribute('y1', startY);
+                line.setAttribute('x2', '16');
+                line.setAttribute('y2', endY);
+                line.setAttribute('stroke', '#94a3b8');
+                line.setAttribute('stroke-width', '2');
+                line.setAttribute('stroke-dasharray', '4');
+                
+                this.svg.appendChild(line);
+            });
+        } catch (error) {
+            console.error('Error updating connections:', error);
+        }
+    }
+
+    addEvent(eventData) {
+        try {
+            const activity = eventData.type === 'new_activity' ? eventData.activity : eventData;
+            const timestamp = new Date(activity.timestamp).getTime();
+
+            // Track the first live event after initial data load
+            if (this.isInitialDataLoaded && this.lastHistoricalEventTime && 
+                timestamp > this.lastHistoricalEventTime && !this.firstLiveEventTime) {
+                this.firstLiveEventTime = timestamp;
+            }
+            
+            // Add the new event to the beginning of the array
+            this.events.unshift(activity);
+            
+            // Keep only the maximum number of events
+            if (this.events.length > this.maxEvents) {
+                this.events = this.events.slice(0, this.maxEvents);
+            }
+            
+            this.render();
+        } catch (error) {
+            console.error('Error adding event:', error);
+        }
+    }
+
+    sanitizeHTML(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    render() {
+        try {
+            this.container.innerHTML = '';
+            
+            this.events.forEach((event, idx) => {
+                const eventEl = document.createElement('div');
+                eventEl.className = 'timeline-event';
+                
+                const timeGap = idx < this.events.length - 1 ? 
+                    this.formatTimeGap(event.timestamp, this.events[idx + 1].timestamp) : '';
+                
+                const sanitizedLabel = this.sanitizeHTML(event.label || '');
+                const sanitizedType = this.sanitizeHTML(event.type || '');
+                const formattedTime = this.formatTimestamp(event.timestamp);
+
+                eventEl.innerHTML = `
+                    <div class="icon-container">
+                        <div class="icon-bg"></div>
+                        ${this.getIconSVG(event.type)}
+                    </div>
+                    <div class="event-content">
+                        <div class="event-header">
+                            <p class="event-label">${sanitizedLabel}</p>
+                            <time class="event-time">${formattedTime}</time>
+                        </div>
+                        <p class="event-type">${sanitizedType.replace('_', ' ')}</p>
+                        ${timeGap ? `<p class="time-gap">Time spent: ${timeGap}</p>` : ''}
+                    </div>
+                `;                
+                this.container.appendChild(eventEl);
+            });
+            
+            // Update SVG height and connections
+            this.svg.style.height = `${this.events.length * 88}px`;
+            this.updateConnections();
+        } catch (error) {
+            console.error('Error rendering timeline:', error);
+        }
+    }
+}
+
+// Initialize timeline with initial activities from Django context
+const initialActivitiesJson = document.getElementById('initial-activities-data');
+const initialActivities = initialActivitiesJson ? JSON.parse(initialActivitiesJson.textContent) : [];
+const timeline = new ActivityTimeline('events-container', initialActivities);
+
+</script>
+
+<style>
+    .timeline-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    .timeline-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 20px;
+    }
+
+    .timeline-title {
+        font-size: 1.5rem;
+        margin: 0 0 20px 0;
+        color: #1a1a1a;
+    }
+
+    .timeline-events {
+        position: relative;
+        min-height: 200px;
+    }
+
+    .timeline-connection-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .timeline-event {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        position: relative;
+        margin-bottom: 2rem;
+        z-index: 1;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .icon-container {
+        position: relative;
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+    }
+
+    .icon-bg {
+        position: absolute;
+        width: 32px;
+        height: 32px;
+        background: white;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .event-icon {
+        position: relative;
+        width: 24px;
+        height: 24px;
+        margin: 4px;
+    }
+
+    .event-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .event-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 4px;
+    }
+
+    .event-label {
+        font-weight: 500;
+        color: #1a1a1a;
+        margin: 0;
+        word-break: break-word;
+    }
+
+    .event-time {
+        font-size: 0.875rem;
+        color: #666;
+        white-space: nowrap;
+    }
+
+    .event-type {
+        font-size: 0.75rem;
+        color: #666;
+        text-transform: uppercase;
+        margin: 0;
+    }
+
+    .time-gap {
+        font-size: 0.75rem;
+        color: #666;
+        margin: 4px 0 0 0;
+    }
+
+    @media (max-width: 640px) {
+        .timeline-container {
+            padding: 10px;
+        }
+        
+        .timeline-card {
+            padding: 15px;
+        }
+        
+        .event-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .event-time {
+            margin-top: 4px;
+        }
+    }
+</style>
+
+{% endblock %}
+
+{% block page_specific_js %}
+{% endblock %}

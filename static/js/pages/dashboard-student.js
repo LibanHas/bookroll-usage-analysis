@@ -1,104 +1,83 @@
-// Average Learning Chart
-const averageLearningOptions = {
+// Get the raw data from the DOM
+const dailystudentactivityRaw = document.getElementById('dailystudentactivity').textContent;
+
+// Parse the raw data (assuming it's JSON)
+const parsedData = JSON.parse(dailystudentactivityRaw);
+
+// Transform the data for ApexCharts
+const groupedData = parsedData.reduce((acc, row) => {
+  const { date, operation_name, daily_count } = row;
+
+  // Convert date to string if needed
+  const dateString = typeof date === "string" ? date : date.toISOString().split('T')[0];
+
+  if (!acc[dateString]) acc[dateString] = {};
+  acc[dateString][operation_name] = daily_count;
+
+  return acc;
+}, {});
+
+// Prepare categories (x-axis labels)
+const categories = Object.keys(groupedData);
+
+// Get unique operation names (stack names)
+const operationNames = [...new Set(parsedData.map(row => row.operation_name))];
+
+// Prepare series data
+const series = operationNames.map(operationName => ({
+  name: operationName,
+  data: categories.map(date => groupedData[date][operationName] || 0), // Fill missing counts with 0
+}));
+
+// Stacked Bar Chart Options
+const studentActivityOptions = {
   chart: {
-    type: "line",
-    height: 250,
+    type: "bar",
+    height: 400,
     width: "100%",
-    offsetX: -5,
-    offsetY: 15,
+    stacked: true,
+    zoom: {
+      enabled: true, // Enables zooming
+      type: 'x',     // Zoom along x-axis only
+      autoScaleYaxis: true, // Auto scales Y-axis while zooming
+    },
     toolbar: {
-      show: false,
+      show: true,
     },
-    events: {
-      mounted: (chart) => {
-        chart.windowResizeHandler();
-      },
-    },
+    
   },
   xaxis: {
-    categories: [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ],
+    categories: categories,
   },
   yaxis: {
-    min: 5,
-    max: 100,
-    tickAmount: 5,
     labels: {
-      formatter: (val) => val + "h",
+      formatter: (val) => val,
     },
   },
-  series: [
-    {
-      name: "Learning",
-      data: [73, 49, 29, 56, 89, 50, 80, 40, 85, 45, 58, 88],
-    },
-  ],
+  series: series,
   plotOptions: {
     bar: {
       horizontal: false,
-      columnWidth: "18%",
-      endingShape: "rounded",
+      columnWidth: "50%",
     },
-  },
-  grid: {
-    borderColor: "#EEE",
   },
   dataLabels: {
     enabled: false,
   },
-  stroke: {
-    curve: "smooth",
-    colors: ["#5F71FA", "#76D466"],
-    width: 1,
-  },
-  // fill: {
-  //   type: "gradient",
-  //   gradient: {
-  //     opacityFrom: 0.5,
-  //     opacityTo: 0.2,
-  //     stops: [0, 60],
-  //   },
-  // },
   legend: {
     position: "top",
     horizontalAlign: "left",
-    offsetX: -30,
-    offsetY: 0,
-    markers: {
-      width: 7,
-      height: 7,
-      radius: 99,
-      fillColors: ["#5F71FA", "#76D466"],
-      offsetX: -3,
-      offsetY: -1,
-    },
-    itemMargin: {
-      horizontal: 20,
-    },
   },
   tooltip: {
     y: {
-      formatter: (val) => {
-        return val + "h";
-      },
+      formatter: (val) => val,
     },
   },
 };
 
-const averageLearningChart = new ApexCharts(
+// Render the chart
+const studentActivityChart = new ApexCharts(
   document.querySelector("#student-average-learning-chart"),
-  averageLearningOptions
+  studentActivityOptions
 );
-averageLearningChart.render();
+studentActivityChart.render();

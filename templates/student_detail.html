@@ -4,16 +4,21 @@
 
 <div class="grid grid-cols-12 gap-x-4">
     <!-- Start Bread Crumb Section -->
-    <div class="col-span-full card flex-center-btween">
-        <h5 class="card-title">Student</h5>
-        <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
-            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two">
-                <a href="index.html">Home</a>
-            </li>
-            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two current-page">
-                <a href="#">Student Dashboard</a>
-            </li>
-        </ul>
+    <div class="col-span-full card flex-center-btween sm:flex-center-between sm:flex-row">
+            <div>
+                <h5 class="card-title">Student</h5>
+                <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
+                    <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two">
+                        <a href="index.html">Home</a>
+                    </li>
+                    <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two current-page">
+                        <a href="#">Student Dashboard</a>
+                    </li>
+                </ul>
+            </div>           
+                <a href="{% url 'student_activity_live' student.user_id %}" class="btn b-solid btn-primary-solid">View Live Activities</a> 
+            
+
     </div>
     <!-- End Bread Crumb Section -->
     <!-- Start Student Profile Preview Section -->
@@ -24,7 +29,7 @@
                 <label for="thumbnailsrc" class="file-container bg-white bg-no-repeat bg-cover absolute left-1/2 -translate-x-1/2 -bottom-[calc(theme('spacing.ins-pro-img')_/_2)] w-[calc(theme('spacing.ins-pro-img')_+_5px)] h-[theme('spacing.ins-pro-img')] border-2 border-white dark:border-dark-border-two rounded-20 dk-theme-card-square"
                     style="background-image: url('{% static 'images/user/profile-img.png' %}');">
                     <input type="file" id="thumbnailsrc" hidden class="img-src peer/file">   
-                    <span class="absolute bottom-0 right-0 flex-center size-5 rounded-50 border border-white dark:border-dark-border-two text-primary-500 bg-primary-200 dk-theme-card-square">             
+                    <span class="absolute bottom-0 right-0 flex-center size-5 rounded-50 border border-white dark:border-dark-border-two text-primary-500 bg-primary-200">             
                         {% if student.last_action_time.is_online %}
                             <i class="ri-circle-fill text-success text-[5px]"></i>
                         {% else %}
@@ -116,12 +121,15 @@
         <!-- Student Average Learning Section -->
         <div class="col-span-full 3xl:col-span-8 card mb-0 mt-4 p-5 dk-border-one">
             <div class="flex-center-between">
-                <h6 class="card-title">Average Learning</h6>
+                <h6 class="card-title">Daily Activities</h6>
                 <select class="form-input form-select">
                     <option value="this-month">This Year</option>
                     <option value="last-month">This Month</option>
                 </select>
-            </div>
+            </div>   
+            <script id="dailystudentactivity" type="application/json">
+                {{ activity_by_day|safe }}
+            </script>    
             <div id="student-average-learning-chart"></div>
         </div>
     </div>
@@ -258,7 +266,10 @@
     <!-- End Recent Viewed Course -->
 </div>
 
-
-
-
 {% endblock %}
+
+{% block page_specific_js %}
+<script src="{% static 'js/pages/dashboard-student.js' %}"></script>
+{% endblock %}
+
+

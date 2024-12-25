@@ -215,7 +215,7 @@ class Student(models.Model):
                 SELECT
                 actor_account_name,
                 MAX(`timestamp`) AS last_event
-                FROM leaf_newleaf.statements_mv
+                FROM statements_mv
                 WHERE actor_account_name IN ({user_ids_str})
                 GROUP BY actor_account_name
                 ORDER BY last_event DESC
@@ -323,6 +323,36 @@ class StudentDetails(models.Model):
                 "total_courses": row[5],
                 "archived_courses": row[6],
                 "active_courses": row[7],
+            }
+        return None
+
+    @staticmethod
+    def get_student_basic_info(user_id):
+        """
+        Retrieve student details from Moodle via raw SQL query.
+        """
+        query = """
+            SELECT 
+                u.id AS user_id,
+                u.username,
+                u.email,
+                u.firstname,
+                u.lastname
+            FROM 
+                mdl_user u
+            WHERE 
+                u.id = %s
+        """
+        with connections['moodle_db'].cursor() as cursor:
+            cursor.execute(query, [user_id])
+            row = cursor.fetchone()
+        if row:
+            return {
+                "user_id": row[0],
+                "username": row[1],
+                "email": row[2],
+                "firstname": row[3],
+                "lastname": row[4]
             }
         return None
 
@@ -441,7 +471,7 @@ class StudentDetails(models.Model):
         """
         clickhouse_query = """
             SELECT contents_id
-            FROM leaf_newleaf.statements_mv
+            FROM statements_mv
             WHERE actor_account_name = %s
             GROUP BY contents_id
         """
@@ -456,7 +486,7 @@ class StudentDetails(models.Model):
         Retrieve student  from ClickHouse via raw SQL query.
         """
         clickhouse_query = """
-            SELECT actor_account_name, object_id, object_definition_name_en, operation_name, contents_id  
+            SELECT DISTINCT ON (id) actor_account_name, object_id, object_definition_name_en, operation_name, contents_id  
             FROM statements_mv 
             WHERE actor_account_name = %s 
             AND operation_name = 'ANSWER_QUIZ';
@@ -494,6 +524,43 @@ class StudentDetails(models.Model):
         else:
             return { "is_online": False, "last_action_time": last_event_time }
 
+    @staticmethod
+    def get_student_activity_by_day(user_id):
+        """
+        Retrieve student activity details from ClickHouse via raw SQL query.
+        """
+        clickhouse_query = """
+            SELECT 
+                toDate(timestamp) AS day, 
+                operation_name, 
+                uniqExact(id) AS daily_distinct_count
+            FROM statements_mv
+            WHERE actor_account_name = %s
+                AND timestamp >= today() - INTERVAL 1 YEAR
+            GROUP BY 
+                day, 
+                operation_name 
+            ORDER BY 
+                day ASC, 
+                operation_name;
+
+        """
+        with connections['clickhouse_db'].cursor() as ch_cursor:
+            ch_cursor.execute(clickhouse_query, [str(user_id)])
+            rows = ch_cursor.fetchall()
+        
+        results = []
+        user_ids_on_page = []
+        for row in rows:
+            user_id = row[0]
+            user_ids_on_page.append(user_id)
+            results.append({
+                "date": row[0],
+                "operation_name": row[1],
+                "daily_count": row[2],
+            })
+        return results
+    
 
     @staticmethod
     def get_full_student_details(user_id):
@@ -507,10 +574,22 @@ class StudentDetails(models.Model):
         clickhouse_contents = StudentDetails.get_student_contents_from_clickhouse(user_id)
         moodle_details["contents_ids"] = clickhouse_contents
         clickhouse_quiz_answers = StudentDetails.get_student_questions_answers(user_id)
-        # print("clickhouse_quiz_answers------",clickhouse_quiz_answers)
         moodle_details["quiz_answers"] = clickhouse_quiz_answers
         last_action_time = StudentDetails.get_student_last_action_time(user_id)
         moodle_details["last_action_time"] = last_action_time
         moodle_details["enrollments"] = StudentDetails.get_students_course_enrollments(user_id)
+        moodle_details["activity_by_day"] = StudentDetails.get_student_activity_by_day(user_id)
 
         return moodle_details
+
+class StudentActivityLive(models.Model):
+    """
+    Optional model if you need to store/cache any activity data locally
+    """
+    user_id = models.CharField(max_length=255)
+    timestamp = models.DateTimeField()
+    operation_name = models.CharField(max_length=255)
+    details = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-timestamp']
