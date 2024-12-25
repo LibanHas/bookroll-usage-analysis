@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'crispy_tailwind',
     'core',
     'clickhouse_backend',
+    'teacher_student',
 ]
 
 MIDDLEWARE = [
@@ -236,4 +237,20 @@ DEBUG_TOOLBAR_PANELS = [
 
 DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': lambda request: True,
+}
+
+MEMCACHED_HOST = '127.0.0.1'
+MEMCACHED_PORT = '11211'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
+        'LOCATION': f'{MEMCACHED_HOST}:{MEMCACHED_PORT}',
+        'OPTIONS': {
+            'no_delay': True,
+            'ignore_exc': True,
+            'max_pool_size': 4,
+            'use_pooling': True,
+        }
+    }
 }

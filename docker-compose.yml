@@ -16,6 +16,15 @@ services:
       - school_dashboard_net
     ports:
       - "5432:5432"
+ 
+  memcached:
+    image: memcached:latest
+    ports:
+      - "11211:11211"
+    command: ["-m", "64"]
+    networks:
+      - school_dashboard_net   
+
   school_dashboard:
     build:
       context: .
@@ -27,8 +36,11 @@ services:
       - "5000:8000"
     depends_on:
       - db
+      - memcached
     environment:
       DATABASE_URL: postgres://db:$m8.Z&81Tr$B@db:5432/school_db
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: 11211      
     networks:
       - newleaf_analysis_db_net
       - newleaf_bookroll_db_net

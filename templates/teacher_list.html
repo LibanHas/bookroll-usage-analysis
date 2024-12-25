@@ -1,0 +1,62 @@
+{% extends 'main.html' %}
+{% load static %}
+{% block main_content %}
+
+ <div class="card p-0 lg:min-h-[calc(100vh_-_theme('spacing.header')_*_1.4)] xl:min-h-[calc(100vh_-_theme('spacing.header')_*_1.6)]">
+        <div class="flex flex-col gap-2 sm:flex-center-between sm:flex-row px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
+            <div>
+                <h6 class="card-title">Teacher list</h6>
+                <p class="card-description">All Teacher Here</p>
+            </div>
+            <a href="#" class="btn b-solid btn-primary-solid">XXXXXXX</a>
+        </div>
+        <!-- Start All Instructor List Table -->
+        <div class="p-3 sm:p-4">
+            <div class="overflow-x-auto scrollbar-table">
+                {% if teachers %}
+                <table class="table-auto border-collapse w-full whitespace-nowrap text-left text-gray-500 dark:text-dark-text font-medium">
+                    <thead>
+                        <tr class="text-primary-500">
+                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">Name</th>
+                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">Email</th>
+                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">Active Courses</th>
+                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">Archived Courses</th>
+                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">Total Course</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-dark-border">
+                        {% for teacher in teachers %}
+                        <tr>
+                            <td class="px-4 py-4">
+                                <div class="flex items-center gap-3.5">
+                                    <a href="#" class="size-12 rounded-50 overflow-hidden dk-theme-card-square">
+                                        <img src="{% static 'images/user/profile-img.png' %}" alt="instructor">
+                                    </a>
+                                    <div>
+                                        <h6 class="leading-none text-heading font-semibold">
+                                            <a href="#">{{ teacher.firstname }} {{ teacher.lastname }}</a>
+                                        </h6>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">{{ teacher.email }}</td>
+                            <td class="px-4 py-4">{{ teacher.active_courses }}</td>
+                            <td class="px-4 py-4">{{ teacher.archived_courses }}</td>
+                            <td class="px-4 py-4">{{ teacher.total_courses }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                    <p>No teachers found</p>
+                {% endif %}
+            </div>
+        </div>
+        <!-- End All Instructor List Table -->
+    </div>
+
+
+
+
+
+{% endblock %}

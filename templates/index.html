@@ -1,6 +1,6 @@
 {% extends 'main.html' %}
-{% block main_content %}
 {% load static %}
+{% block main_content %}
 
 <div class="grid grid-cols-12 gap-x-4">
     <!-- Start Bread Crumb Section -->
@@ -41,7 +41,7 @@
                     </div>
                     <div class="leading-none text-gray-900 dark:text-dark-text font-semibold">
                         <span class="text-primary-500">09%</span>
-                        Below Target
+                        Below 
                     </div>
                 </div>
                 <div class="grow self-center pb-3">
@@ -69,7 +69,7 @@
                     </div>
                     <div class="leading-none text-gray-900 dark:text-dark-text font-semibold">
                         <span class="text-danger">05%</span>
-                        Below Target
+                        Below 
                     </div>
                 </div>
                 <div class="grow self-center pb-3">
@@ -97,7 +97,7 @@
                     </div>
                     <div class="leading-none text-gray-900 dark:text-dark-text font-semibold">
                         <span class="text-primary-500">50%</span>
-                        Below Target
+                        Below 
                     </div>
                 </div>
                 <div class="grow self-center pb-3">
@@ -115,7 +115,7 @@
                 <div class="pb-8 shrink-0">
                     <div class="flex items-center gap-2 mb-3">
                         {% if active_students %}
-                        <div class="counter-value card-title" data-value="{{active_students}}">0</div>
+                        <div class="counter-value card-title" data-value="{{active_students}}">{{active_students}}</div>
                         {% else %}
                         <div class="counter-value card-title" data-value="0">0</div>
                         {% endif %}
@@ -125,7 +125,7 @@
                     </div>
                     <div class="leading-none text-gray-900 dark:text-dark-text font-semibold">
                         <span class="text-primary-500">05%</span>
-                        Below Target
+                        Below 
                     </div>
                 </div>
                 <div class="grow self-center pb-3">

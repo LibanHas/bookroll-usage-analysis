@@ -1,0 +1,264 @@
+{% extends 'main.html' %}
+{% load static %}
+{% block main_content %}
+
+<div class="grid grid-cols-12 gap-x-4">
+    <!-- Start Bread Crumb Section -->
+    <div class="col-span-full card flex-center-btween">
+        <h5 class="card-title">Student</h5>
+        <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
+            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two">
+                <a href="index.html">Home</a>
+            </li>
+            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two current-page">
+                <a href="#">Student Dashboard</a>
+            </li>
+        </ul>
+    </div>
+    <!-- End Bread Crumb Section -->
+    <!-- Start Student Profile Preview Section -->
+    <div class="col-span-full lg:col-span-4 card p-0">
+        <div class="bg-white dark:bg-dark-card rounded-15 overflow-hidden dk-theme-card-square">
+            <div class="relative w-full h-[150px]">
+                <img src="{% static 'images/profile/cover.png' %}" alt="cover-image" class="w-full h-full">
+                <label for="thumbnailsrc" class="file-container bg-white bg-no-repeat bg-cover absolute left-1/2 -translate-x-1/2 -bottom-[calc(theme('spacing.ins-pro-img')_/_2)] w-[calc(theme('spacing.ins-pro-img')_+_5px)] h-[theme('spacing.ins-pro-img')] border-2 border-white dark:border-dark-border-two rounded-20 dk-theme-card-square"
+                    style="background-image: url('{% static 'images/user/profile-img.png' %}');">
+                    <input type="file" id="thumbnailsrc" hidden class="img-src peer/file">   
+                    <span class="absolute bottom-0 right-0 flex-center size-5 rounded-50 border border-white dark:border-dark-border-two text-primary-500 bg-primary-200 dk-theme-card-square">             
+                        {% if student.last_action_time.is_online %}
+                            <i class="ri-circle-fill text-success text-[5px]"></i>
+                        {% else %}
+                            <i class="ri-circle-fill text-muted text-[5px]"></i>
+                        {% endif %}
+                    </span>              
+                </label>
+
+            </div>
+            <div class="mt-7 px-6 text-center">
+                <div class="py-5">
+                    <div class="flex-center">
+                        <h4 class="text-[22px] leading-none text-heading font-semibold relative">
+                            {{ student.firstname }} {{ student.lastname }}
+                        </h4>                       
+                    </div>
+                    <p class="font-spline_sans leading-[1.62] text-heading dark:!text-dark-text mt-2.5">Xxxxxx Xxxxxx</p>
+                    <p class="font-spline_sans text-sm leading-[1.62] text-gray-500 dark:text-dark-text mt-1">Xxxxxx Xxxxxx</p>
+                </div>
+                <div class="py-5 border-t border-gray-200 dark:border-dark-border text-left">
+                    <div class="flex-center-between">
+                        <h6 class="text-gray-500 dark:text-dark-text leading-none font-semibold">About</h6>
+                    </div>
+                    <ul class="flex flex-col gap-y-3 *:flex *:gap-x-2.5 *:leading-none *:text-gray-500 dark:*:text-dark-text *:font-medium mt-4">
+                        <li>
+                            <i class="ri-mail-line text-inherit"></i>
+                            <div>Email: <span class="text-heading dark:!text-dark-text"> {{ student.email }}</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i class="ri-briefcase-line text-inherit"></i>
+                            <div>Xxxxx <span class="text-heading dark:!text-dark-text">Xxxxxx</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <div class="py-5 border-t border-gray-200 dark:border-dark-border text-left">
+                    <div class="flex-center-between">
+                        <h6 class="text-gray-500 dark:text-dark-text leading-none font-semibold">Sub Content</h6>
+                    </div>
+                    <ul class="flex flex-col gap-y-3 *:flex *:items-center *:gap-x-2.5 *:leading-none *:text-gray-500 dark:*:text-dark-text *:font-medium mt-4">
+                        <li>
+                            <i class="ri-arrow-right-box-fill text-inherit"></i>
+                            <div>Last Access: <span class="text-heading dark:!text-dark-text"> {{ student.last_action_time.last_action_time }}</span>
+                            </div>
+                        </li>
+                        <li>
+                            <i class="ri-arrow-right-box-fill text-inherit"></i>
+                            <a href="#" class="hover:text-heading dark:hover:text-dark-text-two">Xxxxxx</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Student Profile Preview Section -->
+    <!-- Start Student Couse Overview Section -->
+    <div class="col-span-full lg:col-span-8 card">
+        <div class="grid grid-cols-12 gap-4">
+            <div class="col-span-full md:col-span-6 lg:col-span-3 dk-border-one p-5 mb-0">
+                <div class="size-11 flex-center bg-[#F7F3FF] dark:bg-dark-icon rounded-10 mb-4">
+                    <img src="{% static 'images/icons/course-overview/progress.svg' %}" alt="icon" class="dark:brightness-[5]">
+                </div>
+                <p class="text-gray-500 dark:text-dark-text-two font-medium leading-none mb-2">Active Courses</p>
+                <div class="counter-value text-primary-500 text-[32px] font-semibold leading-none" data-value="{{student.active_courses}}">0</div>
+            </div>
+            <div class="col-span-full md:col-span-6 lg:col-span-3 dk-border-one p-5 mb-0">
+                <div class="size-11 flex-center bg-[#F7F3FF] dark:bg-dark-icon rounded-10 mb-4">
+                    <img src="{% static 'images/icons/course-overview/complete.svg' %}" alt="icon" class="dark:brightness-[5]">
+                </div>
+                <p class="text-gray-500 dark:text-dark-text-two font-medium leading-none mb-2">Archived course</p>
+                <div class="counter-value text-primary-500 text-[32px] font-semibold leading-none" data-value="{{student.archived_courses}}">0</div>
+            </div>           
+            <div class="col-span-full md:col-span-6 lg:col-span-3 dk-border-one p-5 mb-0">
+                <div class="size-11 flex-center bg-[#F7F3FF] dark:bg-dark-icon rounded-10 mb-4">
+                    <img src="{% static 'images/icons/course-overview/certificate.svg' %}" alt="icon" class="dark:brightness-[5]">
+                </div>
+                <p class="text-gray-500 dark:text-dark-text-two font-medium leading-none mb-2">Accessed Contents</p>
+                <div class="counter-value text-primary-500 text-[32px] font-semibold leading-none" data-value="{{student.contents_ids | length}}">0</div>
+            </div>
+            <div class="col-span-full md:col-span-6 lg:col-span-3 dk-border-one p-5 mb-0">
+                <div class="size-11 flex-center bg-[#F7F3FF] dark:bg-dark-icon rounded-10 mb-4">
+                    <img src="{% static 'images/icons/course-overview/purchase.svg' %}" alt="icon" class="dark:brightness-[5]">
+                </div>
+                <p class="text-gray-500 dark:text-dark-text-two font-medium leading-none mb-2">Quiz Answers</p>
+                <div class="counter-value text-primary-500 text-[32px] font-semibold leading-none" data-value="{{student.quiz_answers|length}}">0</div>
+            </div>
+        </div>
+        <!-- Student Average Learning Section -->
+        <div class="col-span-full 3xl:col-span-8 card mb-0 mt-4 p-5 dk-border-one">
+            <div class="flex-center-between">
+                <h6 class="card-title">Average Learning</h6>
+                <select class="form-input form-select">
+                    <option value="this-month">This Year</option>
+                    <option value="last-month">This Month</option>
+                </select>
+            </div>
+            <div id="student-average-learning-chart"></div>
+        </div>
+    </div>
+    <!-- End Student Couse Overview Section -->
+    <!-- Start Student Course List Table -->
+    <div class="col-span-full lg:col-span-6 2xl:col-span-6 card px-0 card">
+        <div class="flex-center-between px-3">
+            <h6 class="card-title">Enrolled Courses</h6>
+        </div>
+        <!-- Course Table -->
+        <div class="overflow-x-auto scrollbar-table mt-5 px-3"> 
+            <table class="table-auto w-full whitespace-nowrap text-left text-gray-500 dark:text-dark-text font-medium leading-none">
+                <thead>
+                    <tr>
+                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">Course title</th>
+                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">Category</th>
+                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square w-10">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-dark-border">
+                    {% for course in student.enrollments %}
+                        <tr>
+                            <td class="flex items-center gap-2 px-3.5 py-4">
+                                <div>
+                                    <h6 class="text-lg leading-none text-heading dark:!text-dark-text font-semibold mb-1.5 line-clamp-1">
+                                        {{course.course_name}}
+                                    </h6>
+                                    <div class="flex items-center gap-2">
+                                        <p class="font-normal text-xs text-gray-900">{{course.category_path}}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-3.5 py-4">{{course.category_path}}</td>
+                            
+                            <td class="px-3.5 py-4">
+                                <a href="#" class="btn b-solid btn-primary-solid btn-sm">View course</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    
+                </tbody>
+            </table>
+        </div>
+        <!-- End Course Table
+        <div class="flex-center-between border-t-[0.5px] border-gray-200 dark:border-dark-border pt-4">
+            <div class="leading-none text-xs font-semibold text-gray-900">Showing 4 of 20 entries</div>
+            <ul class="flex items-center gap-1 5 *:text-xs *:text-gray-900">
+                <li>
+                    <a href="#" class="size-6 border-[0.5px] border-gray-900/50 rounded-[5px] flex-center hover:border-none hover:bg-primary-500 hover:text-white">01</a>
+                </li>
+                <li>
+                    <a href="#" class="size-6 border-[0.5px] border-gray-900/50 rounded-[5px] flex-center hover:border-none hover:bg-primary-500 hover:text-white">02</a>
+                </li>
+                <li>
+                    <a href="#" class="size-6 border-[0.5px] border-gray-900/50 rounded-[5px] flex-center hover:border-none hover:bg-primary-500 hover:text-white">03</a>
+                </li>
+                <li>
+                    <a href="#" class="size-6 border-[0.5px] border-transparent hover:border-gray-900/50 rounded-[5px] flex-center bg-primary-500 hover:bg-transparent text-white hover:text-gray-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="10" viewbox="0 0 12 10" fill="none">
+                            <path d="M10.9593 5L1 5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M6.94254 1L10.9595 4.99967L6.94254 9" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </a>
+                </li>
+            </ul>
+        </div>
+         -->
+    </div>
+    <!-- End Student Course List Table -->
+    <!-- Start Recent Viewed Course -->
+    <div class="col-span-full lg:col-span-6 2xl:col-span-6 card px-0 card">
+        <div class="flex-center-between px-3">
+            <h6 class="card-title">Redently Visitied Courses</h6>
+        </div>
+        <!-- Course Table -->
+        <div class="overflow-x-auto scrollbar-table mt-5 px-3"> 
+            <table class="table-auto w-full whitespace-nowrap text-left text-gray-500 dark:text-dark-text font-medium leading-none">
+                <thead>
+                    <tr>
+                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">Course title</th>
+                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">Category</th>
+                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square w-10">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-dark-border">
+                    {% for course in student.enrollments %}
+                        <tr>
+                            <td class="flex items-center gap-2 px-3.5 py-4">
+                                <div>
+                                    <h6 class="text-lg leading-none text-heading dark:!text-dark-text font-semibold mb-1.5 line-clamp-1">
+                                        {{course.course_name}}
+                                    </h6>
+                                    <div class="flex items-center gap-2">
+                                        <p class="font-normal text-xs text-gray-900">{{course.category_path}}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-3.5 py-4">{{course.category_path}}</td>
+                            
+                            <td class="px-3.5 py-4">
+                                <a href="#" class="btn b-solid btn-primary-solid btn-sm">View course</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    
+                </tbody>
+            </table>
+        </div>
+        <!-- End Course Table
+        <div class="flex-center-between border-t-[0.5px] border-gray-200 dark:border-dark-border pt-4">
+            <div class="leading-none text-xs font-semibold text-gray-900">Showing 4 of 20 entries</div>
+            <ul class="flex items-center gap-1 5 *:text-xs *:text-gray-900">
+                <li>
+                    <a href="#" class="size-6 border-[0.5px] border-gray-900/50 rounded-[5px] flex-center hover:border-none hover:bg-primary-500 hover:text-white">01</a>
+                </li>
+                <li>
+                    <a href="#" class="size-6 border-[0.5px] border-gray-900/50 rounded-[5px] flex-center hover:border-none hover:bg-primary-500 hover:text-white">02</a>
+                </li>
+                <li>
+                    <a href="#" class="size-6 border-[0.5px] border-gray-900/50 rounded-[5px] flex-center hover:border-none hover:bg-primary-500 hover:text-white">03</a>
+                </li>
+                <li>
+                    <a href="#" class="size-6 border-[0.5px] border-transparent hover:border-gray-900/50 rounded-[5px] flex-center bg-primary-500 hover:bg-transparent text-white hover:text-gray-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="10" viewbox="0 0 12 10" fill="none">
+                            <path d="M10.9593 5L1 5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <path d="M6.94254 1L10.9595 4.99967L6.94254 9" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </a>
+                </li>
+            </ul>
+        </div>
+         -->
+    </div>
+    <!-- End Recent Viewed Course -->
+</div>
+
+
+
+
+{% endblock %}
