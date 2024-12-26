@@ -322,7 +322,6 @@ class StudentDetails(models.Model):
                 "lastname": row[4],
                 "total_courses": row[5],
                 "archived_courses": row[6],
-                "active_courses": row[7],
             }
         return None
 

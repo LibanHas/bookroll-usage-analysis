@@ -1,6 +1,6 @@
 {% extends 'main.html' %}
 {% load static %}
-{% block main_content %}
+{% block main_content %}   
 <script type="application/json" id="initial-activities-data">
     {{ initial_activities|safe }}
 </script>
@@ -452,12 +452,13 @@ function getIconSVG(type) {
         // Add more icons following the above patterns
     };
         return icons[type] || icons.OPEN;
-    }
+}
 
-    class ActivityTimeline {
+
+class ActivityTimeline {
         constructor(containerId, initialActivities = []) {
             this.container = document.getElementById(containerId);
-            this.events = [];
+            this.events = new Map(); // Change to Map for easier updates
             this.svg = document.querySelector('.timeline-connection-layer');
             this.maxEvents = 1000;
             this.lastHistoricalEventTime = null;
@@ -472,14 +473,16 @@ function getIconSVG(type) {
                 const sortedActivities = [...initialActivities].sort((a, b) => 
                     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
                 );
+                // console.log('Initial activities----:', sortedActivities) 
                 
                 sortedActivities.forEach(activity => {
-                    this.addEvent(activity);
+                    this.addOrUpdateEvent(activity);
                 });
                 
                 this.isInitialDataLoaded = true;
-                if (this.events.length > 0) {
-                    this.lastHistoricalEventTime = new Date(this.events[0].timestamp).getTime();
+                if (this.events.size > 0) {
+                    const firstEvent = Array.from(this.events.values())[0];
+                    this.lastHistoricalEventTime = new Date(firstEvent.timestamp).getTime();
                     this.lastEventTime = new Date().getTime();
                     this.startCurrentActivityTimer();
                 }
@@ -488,36 +491,37 @@ function getIconSVG(type) {
             this.setupWebSocket();
         }
 
-    setupWebSocket() {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const ws = new WebSocket(`${protocol}//${window.location.host}/ws/activity/{{user_id}}`);
-        
-        ws.onopen = () => {
-            console.log('WebSocket connection established');
-        };
+        setupWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const ws = new WebSocket(`${protocol}//${window.location.host}/ws/activity/{{user_id}}`);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connection established');
+            };
 
-        ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                console.log('WebSocket message received:', data);
-                if (data.type === 'new_activity' && data.activity) {
-                    this.lastEventTime = new Date().getTime();
-                    this.addEvent(data.activity);
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('WebSocket message received:', data);
+                    
+                    if ((data.type === 'new_activity' || data.type === 'enriched_activity') && data.activity) {
+                        this.lastEventTime = new Date().getTime();
+                        this.addOrUpdateEvent(data.activity);
+                    }
+                } catch (error) {
+                    console.error('Error processing WebSocket message:', error);
                 }
-            } catch (error) {
-                console.error('Error processing WebSocket message:', error);
-            }
-        };
+            };
 
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
 
-        ws.onclose = (event) => {
-            console.log('WebSocket connection closed:', event.code, event.reason);
-            setTimeout(() => this.setupWebSocket(), 5000);
-        };
-    }
+            ws.onclose = (event) => {
+                console.log('WebSocket connection closed:', event.code, event.reason);
+                setTimeout(() => this.setupWebSocket(), 5000);
+            };
+        }
 
     startCurrentActivityTimer() {
         if (this.timerInterval) {
@@ -595,13 +599,22 @@ function getIconSVG(type) {
 
     formatTimestamp(timestamp) {
         try {
-            const date = new Date(timestamp);
+            let date;
+            if (typeof timestamp === 'string' && timestamp.includes(' ')) {
+                // Handle space-separated format from WebSocket
+                // Convert "2024-12-26 09:29:48.000" to "2024-12-26T09:29:48.000Z"
+                date = new Date(timestamp.replace(' ', 'T') + 'Z');
+            } else {
+                date = new Date(timestamp);
+            }
+            
             if (isNaN(date.getTime())) return '';
             
-            return date.toLocaleTimeString(undefined, {
+            return date.toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
-                second: '2-digit'
+                second: '2-digit',
+                timeZone: 'UTC'  // Keep UTC timezone
             });
         } catch (error) {
             console.error('Error formatting timestamp:', error);
@@ -613,11 +626,14 @@ function getIconSVG(type) {
         try {
             this.svg.innerHTML = '';
             
-            this.events.forEach((event, idx) => {
+            const sortedEvents = Array.from(this.events.values())
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            sortedEvents.forEach((event, idx) => {
                 if (idx === 0) return;
                 
-                const startY = (idx - 1) * 88 + 16;
-                const endY = idx * 88 + 16;
+                const startY = (idx - 1) * 200 + 16;
+                const endY = idx * 200 + 16;
                 
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 line.setAttribute('x1', '16');
@@ -635,86 +651,171 @@ function getIconSVG(type) {
         }
     }
 
-    addEvent(activity) {
+    getEventKey(activity) {
+        const timestamp = new Date(activity.timestamp).getTime();
+        return `${timestamp}-${activity.id}`;
+    }
+
+    addOrUpdateEvent(activity) {
         try {
-            const timestamp = new Date(activity.timestamp).getTime();
-
-            // Update the last event time for real-time activities
-            if (!this.lastEventTime || timestamp > this.lastEventTime) {
-                this.lastEventTime = new Date().getTime();
+            const eventKey = this.getEventKey(activity);
+            const existingEvent = this.events.get(eventKey);
+            
+            if (existingEvent) {
+                this.events.set(eventKey, { ...existingEvent, ...activity });
+                
+            } else {
+                const timestamp = new Date(activity.timestamp).getTime();
+                if (this.isInitialDataLoaded && this.lastHistoricalEventTime && 
+                    timestamp > this.lastHistoricalEventTime && !this.firstLiveEventTime) {
+                    this.firstLiveEventTime = timestamp;
+                }
+                
+                this.events.set(eventKey, activity);
             }
 
-            if (this.isInitialDataLoaded && this.lastHistoricalEventTime && 
-                timestamp > this.lastHistoricalEventTime && !this.firstLiveEventTime) {
-                this.firstLiveEventTime = timestamp;
+            // Maintain max events limit
+            if (this.events.size > this.maxEvents) {
+                const sortedKeys = Array.from(this.events.keys())
+                    .sort((a, b) => {
+                        const timestampA = Number(a.split('-')[0]);
+                        const timestampB = Number(b.split('-')[0]);
+                        return timestampB - timestampA;
+                    })
+                    .slice(0, this.maxEvents); // Keep only the top `maxEvents`
+                
+                this.events = new Map(sortedKeys.map(key => [key, this.events.get(key)]));
             }
-            
-            this.events.unshift(activity);
-            
-            if (this.events.length > this.maxEvents) {
-                this.events = this.events.slice(0, this.maxEvents);
-            }
-            
-            // Restart the timer when a new event is added
+
+            this.lastEventTime = new Date().getTime();
             this.startCurrentActivityTimer();
             this.render();
         } catch (error) {
-            console.error('Error adding event:', error);
+            console.error('Error adding/updating event:', error);
         }
     }
 
+
     sanitizeHTML(str) {
+        if (!str) return '';
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
+    }
+
+    renderThumbnail(event) {
+        if (!event.content_info?.image_url || !event.content_info?.auth_token) {
+            return '';
+        }
+
+        return `
+            <img 
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                class="activity-thumbnail"
+                alt="Page thumbnail"
+                data-original-url="${this.sanitizeHTML(event.content_info.image_url)}"
+                data-auth-token="${this.sanitizeHTML(event.content_info.auth_token)}"
+            />
+        `;
+    }
+
+    async loadImage(img, url, token) {
+        try {
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'image/*'
+                },
+                mode: 'cors',
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            img.src = objectUrl;
+            img.removeAttribute('data-original-url');
+            img.removeAttribute('data-auth-token');
+        } catch (error) {
+            console.error('Error loading image:', error);
+            img.style.display = 'none';
+        }
     }
 
     render() {
         try {
             this.container.innerHTML = '';
             
-            this.events.forEach((event, idx) => {
+            // Enhanced sorting logic
+            const sortedEvents = Array.from(this.events.values())
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); 
+            
+            // Modified: Prepend new events instead of appending
+            sortedEvents.forEach((event, idx) => {
+               
                 const eventEl = document.createElement('div');
                 eventEl.className = 'timeline-event';
                 
-                const timeGap = idx < this.events.length - 1 ? 
-                    this.formatTimeGap(event.timestamp, this.events[idx + 1].timestamp) : '';
+                const timeGap = idx < sortedEvents.length - 1 ? 
+                    this.formatTimeGap(event.timestamp, sortedEvents[idx + 1].timestamp) : '';
                 
+                const thumbnailHTML = this.renderThumbnail(event);
                 const sanitizedLabel = this.sanitizeHTML(event.label || '');
-                const sanitizedType = this.sanitizeHTML(event.type || '');
+                const sanitizedType = this.sanitizeHTML(event.type || ''); 
+                console.log('event.timestamp:', event.timestamp);               
                 const formattedTime = this.formatTimestamp(event.timestamp);
+                console.log('Formatted time:', formattedTime);
 
                 eventEl.innerHTML = `
-                    <div class="icon-container">
+                    <div class="icon-container icon-container flex items-center justify-center flex self-center">
                         <div class="icon-bg"></div>
                         ${getIconSVG(event.type)}
                     </div>
                     <div class="event-content">
                         <div class="event-header">
-                            <p class="event-label">${sanitizedLabel}</p>
-                            <time class="event-time">${formattedTime}</time>
+                            <div class="badge badge-success-outline b-outline rounded-lg group/b-counter">${thumbnailHTML} </div>
+                            <p class="event-label flex self-center">${sanitizedLabel}</p>
+                            <time class="event-time flex self-center">${formattedTime}</time>
                         </div>
-                        <p class="event-type">${sanitizedType.replace('_', ' ')}</p>
-                        ${timeGap ? `<p class="time-gap">Time spent: ${timeGap}</p>` : ''}
+                        <p class="event-type">${sanitizedType.replace('_', ' ')} | 
+                        ${timeGap ? `<span class="time-gap lowercase">Time spent: ${timeGap}</span>` : ''}
+                        </p>
                     </div>
-                `;                
+                `;
+                
                 this.container.appendChild(eventEl);
             });
             
+            // Handle image loading
+            const images = this.container.querySelectorAll('img[data-original-url]');
+            images.forEach(img => {
+                const url = img.dataset.originalUrl;
+                const token = img.dataset.authToken;
+                if (url && token) {
+                    this.loadImage(img, url, token);
+                }
+            });
+            
             // Update SVG height and connections
-            this.svg.style.height = `${this.events.length * 88}px`;
+            this.svg.style.height = `${sortedEvents.length * 196}px`;
             this.updateConnections();
         } catch (error) {
             console.error('Error rendering timeline:', error);
         }
     }
+    
 }
 
 
 
 // Initialize timeline with initial activities from Django context
-const initialActivitiesJson = document.getElementById('initial-activities-data');
+// const initialActivitiesJson = document.getElementById('initial-activities-data');
+const initialActivitiesJson = '';
 const initialActivities = initialActivitiesJson ? JSON.parse(initialActivitiesJson.textContent) : [];
+// console.log(initialActivities);
 const timeline = new ActivityTimeline('events-container', initialActivities);
 
 </script>
@@ -829,6 +930,7 @@ const timeline = new ActivityTimeline('events-container', initialActivities);
         font-size: 0.75rem;
         color: #666;
         margin: 4px 0 0 0;
+        text-transform: lowercase;
     }
 
     .current-activity-timer {
@@ -856,7 +958,25 @@ const timeline = new ActivityTimeline('events-container', initialActivities);
         font-weight: 500;
         color: #0f172a;
     }
+    .activity-thumbnail {
+    margin: 8px 0;
+    overflow: hidden;
+    border-radius: 4px;
+    }
 
+    .thumbnail-image {
+        max-width: 120px;
+        height: auto;
+        display: block;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Optional: Add hover effect */
+    .thumbnail-image:hover {
+        transform: scale(1.05);
+        transition: transform 0.2s ease-in-out;
+    }
     @media (max-width: 640px) {
         .timeline-container {
             padding: 10px;

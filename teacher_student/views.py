@@ -74,6 +74,7 @@ class StudentActivityLiveView(TemplateView):
         """
         clickhouse_query = """
             SELECT  DISTINCT ON (id)
+                id,
                 operation_name as type,
                 timestamp,
                 platform,
@@ -100,21 +101,22 @@ class StudentActivityLiveView(TemplateView):
             rows = ch_cursor.fetchall()
         
         activities = []
-        for row in rows:
-            type_ = row[0]
-            timestamp = row[1]
-            platform = row[2]
-            object_id = row[3]
-            description = row[4]
-            marker_color = row[5]
-            marker_position = row[6]
-            marker_text = row[7]
-            memo_title = row[8]
-            memo_text = row[9]
-            contents_id = row[10]
-            contents_name = row[11]
-            page_no = row[12]
-            context_label = row[13]
+        for row in rows: 
+            id = row[0]           
+            type_ = row[1]
+            timestamp = row[2]
+            platform = row[3]
+            object_id = row[4]
+            description = row[5]
+            marker_color = row[6]
+            marker_position = row[7]
+            marker_text = row[8]
+            memo_title = row[9]
+            memo_text = row[10]
+            contents_id = row[11]
+            contents_name = row[12]
+            page_no = row[13]
+            context_label = row[14]
             
             # Ensure timestamp is timezone-aware
             if timestamp is not None and timestamp.tzinfo is None:
@@ -127,6 +129,7 @@ class StudentActivityLiveView(TemplateView):
             label = StudentActivityLiveView.get_activity_label(type_, contents_name, page_no)
             
             activity = {
+                "id": id,
                 "type": type_,
                 "timestamp": timestamp.isoformat() if timestamp else None,
                 "platform": platform,
@@ -143,7 +146,7 @@ class StudentActivityLiveView(TemplateView):
                 "context_label": context_label,
                 "label": label
             }
-            
+            # print(activity)
             activities.append(activity)
         
         return json.dumps(activities)

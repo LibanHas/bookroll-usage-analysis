@@ -281,3 +281,5 @@ LEAF_API_CONFIG: Dict[str, Any] = {
     'CONTENT_CACHE_PREFIX': 'leaf_content',
 }
 
+# TIME_ZONE = 'Asia/Tokyo'
+USE_TZ = True
