@@ -1,3 +1,6 @@
+# Django Channels consumer for real-time activity stream
+# consumer.py
+
 import json
 import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -212,15 +215,6 @@ class ActivityConsumer(AsyncWebsocketConsumer):
         else:
             return f"{operation_type.replace('_', ' ').title()} - {contents_name} (Page {page_no})"
 
-    # async def send_initial_activities(self):
-    #     """
-    #     Send the initial set of activities to the client upon connection.
-    #     """
-    #     initial_activities = await self.get_recent_activity()
-    #     await self.send(text_data=json.dumps({
-    #         'type': 'initial_activities',
-    #         'activities': initial_activities
-    #     }))
 
     async def start_activity_stream(self):
         """
@@ -253,7 +247,7 @@ class ActivityConsumer(AsyncWebsocketConsumer):
                             'type': 'new_activity',
                             'activity': activity
                         }))
-                await asyncio.sleep(2)  # Poll every 5 seconds
+                await asyncio.sleep(2)  # Poll every 2 seconds
             except asyncio.CancelledError:
                 print(">>> Activity stream task cancelled")
                 break

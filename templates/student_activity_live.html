@@ -41,6 +41,10 @@
                 This live view enables seamless monitoring of students' real-time activities and actions.
             </p>
         </div>
+        <div class="timeline-header">
+            <span class="timer-label">Current Activity Duration:</span>
+            <span class="activity-timer">0s</span>
+        </div>
         <div class="timeline-events py-5">
             <svg class="timeline-connection-layer"></svg>
             <div id="events-container"></div>
@@ -49,84 +53,9 @@
 </div>
 
 <script>
-class ActivityTimeline {
-    constructor(containerId, initialActivities = []) {
-        this.container = document.getElementById(containerId);
-        this.events = [];
-        this.svg = document.querySelector('.timeline-connection-layer');
-        this.maxEvents = 1000;
-        this.lastHistoricalEventTime = null;
-        this.firstLiveEventTime = null;
-        this.isInitialDataLoaded = false;
-        
-        // Add initial activities if provided
-        if (initialActivities && initialActivities.length > 0) {
-            // Sort initial activities by timestamp in descending order
-            const sortedActivities = [...initialActivities].sort((a, b) => 
-                new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            );
-            
-            sortedActivities.forEach(activity => {
-                this.addEvent(activity);
-            });
-            
-            this.isInitialDataLoaded = true;
-            // Store the timestamp of the most recent historical event
-            if (this.events.length > 0) {
-                this.lastHistoricalEventTime = new Date(this.events[0].timestamp).getTime();
-            }
-        }
-        
-        this.setupWebSocket();
-    }
 
-    setupWebSocket() {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const ws = new WebSocket(`${protocol}//${window.location.host}/ws/activity/{{user_id}}`);
-        
-        ws.onopen = () => {
-            console.log('WebSocket connection established');
-        };
 
-        ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'new_activity' && data.activity) {
-                    this.addEvent(data.activity);
-                }
-            } catch (error) {
-                console.error('Error processing WebSocket message:', error);
-            }
-        };
-
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
-
-        ws.onclose = (event) => {
-            console.log('WebSocket connection closed:', event.code, event.reason);
-            // Attempt to reconnect after 5 seconds
-            setTimeout(() => this.setupWebSocket(), 5000);
-        };
-    }
-
-    addEvent(activity) { // Modify to accept activity directly
-        try {
-            // Add the new event to the beginning of the array
-            this.events.unshift(activity);
-            
-            // Keep only the maximum number of events
-            if (this.events.length > this.maxEvents) {
-                this.events = this.events.slice(0, this.maxEvents);
-            }
-            
-            this.render();
-        } catch (error) {
-            console.error('Error adding event:', error);
-        }
-    }
-    getIconSVG(type) {
-        console.log('type----------ttt----', type)
+function getIconSVG(type) {        
         const icons = {
         // Existing Icons
         OPEN: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
@@ -525,6 +454,102 @@ class ActivityTimeline {
         return icons[type] || icons.OPEN;
     }
 
+    class ActivityTimeline {
+        constructor(containerId, initialActivities = []) {
+            this.container = document.getElementById(containerId);
+            this.events = [];
+            this.svg = document.querySelector('.timeline-connection-layer');
+            this.maxEvents = 1000;
+            this.lastHistoricalEventTime = null;
+            this.firstLiveEventTime = null;
+            this.isInitialDataLoaded = false;
+            this.timerInterval = null;
+            this.lastEventTime = null;
+            this.timerElement = document.querySelector('.timeline-header .activity-timer');
+            
+            // Add initial activities if provided
+            if (initialActivities && initialActivities.length > 0) {
+                const sortedActivities = [...initialActivities].sort((a, b) => 
+                    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                );
+                
+                sortedActivities.forEach(activity => {
+                    this.addEvent(activity);
+                });
+                
+                this.isInitialDataLoaded = true;
+                if (this.events.length > 0) {
+                    this.lastHistoricalEventTime = new Date(this.events[0].timestamp).getTime();
+                    this.lastEventTime = new Date().getTime();
+                    this.startCurrentActivityTimer();
+                }
+            }
+            
+            this.setupWebSocket();
+        }
+
+    setupWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${protocol}//${window.location.host}/ws/activity/{{user_id}}`);
+        
+        ws.onopen = () => {
+            console.log('WebSocket connection established');
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('WebSocket message received:', data);
+                if (data.type === 'new_activity' && data.activity) {
+                    this.lastEventTime = new Date().getTime();
+                    this.addEvent(data.activity);
+                }
+            } catch (error) {
+                console.error('Error processing WebSocket message:', error);
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        ws.onclose = (event) => {
+            console.log('WebSocket connection closed:', event.code, event.reason);
+            setTimeout(() => this.setupWebSocket(), 5000);
+        };
+    }
+
+    startCurrentActivityTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
+        
+        this.updateTimer();
+        this.timerInterval = setInterval(() => this.updateTimer(), 1000);
+    }
+
+    updateTimer() {
+        if (!this.lastEventTime || !this.timerElement) return;
+
+        const now = new Date().getTime();
+        const diff = now - this.lastEventTime;
+
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        let timeString = '';
+        if (hours > 0) {
+            timeString += `${hours}h `;
+        }
+        if (minutes > 0 || hours > 0) {
+            timeString += `${minutes}m `;
+        }
+        timeString += `${seconds}s`;
+
+        this.timerElement.textContent = timeString;
+    }
+
     formatTimeGap(start, end) {
         if (!start || !end) return '';
         
@@ -584,7 +609,6 @@ class ActivityTimeline {
         }
     }
 
-
     updateConnections() {
         try {
             this.svg.innerHTML = '';
@@ -611,25 +635,28 @@ class ActivityTimeline {
         }
     }
 
-    addEvent(eventData) {
+    addEvent(activity) {
         try {
-            const activity = eventData.type === 'new_activity' ? eventData.activity : eventData;
             const timestamp = new Date(activity.timestamp).getTime();
 
-            // Track the first live event after initial data load
+            // Update the last event time for real-time activities
+            if (!this.lastEventTime || timestamp > this.lastEventTime) {
+                this.lastEventTime = new Date().getTime();
+            }
+
             if (this.isInitialDataLoaded && this.lastHistoricalEventTime && 
                 timestamp > this.lastHistoricalEventTime && !this.firstLiveEventTime) {
                 this.firstLiveEventTime = timestamp;
             }
             
-            // Add the new event to the beginning of the array
             this.events.unshift(activity);
             
-            // Keep only the maximum number of events
             if (this.events.length > this.maxEvents) {
                 this.events = this.events.slice(0, this.maxEvents);
             }
             
+            // Restart the timer when a new event is added
+            this.startCurrentActivityTimer();
             this.render();
         } catch (error) {
             console.error('Error adding event:', error);
@@ -660,7 +687,7 @@ class ActivityTimeline {
                 eventEl.innerHTML = `
                     <div class="icon-container">
                         <div class="icon-bg"></div>
-                        ${this.getIconSVG(event.type)}
+                        ${getIconSVG(event.type)}
                     </div>
                     <div class="event-content">
                         <div class="event-header">
@@ -682,6 +709,8 @@ class ActivityTimeline {
         }
     }
 }
+
+
 
 // Initialize timeline with initial activities from Django context
 const initialActivitiesJson = document.getElementById('initial-activities-data');
@@ -802,6 +831,32 @@ const timeline = new ActivityTimeline('events-container', initialActivities);
         margin: 4px 0 0 0;
     }
 
+    .current-activity-timer {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 16px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .timer-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .timer-label {
+        color: #64748b;
+        font-size: 0.875rem;
+    }
+
+    .timer-value {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #0f172a;
+    }
+
     @media (max-width: 640px) {
         .timeline-container {
             padding: 10px;
@@ -820,6 +875,9 @@ const timeline = new ActivityTimeline('events-container', initialActivities);
             margin-top: 4px;
         }
     }
+
+
+
 </style>
 
 {% endblock %}
