@@ -94,7 +94,7 @@
                     <img src="{% static 'images/icons/course-overview/progress.svg' %}" alt="icon" class="dark:brightness-[5]">
                 </div>
                 <p class="text-gray-500 dark:text-dark-text-two font-medium leading-none mb-2">Active Courses</p>
-                <div class="counter-value text-primary-500 text-[32px] font-semibold leading-none" data-value="{{student.active_courses}}">0</div>
+                <div class="counter-value text-primary-500 text-[32px] font-semibold leading-none" data-value="{{student.enrollments|length}}">0</div>
             </div>
             <div class="col-span-full md:col-span-6 lg:col-span-3 dk-border-one p-5 mb-0">
                 <div class="size-11 flex-center bg-[#F7F3FF] dark:bg-dark-icon rounded-10 mb-4">
