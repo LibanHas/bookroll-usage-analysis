@@ -9,7 +9,8 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+import os
+from typing import Dict, Any
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -262,8 +263,23 @@ CACHES = {
     }
 }
 
-
-
 ASGI_APPLICATION = "leaf_school.asgi.application"
 
 
+# LEAF API SETTINGS
+# LEAF API Configuration
+LEAF_API_CONFIG: Dict[str, Any] = {
+    'HOST': os.getenv('LEAF_API_HOST', '10.236.173.177'),
+    'PORT': os.getenv('LEAF_API_PORT', '8090'),
+    'CLIENT_ID': os.getenv('LEAF_API_CLIENT_ID', 'client1'),
+    'CLIENT_SECRET': os.getenv('LEAF_API_CLIENT_SECRET', 'secret11'),
+    'TIMEOUT': int(os.getenv('LEAF_API_TIMEOUT', '30')),
+    'MAX_CONNECTIONS': int(os.getenv('LEAF_API_MAX_CONNECTIONS', '10')),
+    'MAX_KEEPALIVE_CONNECTIONS': int(os.getenv('LEAF_API_MAX_KEEPALIVE_CONNECTIONS', '5')),
+    'CACHE_TTL': int(os.getenv('LEAF_API_CACHE_TTL', '3600')),  # 1 hour default
+    'TOKEN_CACHE_KEY': 'leaf_api_token',
+    'CONTENT_CACHE_PREFIX': 'leaf_content',
+}
+
+# TIME_ZONE = 'Asia/Tokyo'
+USE_TZ = True

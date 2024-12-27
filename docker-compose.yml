@@ -21,7 +21,12 @@ services:
     image: memcached:latest
     ports:
       - "11211:11211"
-    command: ["-m", "64"]
+    command: [
+        "-m", "64",              # Memory limit
+        "-c", "1024",           # Max simultaneous connections
+        "-I", "4m",             # Max item size (4MB)
+        "-t", "4"               # Number of threads
+    ]
     networks:
       - school_dashboard_net   
 

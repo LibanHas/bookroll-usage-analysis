@@ -1,38 +1,186 @@
 import json
 import asyncio
-from channels.generic.websocket import AsyncWebsocketConsumer
-from channels.db import database_sync_to_async
+import httpx
+import datetime
+from typing import Optional, Dict, List
+from django.conf import settings
+from django.utils.cache import caches
 from django.utils import timezone
 from django.db import connections
+from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+from dataclasses import dataclass
+from urllib.parse import urljoin
+
+@dataclass
+class LeafAPIConfig:
+    """Configuration for LEAF API with validation"""
+    host: str
+    port: str
+    client_id: str
+    client_secret: str
+    timeout: int
+    max_connections: int
+    max_keepalive_connections: int
+    cache_ttl: int
+    token_cache_key: str
+    content_cache_prefix: str
+    
+    @property
+    def base_url(self) -> str:
+        return f"http://{self.host}:{self.port}"
+
+    @classmethod
+    def from_settings(cls) -> 'LeafAPIConfig':
+        """Create config from Django settings"""
+        config = settings.LEAF_API_CONFIG
+        return cls(
+            host=config['HOST'],
+            port=config['PORT'],
+            client_id=config['CLIENT_ID'],
+            client_secret=config['CLIENT_SECRET'],
+            timeout=config['TIMEOUT'],
+            max_connections=config['MAX_CONNECTIONS'],
+            max_keepalive_connections=config['MAX_KEEPALIVE_CONNECTIONS'],
+            cache_ttl=config['CACHE_TTL'],
+            token_cache_key=config['TOKEN_CACHE_KEY'],
+            content_cache_prefix=config['CONTENT_CACHE_PREFIX']
+        )
+
+class LeafAPIClient:
+    """Dedicated API client for LEAF services"""
+    def __init__(self, config: LeafAPIConfig):
+        self.config = config
+        self._client = httpx.AsyncClient(
+            timeout=config.timeout,
+            limits=httpx.Limits(
+                max_keepalive_connections=config.max_keepalive_connections,
+                max_connections=config.max_connections
+            )
+        )
+        self._cache = caches['default']
+
+    async def close(self):
+        await self._client.aclose()
+
+    @database_sync_to_async
+    def _get_cached_token(self) -> Optional[str]:
+        """Get token from cache"""
+        return self._cache.get(self.config.token_cache_key)
+
+    @database_sync_to_async
+    def _set_cached_token(self, token: str):
+        """Set token in cache"""
+        self._cache.set(
+            self.config.token_cache_key,
+            token,
+            timeout=self.config.cache_ttl
+        )
+
+    async def get_token(self) -> str:
+        """Get cached token or fetch new one if expired"""
+        token = await self._get_cached_token()
+        if token:
+            return token
+
+        url = urljoin(self.config.base_url, '/api/token')
+        data = {
+            'client_id': self.config.client_id,
+            'client_secret': self.config.client_secret
+        }
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        
+        try:
+            response = await self._client.post(
+                url, 
+                json=data,  # Use json parameter to send JSON data
+                headers=headers
+            )
+            if response.status_code != 200:
+                print(f"Token request failed with status {response.status_code}")
+                print(f"Response body: {response.text}")
+            response.raise_for_status()
+            token = response.json()['access_token']
+            await self._set_cached_token(token)
+            return token
+        except (httpx.HTTPError, KeyError) as e:
+            if isinstance(e, httpx.HTTPError):
+                print(f"Response status: {e.response.status_code}")
+                print(f"Response headers: {e.response.headers}")
+                print(f"Response body: {e.response.text}")
+            raise ValueError(f"Failed to retrieve LEAF API token: {str(e)}")
+
+    async def get_content_info(self, content_id: str, page_no: int, image_type: str = "thumb") -> Optional[Dict]:
+        """Fetch content information with automatic token refresh"""
+        token = await self.get_token()
+        
+        # First, construct the image URL that the frontend will use
+        image_url = urljoin(
+            self.config.base_url,
+            f"/api/get_image_by_id_page_no?content_id={content_id}&page_no={page_no}&image_type={image_type}"
+        )
+        
+        # Return both the URL and the token that will be needed to fetch the image
+        return {
+            "image_url": image_url,
+            "auth_token": token,
+            "content_id": content_id,
+            "page_no": page_no
+    }
 
 class ActivityConsumer(AsyncWebsocketConsumer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.api_client: Optional[LeafAPIClient] = None
+        self.config = LeafAPIConfig.from_settings()
+        self._cache = caches['default']
+        self.reconnect_attempt = 0
+        self.max_reconnect_delay = 30
+
     async def connect(self):
-        print(">>> ActivityConsumer.connect called")
-        self.user_id = self.scope['url_route']['kwargs']['user_id']
-        # Optional: Add authentication checks here
-        await self.accept()
-        # Send initial activities
-        # await self.send_initial_activities()
-        # Start the activity stream as a background task
-        self.activity_stream_task = asyncio.create_task(self.start_activity_stream())
+        try:
+            print(">>> ActivityConsumer.connect called")
+            self.user_id = self.scope['url_route']['kwargs']['user_id']
+            self.api_client = LeafAPIClient(self.config)
+            await self.accept()
+            self.activity_stream_task = asyncio.create_task(self.start_activity_stream())
+        except Exception as e:
+            print(f"Error in connect: {str(e)}")
+            await self.close()
 
     async def disconnect(self, close_code):
         print(f">>> ActivityConsumer.disconnect called with code {close_code}")
-        # Cancel the activity stream task if it's running
         if hasattr(self, 'activity_stream_task'):
             self.activity_stream_task.cancel()
             try:
                 await self.activity_stream_task
             except asyncio.CancelledError:
                 print(">>> Activity stream task cancelled successfully")
+        
+        if self.api_client:
+            await self.api_client.close()
+
+    def get_activity_label(self, operation_type, contents_name, page_no):
+        """Generate a human-readable label based on operation type, contents name, and page number."""
+        if operation_type == "page_open":
+            return f"{contents_name} (Page {page_no})"
+        elif operation_type == "quiz_answer":
+            return f"Answered Quiz on {contents_name} (Page {page_no})"
+        elif operation_type == "next":
+            return f"Navigated to Next Page: {contents_name} (Page {page_no})"
+        elif operation_type == "close":
+            return f"Closed {contents_name} (Page {page_no})"
+        else:
+            return f"{operation_type.replace('_', ' ').title()} - {contents_name} (Page {page_no})"
 
     @database_sync_to_async
     def get_recent_activity(self):
-        """
-        Retrieve the initial set of student activities for the dashboard.
-        """
+        """Retrieve the initial set of student activities for the dashboard."""
         clickhouse_query = """
             SELECT DISTINCT ON (id)
+                id,
                 operation_name as type,
                 timestamp,
                 platform,
@@ -58,65 +206,14 @@ class ActivityConsumer(AsyncWebsocketConsumer):
             ch_cursor.execute(clickhouse_query, {'user_id': self.user_id})
             rows = ch_cursor.fetchall()
         
-        activities = []
-        for row in rows:
-            type_ = row[0]
-            timestamp = row[1]
-            platform = row[2]
-            object_id = row[3]
-            description = row[4]
-            marker_color = row[5]
-            marker_position = row[6]
-            marker_text = row[7]
-            memo_title = row[8]
-            memo_text = row[9]
-            contents_id = row[10]
-            contents_name = row[11]
-            page_no = row[12]
-            context_label = row[13]
-            
-            # Ensure timestamp is timezone-aware
-            if timestamp is not None and timestamp.tzinfo is None:
-                timestamp = timezone.make_aware(
-                    timestamp,
-                    timezone.get_default_timezone()
-                )
-            
-            # Format timestamp as 'YYYY-MM-DD HH:MM:SS.mmm'
-            timestamp_formatted = timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] if timestamp else None
-            
-            # Generate a human-readable label
-            label = self.get_activity_label(type_, contents_name, page_no)
-            
-            activity = {
-                "type": type_,
-                "timestamp": timestamp_formatted,  # Use formatted timestamp
-                "platform": platform,
-                "object_id": object_id,
-                "description": description,
-                "marker_color": marker_color,
-                "marker_position": marker_position,
-                "marker_text": marker_text,
-                "memo_title": memo_title,
-                "memo_text": memo_text,
-                "contents_id": contents_id,
-                "contents_name": contents_name,
-                "page_no": page_no,
-                "context_label": context_label,
-                "label": label
-            }
-            
-            activities.append(activity)
-        
-        return activities
+        return [self._process_activity_row(row) for row in rows]
 
     @database_sync_to_async
     def get_live_activity(self, last_timestamp):
-        """
-        Retrieve new activities that have occurred since the last_timestamp.
-        """
+        """Retrieve new activities that have occurred since the last_timestamp."""
         clickhouse_query = """
             SELECT DISTINCT ON (id)
+                id,
                 operation_name as type,
                 timestamp,
                 platform,
@@ -144,119 +241,123 @@ class ActivityConsumer(AsyncWebsocketConsumer):
             })
             rows = ch_cursor.fetchall()
         
-        activities = []
-        for row in rows:
-            type_ = row[0]
-            timestamp = row[1]
-            platform = row[2]
-            object_id = row[3]
-            description = row[4]
-            marker_color = row[5]
-            marker_position = row[6]
-            marker_text = row[7]
-            memo_title = row[8]
-            memo_text = row[9]
-            contents_id = row[10]
-            contents_name = row[11]
-            page_no = row[12]
-            context_label = row[13]
-            
-            # Ensure timestamp is timezone-aware
-            if timestamp is not None and timestamp.tzinfo is None:
-                timestamp = timezone.make_aware(
-                    timestamp,
-                    timezone.get_default_timezone()
-                )
-            
-            # Format timestamp as 'YYYY-MM-DD HH:MM:SS.mmm'
-            timestamp_formatted = timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] if timestamp else None
-            
-            # Generate a human-readable label
-            label = self.get_activity_label(type_, contents_name, page_no)
-            
-            activity = {
-                "type": type_,
-                "timestamp": timestamp_formatted,  # Use formatted timestamp
-                "platform": platform,
-                "object_id": object_id,
-                "description": description,
-                "marker_color": marker_color,
-                "marker_position": marker_position,
-                "marker_text": marker_text,
-                "memo_title": memo_title,
-                "memo_text": memo_text,
-                "contents_id": contents_id,
-                "contents_name": contents_name,
-                "page_no": page_no,
-                "context_label": context_label,
-                "label": label
-            }
-            
-            activities.append(activity)
+        return [self._process_activity_row(row) for row in rows]
+
+    def _process_activity_row(self, row):
+        """Process a database row into an activity dict."""
+        id, type_, timestamp, platform, object_id, description, marker_color, \
+        marker_position, marker_text, memo_title, memo_text, contents_id, \
+        contents_name, page_no, context_label = row       
+    
         
-        return activities
+        # Format timestamp as 'YYYY-MM-DD HH:MM:SS.mmm'
+        timestamp_formatted = timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] if timestamp else None
+        
+        # Generate a human-readable label
+        label = self.get_activity_label(type_, contents_name, page_no)
+        
+        return {
+            "id": id,
+            "type": type_,
+            "timestamp": timestamp_formatted,
+            "platform": platform,
+            "object_id": object_id,
+            "description": description,
+            "marker_color": marker_color,
+            "marker_position": marker_position,
+            "marker_text": marker_text,
+            "memo_title": memo_title,
+            "memo_text": memo_text,
+            "contents_id": contents_id,
+            "contents_name": contents_name,
+            "page_no": page_no,
+            "context_label": context_label,
+            "label": label
+        }
 
-    def get_activity_label(self, operation_type, contents_name, page_no):
-        """
-        Generate a human-readable label based on operation type, contents name, and page number.
-        """
-        if operation_type == "page_open":
-            return f"{contents_name} (Page {page_no})"
-        elif operation_type == "quiz_answer":
-            return f"Answered Quiz on {contents_name} (Page {page_no})"
-        elif operation_type == "next":
-            return f"Navigated to Next Page: {contents_name} (Page {page_no})"
-        elif operation_type == "close":
-            return f"Closed {contents_name} (Page {page_no})"
-        # Add more operation types as needed
-        else:
-            return f"{operation_type.replace('_', ' ').title()} - {contents_name} (Page {page_no})"
+    def get_cache_key(self, content_id: str, page_no: int) -> str:
+        """Generate consistent cache key for content"""
+        return f"{self.config.content_cache_prefix}:{content_id}:{page_no}"
 
-    # async def send_initial_activities(self):
-    #     """
-    #     Send the initial set of activities to the client upon connection.
-    #     """
-    #     initial_activities = await self.get_recent_activity()
-    #     await self.send(text_data=json.dumps({
-    #         'type': 'initial_activities',
-    #         'activities': initial_activities
-    #     }))
+    @database_sync_to_async
+    def get_cached_content(self, key: str) -> Optional[Dict]:
+        """Retrieve cached content information"""
+        return self._cache.get(key)
+
+    @database_sync_to_async
+    def cache_content(self, key: str, content: Dict):
+        """Cache content information"""
+        self._cache.set(key, content, timeout=self.config.cache_ttl)
+
+    async def enrich_activity(self, activity: Dict) -> Dict:
+        """Enrich activity with cached content information"""
+        cache_key = self.get_cache_key(
+            activity['contents_id'],
+            activity['page_no']
+        )
+        
+        content_info = await self.get_cached_content(cache_key)
+        print(f"Content info for {cache_key}: {content_info}")
+
+        if not content_info and self.api_client:
+            content_info = await self.api_client.get_content_info(
+                activity['contents_id'],
+                activity['page_no']
+            )
+            print(f"Content info from API: {content_info}")
+            if content_info:
+                await self.cache_content(cache_key, content_info)
+
+        if content_info:
+            activity["content_info"] = content_info
+        return activity
 
     async def start_activity_stream(self):
-        """
-        Continuously monitor and send new activities to the client.
-        """
-        # Initialize last_timestamp to the latest timestamp from initial activities
+        """Monitor and send activities with improved error handling and backoff"""
         initial_activities = await self.get_recent_activity()
         if initial_activities:
             last_timestamp_iso = initial_activities[-1]['timestamp']
         else:
-            # If no initial activities, set to 2 minutes ago
             threshold_time = timezone.now() - datetime.timedelta(minutes=2)
             last_timestamp_iso = threshold_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-        
+
         while True:
             try:
                 new_activities = await self.get_live_activity(last_timestamp_iso)
-                if new_activities:
-                    for activity in new_activities:
-                        # Update the last_timestamp_iso to the latest activity's timestamp
-                        activity_timestamp_iso = activity["timestamp"]
-                        if activity_timestamp_iso:
-                            # Parse the timestamp back to datetime object
-                            last_timestamp = timezone.datetime.strptime(activity_timestamp_iso, '%Y-%m-%d %H:%M:%S.%f')
-                            # Make it timezone-aware in UTC
-                            last_timestamp = timezone.make_aware(last_timestamp, timezone.utc)
-                            last_timestamp_iso = last_timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                # print(f"Last timestamp: {last_timestamp_iso}")
+                # print(f"New activities: {new_activities}")
+                self.reconnect_attempt = 0  # Reset reconnect attempts on success
+                
+                for activity in new_activities:
+                    print(f"Sending activity: {activity}")
+                    last_timestamp_iso = activity["timestamp"]
+                    # First send the basic activity
+                    await self.send_json({
+                        'type': 'new_activity',
+                        'activity': activity,
+                    })
+
+                    try:
+                        # Then enrich and send if there's additional info
+                        enriched_activity = await self.enrich_activity(activity)
                         
-                        await self.send(text_data=json.dumps({
-                            'type': 'new_activity',
-                            'activity': activity
-                        }))
-                await asyncio.sleep(2)  # Poll every 5 seconds
+                        await self.send_json({
+                                'type': 'enriched_activity',
+                                'activity': enriched_activity,
+                            })
+                    except Exception as e:
+                        print(f"Error enriching activity: {str(e)}")
+
+                await asyncio.sleep(2)
             except asyncio.CancelledError:
                 print(">>> Activity stream task cancelled")
                 break
             except Exception as e:
-                print(f">>> Error in activity stream: {e}")
-                await asyncio.sleep(2)  # Wait before retrying
+                print(f"Error in activity stream: {str(e)}")
+                delay = min(2 ** self.reconnect_attempt, self.max_reconnect_delay)
+                self.reconnect_attempt += 1
+                await asyncio.sleep(delay)
+
+    async def send_json(self, content: Dict):
+        """Helper method to send JSON data"""
+        await self.send(text_data=json.dumps(content))
