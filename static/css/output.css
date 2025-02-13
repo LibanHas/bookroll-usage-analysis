@@ -12379,7 +12379,7 @@ div[class*="scrollbar-thumb scrollbar-thumb-"]{
   border-radius: 0.375rem !important;
 }
 
-.group[data-card-style=square] .flatpickr-months .flatpickr-prev-month,.group[data-card-style=square] 
+.group[data-card-style=square] .flatpickr-months .flatpickr-prev-month,.group[data-card-style=square]
 .flatpickr-months .flatpickr-next-month{
   border-radius: 0.125rem;
 }
@@ -13235,7 +13235,7 @@ body {
   --tw-border-opacity: 1;
   border-color: rgb(238 238 238 / var(--tw-border-opacity));
   background-color: transparent;
-  background-image: url('../../images/icons/dw-arr.svg');
+  background-image: url('../../static/images/icons/dw-arr.svg');
   background-position: center right 0.75rem;
   background-repeat: no-repeat;
   padding-top: 0px;

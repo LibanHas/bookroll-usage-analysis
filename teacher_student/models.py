@@ -1,6 +1,6 @@
 import math
 import datetime
-import memcache 
+import memcache
 import logging
 from django.db import models
 from django.db import connections
@@ -25,43 +25,43 @@ class Teacher(models.Model):
     class Meta:
         managed = False
         app_label = 'moodle_app'
-    
+
     @staticmethod
     def get_teacher_data():
-        query = """            
-            SELECT 
+        query = """
+            SELECT
                 u.id AS user_id,
                 u.username,
                 u.email,
                 u.firstname,
                 u.lastname,
                 COUNT(*) AS total_courses,
-                SUM(CASE 
+                SUM(CASE
                     WHEN c.visible = 0 THEN 1
                     WHEN c.enddate > 0 AND c.enddate < UNIX_TIMESTAMP() THEN 1
                     ELSE 0
                 END) AS archived_courses,
-                SUM(CASE 
+                SUM(CASE
                     WHEN c.visible = 1 AND (c.enddate = 0 OR c.enddate >= UNIX_TIMESTAMP()) THEN 1
                     ELSE 0
                 END) AS active_courses
-            FROM 
+            FROM
                 mdl_user u
-            JOIN 
+            JOIN
                 mdl_role_assignments ra ON u.id = ra.userid
-            JOIN 
+            JOIN
                 mdl_role r ON ra.roleid = r.id
-            JOIN 
+            JOIN
                 mdl_context ctx ON ra.contextid = ctx.id
-            JOIN 
+            JOIN
                 mdl_course c ON ctx.instanceid = c.id
-            WHERE 
-                r.shortname IN ('editingteacher', 'teacher')  
-                AND ctx.contextlevel = 50                     
-                AND u.deleted = 0                            
-            GROUP BY 
+            WHERE
+                r.shortname IN ('editingteacher', 'teacher')
+                AND ctx.contextlevel = 50
+                AND u.deleted = 0
+            GROUP BY
                 u.id, u.username, u.email, u.firstname, u.lastname
-            ORDER BY 
+            ORDER BY
                 total_courses, u.firstname, u.lastname;
         """
         with connections['moodle_db'].cursor() as cursor:
@@ -110,31 +110,31 @@ class Student(models.Model):
         """
         # --- Base query ---
         base_query = """
-            SELECT 
+            SELECT
                 u.id AS user_id,
                 u.username,
                 u.email,
                 u.firstname,
                 u.lastname,
                 COUNT(*) AS total_courses,
-                SUM(CASE 
+                SUM(CASE
                     WHEN c.visible = 0 THEN 1
                     WHEN c.enddate > 0 AND c.enddate < UNIX_TIMESTAMP() THEN 1
                     ELSE 0
                 END) AS archived_courses,
-                SUM(CASE 
+                SUM(CASE
                     WHEN c.visible = 1 AND (c.enddate = 0 OR c.enddate >= UNIX_TIMESTAMP()) THEN 1
                     ELSE 0
                 END) AS active_courses
-            FROM 
+            FROM
                 mdl_user u
-            JOIN 
+            JOIN
                 mdl_role_assignments ra ON u.id = ra.userid
-            JOIN 
+            JOIN
                 mdl_role r ON ra.roleid = r.id
-            JOIN 
+            JOIN
                 mdl_context ctx ON ra.contextid = ctx.id
-            JOIN 
+            JOIN
                 mdl_course c ON ctx.instanceid = c.id
         """
 
@@ -158,12 +158,12 @@ class Student(models.Model):
 
         # --- ORDER BY ---
         base_query += """
-            GROUP BY 
+            GROUP BY
                 u.id, u.username, u.email, u.firstname, u.lastname
-            ORDER BY 
+            ORDER BY
                 u.firstname, u.lastname
             """
-       
+
         # --- 1) Count total records for pagination ---
         count_query = f"SELECT COUNT(*) FROM ({base_query}) AS sub"
         with connections['moodle_db'].cursor() as cursor:
@@ -179,7 +179,7 @@ class Student(models.Model):
         with connections['moodle_db'].cursor() as cursor:
             cursor.execute(paginated_query, params_for_page)
             rows = cursor.fetchall()
-        
+
         # Build 'results' list
         results = []
         user_ids_on_page = []
@@ -196,7 +196,7 @@ class Student(models.Model):
                 "archived_courses": int(row[6]),
                 "active_coruses": int(row[7]),
             })
-        
+
         # --- 3) Check "online" status from ClickHouse ---
         # We'll get the last xAPI event_time for each user in user_ids_on_page
         # and compare to now() - 2 minutes
@@ -220,13 +220,13 @@ class Student(models.Model):
                 GROUP BY actor_account_name
                 ORDER BY last_event DESC
             """
-             
+
             with connections['clickhouse_db'].cursor() as ch_cursor:
                 ch_cursor.execute(clickhouse_query)
                 for ch_row in ch_cursor.fetchall():
                     cid = ch_row[0]
                     last_event_time = ch_row[1]  # e.g., '2024-12-04 07:39:58' (naive)
-                   
+
                     if last_event_time is not None:
                         # Convert naive datetime to aware
                         if last_event_time.tzinfo is None:
@@ -274,40 +274,42 @@ class StudentDetails(models.Model):
         Retrieve student details from Moodle via raw SQL query.
         """
         query = """
-            SELECT 
+            SELECT
                 u.id AS user_id,
                 u.username,
                 u.email,
                 u.firstname,
                 u.lastname,
+                u.city,
+                u.country,
                 COUNT(*) AS total_courses,
-                SUM(CASE 
+                SUM(CASE
                     WHEN c.visible = 0 THEN 1
                     WHEN c.enddate > 0 AND c.enddate < UNIX_TIMESTAMP() THEN 1
                     ELSE 0
                 END) AS archived_courses,
-                SUM(CASE 
+                SUM(CASE
                     WHEN c.visible = 1 AND (c.enddate = 0 OR c.enddate >= UNIX_TIMESTAMP()) THEN 1
                     ELSE 0
                 END) AS active_courses
-            FROM 
+            FROM
                 mdl_user u
-            JOIN 
+            JOIN
                 mdl_role_assignments ra ON u.id = ra.userid
-            JOIN 
+            JOIN
                 mdl_role r ON ra.roleid = r.id
-            JOIN 
+            JOIN
                 mdl_context ctx ON ra.contextid = ctx.id
-            JOIN 
+            JOIN
                 mdl_course c ON ctx.instanceid = c.id
-            WHERE 
-                r.shortname = 'student'  
-                AND ctx.contextlevel = 50                     
+            WHERE
+                r.shortname = 'student'
+                AND ctx.contextlevel = 50
                 AND u.deleted = 0
                 AND u.id = %s
-            GROUP BY 
+            GROUP BY
                 u.id, u.username, u.email, u.firstname, u.lastname
-            ORDER BY 
+            ORDER BY
                 u.firstname, u.lastname
         """
         with connections['moodle_db'].cursor() as cursor:
@@ -320,8 +322,10 @@ class StudentDetails(models.Model):
                 "email": row[2],
                 "firstname": row[3],
                 "lastname": row[4],
-                "total_courses": row[5],
-                "archived_courses": row[6],
+                "city": row[5],
+                "country": row[6],
+                "total_courses": row[7],
+                "archived_courses": row[8],
             }
         return None
 
@@ -331,15 +335,15 @@ class StudentDetails(models.Model):
         Retrieve student details from Moodle via raw SQL query.
         """
         query = """
-            SELECT 
+            SELECT
                 u.id AS user_id,
                 u.username,
                 u.email,
                 u.firstname,
                 u.lastname
-            FROM 
+            FROM
                 mdl_user u
-            WHERE 
+            WHERE
                 u.id = %s
         """
         with connections['moodle_db'].cursor() as cursor:
@@ -359,17 +363,17 @@ class StudentDetails(models.Model):
     def get_students_course_enrollments(user_id: int) -> List[Dict[str, Any]]:
         """
         Retrieve student course enrollments with category details from Moodle with Memcached caching.
-        
+
         Args:
             user_id (int): The ID of the user whose enrollments to fetch
-            
+
         Returns:
             List[Dict[str, Any]]: List of dictionaries containing course enrollment details
         """
         # Try to get cached result first
         cache_key = f'student_enrollments_{user_id}'
         cached_result = cache.get(cache_key)
-        
+
         if cached_result is not None:
             return cached_result
 
@@ -377,25 +381,25 @@ class StudentDetails(models.Model):
         query = """
             WITH RECURSIVE category_hierarchy AS (
                 -- Base case: root categories
-                SELECT 
+                SELECT
                     id AS category_id,
                     name AS category_name,
                     parent AS parent_id,
                     name AS full_category_path
-                FROM 
+                FROM
                     mdl_course_categories
-                WHERE 
+                WHERE
                     parent = 0
-                
+
                 UNION ALL
-                SELECT 
+                SELECT
                     child.id,
                     child.name,
                     child.parent,
                     CONCAT(parent_hierarchy.full_category_path, ' / ', child.name)
-                FROM 
+                FROM
                     mdl_course_categories child
-                    INNER JOIN category_hierarchy parent_hierarchy 
+                    INNER JOIN category_hierarchy parent_hierarchy
                         ON child.parent = parent_hierarchy.category_id
             )
             SELECT DISTINCT
@@ -403,44 +407,44 @@ class StudentDetails(models.Model):
                 c.fullname,
                 ch.category_id,
                 ch.full_category_path
-            FROM 
+            FROM
                 mdl_role_assignments ra
-                INNER JOIN mdl_context ctx 
+                INNER JOIN mdl_context ctx
                     ON ra.contextid = ctx.id
-                INNER JOIN mdl_course c 
+                INNER JOIN mdl_course c
                     ON ctx.instanceid = c.id
-                LEFT JOIN category_hierarchy ch 
+                LEFT JOIN category_hierarchy ch
                     ON c.category = ch.category_id
-            WHERE 
+            WHERE
                 ra.userid = %s
                 AND ra.contextid IN (
-                    SELECT id 
-                    FROM mdl_context 
+                    SELECT id
+                    FROM mdl_context
                     WHERE contextlevel = 50  -- Course context level
                 )
                 AND ra.roleid IN (
-                    SELECT id 
-                    FROM mdl_role 
+                    SELECT id
+                    FROM mdl_role
                     WHERE shortname IN ('student', 'learner')
                 )
-            ORDER BY 
+            ORDER BY
                 ch.full_category_path,
                 c.fullname
         """
-        
+
         # Process results in batches to handle large datasets efficiently
         BATCH_SIZE = 1000
         results = []
-        
+
         try:
             with connections['moodle_db'].cursor() as cursor:
                 cursor.execute(query, [user_id])
-                
+
                 while True:
                     rows = cursor.fetchmany(BATCH_SIZE)
                     if not rows:
                         break
-                        
+
                     batch_results = [
                         {
                             "course_id": row[0],
@@ -454,13 +458,13 @@ class StudentDetails(models.Model):
             # print("course results----------",results)
             # Cache the results for 1 hour (3600 seconds)
             cache.set(cache_key, results, timeout=3600)
-            
+
             return results
-            
+
         except Exception as e:
             # Log the error if you have logging configured
             logger.error(f"Error fetching enrollments for user {user_id}: {str(e)}")
-            return [] 
+            return []
 
 
     @staticmethod
@@ -478,23 +482,23 @@ class StudentDetails(models.Model):
             ch_cursor.execute(clickhouse_query, [str(user_id)])
             rows = ch_cursor.fetchall()
         return [row[0] for row in rows] if rows else []
-    
+
     @staticmethod
     def get_student_questions_answers(user_id):
         """
         Retrieve student  from ClickHouse via raw SQL query.
         """
         clickhouse_query = """
-            SELECT DISTINCT ON (id) actor_account_name, object_id, object_definition_name_en, operation_name, contents_id  
-            FROM statements_mv 
-            WHERE actor_account_name = %s 
+            SELECT DISTINCT ON (id) actor_account_name, object_id, object_definition_name_en, operation_name, contents_id
+            FROM statements_mv
+            WHERE actor_account_name = %s
             AND operation_name = 'ANSWER_QUIZ';
         """
         with connections['clickhouse_db'].cursor() as ch_cursor:
             ch_cursor.execute(clickhouse_query, [str(user_id)])
             rows = ch_cursor.fetchall()
         return [row[0] for row in rows] if rows else []
-    
+
 
     @staticmethod
     def get_student_last_action_time(user_id):
@@ -509,7 +513,7 @@ class StudentDetails(models.Model):
         with connections['clickhouse_db'].cursor() as ch_cursor:
             ch_cursor.execute(clickhouse_query, [str(user_id)])
             row = ch_cursor.fetchone()
-        last_event_time = row[0] if row else None    
+        last_event_time = row[0] if row else None
         threshold_time = timezone.now() - datetime.timedelta(minutes=2)
         if last_event_time is not None:
         # Convert naive datetime to aware
@@ -529,25 +533,25 @@ class StudentDetails(models.Model):
         Retrieve student activity details from ClickHouse via raw SQL query.
         """
         clickhouse_query = """
-            SELECT 
-                toDate(timestamp) AS day, 
-                operation_name, 
+            SELECT
+                toDate(timestamp) AS day,
+                operation_name,
                 uniqExact(id) AS daily_distinct_count
             FROM statements_mv
             WHERE actor_account_name = %s
                 AND timestamp >= today() - INTERVAL 1 YEAR
-            GROUP BY 
-                day, 
-                operation_name 
-            ORDER BY 
-                day ASC, 
+            GROUP BY
+                day,
+                operation_name
+            ORDER BY
+                day ASC,
                 operation_name;
 
         """
         with connections['clickhouse_db'].cursor() as ch_cursor:
             ch_cursor.execute(clickhouse_query, [str(user_id)])
             rows = ch_cursor.fetchall()
-        
+
         results = []
         user_ids_on_page = []
         for row in rows:
@@ -559,7 +563,7 @@ class StudentDetails(models.Model):
                 "daily_count": row[2],
             })
         return results
-    
+
 
     @staticmethod
     def get_full_student_details(user_id):
@@ -569,7 +573,7 @@ class StudentDetails(models.Model):
         moodle_details = StudentDetails.get_student_details(user_id)
         if not moodle_details:
             return None
-        
+
         clickhouse_contents = StudentDetails.get_student_contents_from_clickhouse(user_id)
         moodle_details["contents_ids"] = clickhouse_contents
         clickhouse_quiz_answers = StudentDetails.get_student_questions_answers(user_id)

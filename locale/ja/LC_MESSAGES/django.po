@@ -1,0 +1,290 @@
+# Japanese translations for LEAF School project.
+# Copyright (C) 2024 LEAF School
+# This file is distributed under the same license as the LEAF School package.
+msgid ""
+msgstr ""
+"Project-Id-Version: 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-02-13 04:59+0000\n"
+"PO-Revision-Date: 2024-02-13 05:00+0000\n"
+"Last-Translator: LEAF School Team <team@leafschool.org>\n"
+"Language-Team: Japanese <ja@li.org>\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "LEAF School & Dashboard"
+msgstr "LEAF スクール & ダッシュボード"
+
+msgid "Saikyo Junior high school"
+msgstr "最強中学校"
+
+msgid "Home"
+msgstr "ホーム"
+
+msgid "Dashboard"
+msgstr "ダッシュボード"
+
+msgid "Total Students"
+msgstr "生徒総数"
+
+msgid "Total Courses"
+msgstr "コース総数"
+
+msgid "Total Contents"
+msgstr "コンテンツ総数"
+
+msgid "Active Students"
+msgstr "アクティブな生徒"
+
+msgid "07 Days"
+msgstr "7日間"
+
+msgid "Daily Active Students"
+msgstr "日別アクティブ生徒"
+
+msgid "Daily Activities"
+msgstr "日々のアクティビティ"
+
+msgid "This Year"
+msgstr "今年"
+
+msgid "This Month"
+msgstr "今月"
+
+msgid "Most Active Contents"
+msgstr "最もアクティブなコンテンツ"
+
+msgid "Most Highlighted Content"
+msgstr "最もハイライトされたコンテンツ"
+
+msgid "Most Memoed Content"
+msgstr "最もメモされたコンテンツ"
+
+msgid "Most Active Students"
+msgstr "最もアクティブな生徒"
+
+msgid "See all"
+msgstr "すべて表示"
+
+msgid "Content Name"
+msgstr "コンテンツ名"
+
+msgid "Activities"
+msgstr "アクティビティ"
+
+msgid "# of Highlights"
+msgstr "ハイライト数"
+
+msgid "# of Memos"
+msgstr "メモ数"
+
+msgid "Student Name"
+msgstr "生徒名"
+
+msgid "Students list"
+msgstr "生徒一覧"
+
+msgid "All Students Here"
+msgstr "全生徒一覧"
+
+msgid "Search..."
+msgstr "検索..."
+
+msgid "Search"
+msgstr "検索"
+
+msgid "Name"
+msgstr "名前"
+
+msgid "Email"
+msgstr "メール"
+
+msgid "Active Courses"
+msgstr "アクティブなコース"
+
+msgid "Archived Courses"
+msgstr "アーカイブされたコース"
+
+msgid "Status"
+msgstr "ステータス"
+
+msgid "Online"
+msgstr "オンライン"
+
+msgid "Offline"
+msgstr "オフライン"
+
+msgid "Previous"
+msgstr "前へ"
+
+msgid "Next"
+msgstr "次へ"
+
+msgid "No students found"
+msgstr "生徒が見つかりません"
+
+#, python-format
+msgid "Page %(current_page)s of %(total_pages)s"
+msgstr "ページ %(current_page)s / %(total_pages)s"
+
+msgid "View Live Activities"
+msgstr "アクティビティをライブで表示"
+
+msgid "About"
+msgstr "概要"
+
+msgid "Sub Content"
+msgstr "サブコンテンツ"
+
+msgid "Last Access"
+msgstr "最終アクセス"
+
+msgid "Archived course"
+msgstr "アーカイブされたコース"
+
+msgid "Accessed Contents"
+msgstr "アクセスしたコンテンツ"
+
+msgid "Quiz Answers"
+msgstr "クイズの回答"
+
+msgid "Enrolled Courses"
+msgstr "登録済みコース"
+
+msgid "Course title"
+msgstr "コースタイトル"
+
+msgid "Category"
+msgstr "カテゴリー"
+
+msgid "Action"
+msgstr "アクション"
+
+msgid "View course"
+msgstr "コースを表示"
+
+msgid "Recently Visited Courses"
+msgstr "最近閲覧したコース"
+
+msgid "Live Activity Timeline"
+msgstr "アクティビティタイムライン"
+
+msgid "This live view enables seamless monitoring of students' real-time activities and actions."
+msgstr "このライブビューでは、生徒のリアルタイムの活動や行動をシームレスにモニタリングできます。"
+
+msgid "Current Activity Duration:"
+msgstr "現在のアクティビティ時間："
+
+msgid "Teacher list"
+msgstr "教師一覧"
+
+msgid "All Teacher Here"
+msgstr "全教師一覧"
+
+msgid "Total Course"
+msgstr "コース合計"
+
+msgid "instructor"
+msgstr "教師"
+
+msgid "No teachers found"
+msgstr "教師が見つかりません"
+
+msgid "login image"
+msgstr "ログイン画像"
+
+msgid "Welcome back!"
+msgstr "おかえりなさい！"
+
+msgid "A tag line goes here."
+msgstr "タグラインがここに入ります。"
+
+msgid "Sign In"
+msgstr "サインイン"
+
+msgid "Welcome Back! Log in to your account"
+msgstr "おかえりなさい！アカウントにログインしてください"
+
+msgid "OR"
+msgstr "または"
+
+msgid "icon"
+msgstr "アイコン"
+
+msgid "Sign in with Google"
+msgstr "Googleでサインイン"
+
+msgid "Continue with Apple"
+msgstr "Appleで続ける"
+
+msgid "Don't have an account yet?"
+msgstr "アカウントをお持ちでない方"
+
+msgid "Sign Up"
+msgstr "サインアップ"
+
+msgid "Admin"
+msgstr "管理者"
+
+msgid "Teachers"
+msgstr "教師"
+
+msgid "Students"
+msgstr "生徒"
+
+msgid "Help"
+msgstr "ヘルプ"
+
+msgid "Documentation"
+msgstr "ドキュメント"
+
+msgid "Support"
+msgstr "サポート"
+
+msgid "All Support"
+msgstr "全てのサポート"
+
+msgid "Create Support"
+msgstr "サポートを作成"
+
+msgid "Logout"
+msgstr "ログアウト"
+
+msgid "Adjust Configurations"
+msgstr "設定を調整"
+
+msgid "Transform your space to reflect your personality!"
+msgstr "あなたの個性を反映するスペースに変更しましょう！"
+
+msgid "Theme Mode"
+msgstr "テーマモード"
+
+msgid "Light"
+msgstr "ライト"
+
+msgid "Dark"
+msgstr "ダーク"
+
+msgid "Theme Card Style"
+msgstr "テーマカードスタイル"
+
+msgid "Square"
+msgstr "四角"
+
+msgid "Round"
+msgstr "丸"
+
+msgid "Theme Layout Width"
+msgstr "テーマレイアウト幅"
+
+msgid "Full Width"
+msgstr "全幅"
+
+msgid "Container"
+msgstr "コンテナ"
+
+msgid "Reset"
+msgstr "リセット"

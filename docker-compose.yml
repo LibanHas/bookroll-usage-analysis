@@ -16,21 +16,21 @@ services:
       - school_dashboard_net
     ports:
       - "5432:5432"
- 
+
   memcached:
     image: memcached:latest
     ports:
       - "11211:11211"
     command: [
-        "-m", "64",              # Memory limit
+        "-m", "64",             # Memory limit
         "-c", "1024",           # Max simultaneous connections
         "-I", "4m",             # Max item size (4MB)
         "-t", "4"               # Number of threads
     ]
     networks:
-      - school_dashboard_net   
+      - school_dashboard_net
 
-  school_dashboard:
+  dashboard:
     build:
       context: .
     container_name: school_dashboard
@@ -45,7 +45,7 @@ services:
     environment:
       DATABASE_URL: postgres://db:$m8.Z&81Tr$B@db:5432/school_db
       MEMCACHED_HOST: memcached
-      MEMCACHED_PORT: 11211      
+      MEMCACHED_PORT: 11211
     networks:
       - newleaf_analysis_db_net
       - newleaf_bookroll_db_net

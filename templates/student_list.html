@@ -1,24 +1,25 @@
 {% extends 'main.html' %}
 {% load static %}
+{% load i18n %}
 {% block main_content %}
 
 <div class="card p-0 lg:min-h-[calc(100vh_-_theme('spacing.header')_*_1.4)] xl:min-h-[calc(100vh_-_theme('spacing.header')_*_1.6)]">
     <div class="flex flex-col gap-2 sm:flex-center-between sm:flex-row px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
         <div>
-            <h6 class="card-title">Students list</h6>
-            <p class="card-description">All Students Here</p>
+            <h6 class="card-title">{% trans "Students list" %}</h6>
+            <p class="card-description">{% trans "All Students Here" %}</p>
         </div>
         <!-- Search Form -->
         <form method="GET" class="flex items-center gap-2">
-            <input 
-                type="text" 
-                name="search" 
-                placeholder="Search..." 
-                value="{{ search_term }}" 
+            <input
+                type="text"
+                name="search"
+                placeholder="{% trans 'Search...' %}"
+                value="{{ search_term }}"
                 class="form-input"
             />
             <button type="submit" class="btn b-solid btn-primary-solid">
-                Search
+                {% trans "Search" %}
             </button>
         </form>
     </div>
@@ -26,21 +27,21 @@
     <!-- Start Students List Table -->
     <div class="p-3 sm:p-4">
         <div class="overflow-x-auto scrollbar-table">
-           
+
             {% if results.students and results.students|length > 0 %}
                 <table class="table-auto border-collapse w-full whitespace-nowrap text-left text-gray-500 dark:text-dark-text font-medium">
                     <thead>
                         <tr class="text-primary-500">
-                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two dk-theme-card-square">Name</th>
-                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two dk-theme-card-square">Email</th>
-                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two dk-theme-card-square">Active Courses</th>
-                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two dk-theme-card-square">Archived Courses</th>
-                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two dk-theme-card-square">Total Courses</th>
-                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two dk-theme-card-square">Status</th>
+                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two dk-theme-card-square">{% trans "Name" %}</th>
+                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two dk-theme-card-square">{% trans "Email" %}</th>
+                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two dk-theme-card-square">{% trans "Active Courses" %}</th>
+                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two dk-theme-card-square">{% trans "Archived Courses" %}</th>
+                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two dk-theme-card-square">{% trans "Total Courses" %}</th>
+                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two dk-theme-card-square">{% trans "Status" %}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 dark:divide-dark-border">
-                        {% for student in results.students %} 
+                        {% for student in results.students %}
                         <tr>
                             <!-- Name -->
                             <td class="px-4 py-4">
@@ -81,9 +82,9 @@
                             <!-- Online/Offline Status -->
                             <td class="px-4 py-4">
                                 {% if student.is_online %}
-                                    <span class="badge badge-success-outline">Online</span>
+                                    <span class="badge badge-success-outline">{% trans "Online" %}</span>
                                 {% else %}
-                                    <span class="badge badge-disable-outline">Offline</span>
+                                    <span class="badge badge-disable-outline">{% trans "Offline" %}</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -95,33 +96,33 @@
                 <div class="flex justify-between items-center p-4">
                     <div>
                         {% if current_page > 1 %}
-                            <a 
-                              href="?page={{ current_page|add:'-1' }}&search={{ search_term }}" 
+                            <a
+                              href="?page={{ current_page|add:'-1' }}&search={{ search_term }}"
                               class="btn b-solid btn-primary-solid"
                             >
-                                Previous
+                                {% trans "Previous" %}
                             </a>
                         {% endif %}
                     </div>
                     <div>
                         {% if results.total_pages > 1 %}
-                        Page {{ current_page }} of {{ total_pages }}
+                        {% blocktrans %}Page {{ current_page }} of {{ total_pages }}{% endblocktrans %}
                         {% endif %}
                     </div>
                     <div>
                         {% if current_page < total_pages %}
-                            <a 
-                              href="?page={{ current_page|add:'1' }}&search={{ search_term }}" 
+                            <a
+                              href="?page={{ current_page|add:'1' }}&search={{ search_term }}"
                               class="btn b-solid btn-primary-solid"
                             >
-                                Next
+                                {% trans "Next" %}
                             </a>
                         {% endif %}
                     </div>
                 </div>
 
             {% else %}
-                <p class="text-center py-4">No students found</p>
+                <p class="text-center py-4">{% trans "No students found" %}</p>
             {% endif %}
 
         </div>

@@ -2,6 +2,7 @@
 {% block non_auth_content %}
 {% load static %}
 {% load crispy_forms_tags %}
+{% load i18n %}
 
  <!-- Start Main Content -->
  <div class="main-content m-4">
@@ -10,15 +11,15 @@
         <div class="col-span-full lg:col-span-6">
             <div class="flex flex-col items-center justify-center gap-10 text-center">
                 <div class="hidden sm:block">
-                    <img src="{% static 'images/loti/auth.webp' %}" alt="login image" style="width: 400px;" class="group-[.dark]:hidden">
-                    <img src="{% static 'images/loti/loti-auth-dark.svg' %}" alt="login image" style="width: 400px;" class="group-[.light]:hidden">
+                    <img src="{% static 'images/loti/auth.webp' %}" alt="{% trans 'login image' %}" style="width: 400px;" class="group-[.dark]:hidden">
+                    <img src="{% static 'images/loti/loti-auth-dark.svg' %}" alt="{% trans 'login image' %}" style="width: 400px;" class="group-[.light]:hidden">
                 </div>
                 <div>
                     <h3 class="text-xl md:text-[28px] leading-none font-semibold text-heading">
-                        Welcome back!
+                        {% trans "Welcome back!" %}
                     </h3>
                     <p class="font-medium text-gray-500 dark:text-dark-text mt-4 px-[10%]">
-                        A tag line goes here.
+                        {% trans "A tag line goes here." %}
                     </p>
                 </div>
             </div>
@@ -28,34 +29,34 @@
         <div class="col-span-full lg:col-span-6 w-full lg:max-w-[600px]">
             <div class="border border-form dark:border-dark-border p-5 md:p-10 rounded-20 md:rounded-30 dk-theme-card-square">
                 <h3 class="text-xl md:text-[28px] leading-none font-semibold text-heading">
-                    Sign In
+                    {% trans "Sign In" %}
                 </h3>
                 <p class="font-medium text-gray-500 dark:text-dark-text mt-4">
-                    Welcome Back! Log in to your account 
+                    {% trans "Welcome Back! Log in to your account" %}
                 </p>
                 <form class="leading-none mt-8" method="post">
                     {% csrf_token %}
                     {{ form.non_field_errors }}
                     {{ form|crispy }}
-                    
+
                     <!-- Submit Button -->
-                    <button type="submit" class="btn b-solid btn-primary-solid w-full">Sign In</button>
+                    <button type="submit" class="btn b-solid btn-primary-solid w-full">{% trans "Sign In" %}</button>
                     <input type="hidden" name="next" value="{{ next }}">
                 </form>
-                <div class="font-spline_sans text-gray-900 dark:text-dark-text leading-none text-center my-4">OR</div>
+                <div class="font-spline_sans text-gray-900 dark:text-dark-text leading-none text-center my-4">{% trans "OR" %}</div>
                 <div class="flex items-center flex-col xl:flex-row gap-4 2xl:gap-5">
                     <a href="#" class="btn b-outline-static btn-disable-outline w-full grow xl:w-auto">
-                        <img src="{% static 'images/icons/google.svg' %}" alt="icon">
-                        <span class="shrink-0">Sign in with Google</span>
+                        <img src="{% static 'images/icons/google.svg' %}" alt="{% trans 'icon' %}">
+                        <span class="shrink-0">{% trans "Sign in with Google" %}</span>
                     </a>
                     <a href="#" class="btn b-outline-static btn-disable-outline w-full grow xl:w-auto">
-                        <img src="{% static 'images/icons/apple.svg' %}" alt="icon" class="dark:brightness-[3]">
-                        <span class="shrink-0">Continue with Apple</span>
+                        <img src="{% static 'images/icons/apple.svg' %}" alt="{% trans 'icon' %}" class="dark:brightness-[3]">
+                        <span class="shrink-0">{% trans "Continue with Apple" %}</span>
                     </a>
                 </div>
                 <div class="text-gray-900 dark:text-dark-text font-medium leading-none mt-5">
-                    Don't have an account yet?
-                    <a href="sign-up.html" class="text-primary-500 font-semibold">Sign Up</a>
+                    {% trans "Don't have an account yet?" %}
+                    <a href="sign-up.html" class="text-primary-500 font-semibold">{% trans "Sign Up" %}</a>
                 </div>
             </div>
         </div>

@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load i18n %}
 
     <body class="bg-body-light dark:bg-dark-body group-data-[theme-width=box]:container group-data-[theme-width=box]:max-w-screen-3xl xl:group-data-[theme-width=box]:px-4">
-        
+
     {% block content %}
         <!-- Start Header -->
         <header class="header px-4 sm:px-6 h-[calc(theme('spacing.header')_-_10px)] sm:h-header bg-white dark:bg-dark-card rounded-none xl:rounded-15 flex items-center mb-4 xl:m-4 group-data-[sidebar-size=lg]:xl:ml-[calc(theme('spacing.app-menu')_+_32px)] group-data-[sidebar-size=sm]:xl:ml-[calc(theme('spacing.app-menu-sm')_+_32px)] group-data-[sidebar-size=sm]:group-data-[theme-width=box]:xl:ml-[calc(theme('spacing.app-menu-sm')_+_16px)] group-data-[theme-width=box]:xl:ml-[calc(theme('spacing.app-menu')_+_16px)] group-data-[theme-width=box]:xl:mr-0 dk-theme-card-square ac-transition">
@@ -70,19 +71,37 @@
                     <!-- Language Select Button -->
                     <div class="relative hidden md:block">
                         <button type="button" data-popover-target="dropdownLanguage" data-popover-trigger="click" data-popover-placement="bottom-end" class="size-8 flex-center hover:bg-gray-200 dark:hover:bg-dark-icon rounded-md dk-theme-card-square">
-                            <img id="header-lang-img" src="{% static 'images/flag/us.svg' %}" alt="flag" class="size-5 rounded-sm" title="English">
+                            {% get_current_language as LANGUAGE_CODE %}
+                            {% if LANGUAGE_CODE == 'ja' %}
+                                <img id="header-lang-img" src="{% static 'images/flag/jp.svg' %}" alt="flag" class="size-5 rounded-sm border border-gray-200" title="Japanese">
+                            {% else %}
+                                <img id="header-lang-img" src="{% static 'images/flag/us.svg' %}" alt="flag" class="size-5 rounded-sm border border-gray-200" title="English">
+                            {% endif %}
                         </button>
                         <!-- Dropdown -->
                         <div id="dropdownLanguage" class="absolute invisible z-backdrop py-2 bg-white rounded-md shadow-md min-w-[10rem] flex flex-col dark:bg-dark-card-shade dk-theme-card-square">
-                            <a href="#" class="flex items-center gap-3 hover:bg-gray-200 px-4 py-2 dark:hover:bg-dark-icon relative after:absolute after:inset-0 after:size-full" data-lang="en" title="English">
-                                <img src="{% static 'images/flag/us.svg' %}" alt="flag" class="object-cover size-4 rounded-50 dk-theme-card-square">
-                                <h6 class="font-medium text-gray-500 dark:text-white">English</h6>
-                            </a>
-                            <a href="#" class="flex items-center gap-3 hover:bg-gray-200 px-4 py-2 dark:hover:bg-dark-icon relative after:absolute after:inset-0 after:size-full" data-lang="jp" title="Japanese">
-                                <img src="{% static 'images/flag/jp.svg' %}" alt="flag" class="object-cover size-4 rounded-50 dk-theme-card-square">
-                                <h6 class="font-medium text-gray-500 dark:text-white">Japanese</h6>
-                            </a>
-                           
+                            <form action="{% url 'set_language' %}" method="post" id="language-form-en">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="/">
+                                <input type="hidden" name="language" value="en">
+                                <a href="#" class="flex items-center gap-3 hover:bg-gray-200 px-4 py-2 dark:hover:bg-dark-icon relative after:absolute after:inset-0 after:size-full"
+                                   onclick="document.getElementById('language-form-en').submit(); return false;"
+                                   data-lang="en" title="English">
+                                    <img src="{% static 'images/flag/us.svg' %}" alt="flag" class="object-cover size-4 rounded-50 dk-theme-card-square">
+                                    <h6 class="font-medium text-gray-500 dark:text-white">English</h6>
+                                </a>
+                            </form>
+                            <form action="{% url 'set_language' %}" method="post" id="language-form-ja">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{% if LANGUAGE_CODE == 'ja' %}/{% else %}/ja/{% endif %}">
+                                <input type="hidden" name="language" value="ja">
+                                <a href="#" class="flex items-center gap-3 hover:bg-gray-200 px-4 py-2 dark:hover:bg-dark-icon relative after:absolute after:inset-0 after:size-full"
+                                   onclick="document.getElementById('language-form-ja').submit(); return false;"
+                                   data-lang="ja" title="Japanese">
+                                    <img src="{% static 'images/flag/jp.svg' %}" alt="flag" class="object-cover size-4 rounded-50 dk-theme-card-square">
+                                    <h6 class="font-medium text-gray-500 dark:text-white">Japanese</h6>
+                                </a>
+                            </form>
                         </div>
                     </div>
                     <!-- Border -->
@@ -134,123 +153,38 @@
             <div class="group-data-[sidebar-size=lg]:max-h-full">
                 <ul id="navbar-nav" class="text-[14px] !leading-none space-y-1 group-data-[sidebar-size=sm]:space-y-2.5 group-data-[sidebar-size=sm]:flex group-data-[sidebar-size=sm]:flex-col group-data-[sidebar-size=sm]:items-start group-data-[sidebar-size=sm]:mx-2 group-data-[sidebar-size=sm]:overflow-visible">
                     <li class="relative group/sm w-full group-data-[sidebar-size=sm]:hover:w-[calc(theme('spacing.app-menu-sm')_*_3.4)] group-data-[sidebar-size=sm]:flex-center">
-                        <a href="#" class="dropdown-button top-layer relative leading-none px-3.5 py-3 h-[42px] flex items-center rounded-md group-data-[sidebar-size=sm]:p-3 group-data-[sidebar-size=sm]:w-full text-gray-500 dark:text-dark-text-two hover:text-primary-500 dark:hover:text-white [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-white group-data-[sidebar-size=sm]:border group-data-[sidebar-size=sm]:border-gray-200 dark:group-data-[sidebar-size=sm]:border-dark-border-four hover:!bg-primary-200 dark:hover:!bg-primary-500 [&amp;.active]:bg-primary-200 dark:[&amp;.active]:bg-primary-500 group-data-[sidebar-size=sm]:bg-white dark:group-data-[sidebar-size=sm]:bg-dark-card group-data-[sidebar-size=sm]:hover:bg-primary-500 group-data-[sidebar-size=sm]:[&amp;.active]:bg-primary-200 dark:group-data-[sidebar-size=sm]:[&amp;.active]:bg-primary-500 group/menu-link peer/dp-btn dk-theme-card-square ac-transition">
+                        <a href="#" class="dropdown-button top-layer relative leading-none px-3.5 py-3 h-[42px] flex items-center rounded-md group-data-[sidebar-size=sm]:p-3 group-data-[sidebar-size=sm]:w-full text-gray-500 dark:text-dark-text-two hover:text-primary-500 dark:hover:text-white [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-white group-data-[sidebar-size=sm]:border group-data-[sidebar-size=sm]:border-gray-200 dark:group-data-[sidebar-size=sm]:border-dark-border-four hover:!bg-primary-200 dark:hover:!bg-primary-500 [&amp;.active]:bg-primary-200 dark:[&amp;.active]:bg-primary-500 group-data-[sidebar-size=sm]:bg-white dark:group-data-[sidebar-size=sm]:bg-dark-card group-data-[sidebar-size=sm]:hover:bg-primary-500 group-data-[sidebar-size=sm]:[&amp;.active]:bg-primary-200 dark:group-data-[sidebar-size=sm]:[&amp;.active]:bg-primary-500 group/menu-link peer/dp-btn dk-theme-card-square ac-transition show">
                             <span class="shrink-0 group-data-[sidebar-size=sm]:w-[calc(theme('spacing.app-menu-sm')_*_0.43)] group-data-[sidebar-size=sm]:flex-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewbox="0 0 15 15">
                                     <path fill="currentColor" fill-rule="evenodd" d="M2.8 1h-.05c-.229 0-.426 0-.6.041A1.5 1.5 0 0 0 1.04 2.15c-.04.174-.04.37-.04.6v2.5c0 .229 0 .426.041.6A1.5 1.5 0 0 0 2.15 6.96c.174.04.37.04.6.04h2.5c.229 0 .426 0 .6-.041A1.5 1.5 0 0 0 6.96 5.85c.04-.174.04-.37.04-.6v-2.5c0-.229 0-.426-.041-.6A1.5 1.5 0 0 0 5.85 1.04C5.676 1 5.48 1 5.25 1H5.2zm-.417 1.014c.043-.01.11-.014.417-.014h2.4c.308 0 .374.003.417.014a.5.5 0 0 1 .37.37c.01.042.013.108.013.416v2.4c0 .308-.003.374-.014.417a.5.5 0 0 1-.37.37C5.575 5.996 5.509 6 5.2 6H2.8c-.308 0-.374-.003-.417-.014a.5.5 0 0 1-.37-.37C2.004 5.575 2 5.509 2 5.2V2.8c0-.308.003-.374.014-.417a.5.5 0 0 1 .37-.37M9.8 1h-.05c-.229 0-.426 0-.6.041A1.5 1.5 0 0 0 8.04 2.15c-.04.174-.04.37-.04.6v2.5c0 .229 0 .426.041.6A1.5 1.5 0 0 0 9.15 6.96c.174.04.37.04.6.04h2.5c.229 0 .426 0 .6-.041a1.5 1.5 0 0 0 1.11-1.109c.04-.174.04-.37.04-.6v-2.5c0-.229 0-.426-.041-.6a1.5 1.5 0 0 0-1.109-1.11c-.174-.04-.37-.04-.6-.04h-.05zm-.417 1.014c.043-.01.11-.014.417-.014h2.4c.308 0 .374.003.417.014a.5.5 0 0 1 .37.37c.01.042.013.108.013.416v2.4c0 .308-.004.374-.014.417a.5.5 0 0 1-.37.37c-.042.01-.108.013-.416.013H9.8c-.308 0-.374-.003-.417-.014a.5.5 0 0 1-.37-.37C9.004 5.575 9 5.509 9 5.2V2.8c0-.308.003-.374.014-.417a.5.5 0 0 1 .37-.37M2.75 8h2.5c.229 0 .426 0 .6.041A1.5 1.5 0 0 1 6.96 9.15c.04.174.04.37.04.6v2.5c0 .229 0 .426-.041.6a1.5 1.5 0 0 1-1.109 1.11c-.174.04-.37.04-.6.04h-2.5c-.229 0-.426 0-.6-.041a1.5 1.5 0 0 1-1.11-1.109c-.04-.174-.04-.37-.04-.6v-2.5c0-.229 0-.426.041-.6A1.5 1.5 0 0 1 2.15 8.04c.174-.04.37-.04.6-.04m.05 1c-.308 0-.374.003-.417.014a.5.5 0 0 0-.37.37C2.004 9.425 2 9.491 2 9.8v2.4c0 .308.003.374.014.417a.5.5 0 0 0 .37.37c.042.01.108.013.416.013h2.4c.308 0 .374-.004.417-.014a.5.5 0 0 0 .37-.37c.01-.042.013-.108.013-.416V9.8c0-.308-.003-.374-.014-.417a.5.5 0 0 0-.37-.37C5.575 9.004 5.509 9 5.2 9zm7-1h-.05c-.229 0-.426 0-.6.041A1.5 1.5 0 0 0 8.04 9.15c-.04.174-.04.37-.04.6v2.5c0 .229 0 .426.041.6a1.5 1.5 0 0 0 1.109 1.11c.174.041.371.041.6.041h2.5c.229 0 .426 0 .6-.041a1.5 1.5 0 0 0 1.109-1.109c.041-.174.041-.371.041-.6V9.75c0-.229 0-.426-.041-.6a1.5 1.5 0 0 0-1.109-1.11c-.174-.04-.37-.04-.6-.04h-.05zm-.417 1.014c.043-.01.11-.014.417-.014h2.4c.308 0 .374.003.417.014a.5.5 0 0 1 .37.37c.01.042.013.108.013.416v2.4c0 .308-.004.374-.014.417a.5.5 0 0 1-.37.37c-.042.01-.108.013-.416.013H9.8c-.308 0-.374-.004-.417-.014a.5.5 0 0 1-.37-.37C9.004 12.575 9 12.509 9 12.2V9.8c0-.308.003-.374.014-.417a.5.5 0 0 1 .37-.37" clip-rule="evenodd"></path>
                                 </svg>
                             </span>
                             <span class="group-data-[sidebar-size=sm]:hidden group-data-[sidebar-size=sm]:ml-6 group-data-[sidebar-size=sm]:group-hover/sm:block ml-3 shrink-0">
-                                Dashboard
+                                {% trans "Dashboard" %}
                             </span>
                         </a>
-                        <div class="dropdown-content max-h-0 group-data-[sidebar-size=sm]:!max-h-max overflow-hidden group-data-[sidebar-size=sm]:overflow-visible hidden group-data-[sidebar-size=lg]:block peer-[.show]/dp-btn:my-1.5 group-data-[sidebar-size=sm]:!my-0 group-data-[sidebar-size=lg]:w-[calc(theme('spacing.app-menu')_-_16px)] group-data-[sidebar-size=sm]:w-[calc(theme('spacing.app-menu-sm')_*_2.5)] group-data-[sidebar-size=sm]:absolute group-data-[sidebar-size=sm]:left-[calc(theme('spacing.app-menu-sm')_*_0.9)] top-full group-data-[sidebar-size=sm]:group-hover/sm:block group-data-[sidebar-size=sm]:bg-white dark:group-data-[sidebar-size=sm]:bg-dark-tooltip group-data-[sidebar-size=sm]:shadow-menu-dropdown transition-all duration-300">
+                        <div class="dropdown-content max-h-0 group-data-[sidebar-size=sm]:!max-h-max overflow-hidden group-data-[sidebar-size=sm]:overflow-visible hidden group-data-[sidebar-size=lg]:block peer-[.show]/dp-btn:my-1.5 group-data-[sidebar-size=sm]:!my-0 group-data-[sidebar-size=lg]:w-[calc(theme('spacing.app-menu')_-_16px)] group-data-[sidebar-size=sm]:w-[calc(theme('spacing.app-menu-sm')_*_2.5)] group-data-[sidebar-size=sm]:absolute group-data-[sidebar-size=sm]:left-[calc(theme('spacing.app-menu-sm')_*_0.9)] top-full group-data-[sidebar-size=sm]:group-hover/sm:block group-data-[sidebar-size=sm]:bg-white dark:group-data-[sidebar-size=sm]:bg-dark-tooltip group-data-[sidebar-size=sm]:shadow-menu-dropdown transition-all duration-300" style="max-height: 117px;">
                             <ul class="text-[14px] pl-1.5 group-data-[sidebar-size=sm]:pl-0">
                                 <li class="relative group/sub">
                                     <a href="#" class="relative peer/link text-gray-500 dark:text-dark-text-two leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 dark:before:border-text-dark hover:before:border-none hover:before:bg-primary-400 dark:hover:before:bg-text-dark [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 dark:[&amp;.active]:before:bg-text-dark group-data-[sidebar-size=sm]:before:hidden">
-                                        Admin
+                                        {% trans "Admin" %}
                                     </a>
                                 </li>
                                 <li class="relative group/sub">
                                     <a href="{% url 'teacher_list' %}" class="relative peer/link text-gray-500 dark:text-dark-text-two leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 dark:before:border-text-dark hover:before:border-none hover:before:bg-primary-400 dark:hover:before:bg-text-dark [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 dark:[&amp;.active]:before:bg-text-dark group-data-[sidebar-size=sm]:before:hidden">
-                                        Teachers
+                                        {% trans "Teachers" %}
                                     </a>
                                 </li>
                                 <li class="relative group/sub">
                                     <a href="{% url 'student_list' %}" class="relative peer/link text-gray-500 dark:text-dark-text-two leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 dark:before:border-text-dark hover:before:border-none hover:before:bg-primary-400 dark:hover:before:bg-text-dark [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 dark:[&amp;.active]:before:bg-text-dark group-data-[sidebar-size=sm]:before:hidden">
-                                        Students
+                                        {% trans "Students" %}
                                     </a>
                                 </li>
                             </ul>
                         </div>
                     </li>
-                   
-                    <li class="relative group/sm w-full group-data-[sidebar-size=sm]:hover:w-[calc(theme('spacing.app-menu-sm')_*_3.4)] group-data-[sidebar-size=sm]:flex-center">
-                        <a href="#" class="dropdown-button top-layer relative leading-none px-3.5 py-3 h-[42px] flex items-center rounded-md group-data-[sidebar-size=sm]:p-3 group-data-[sidebar-size=sm]:w-full text-gray-500 dark:text-dark-text-two hover:text-primary-500 dark:hover:text-white [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-white group-data-[sidebar-size=sm]:border group-data-[sidebar-size=sm]:border-gray-200 dark:group-data-[sidebar-size=sm]:border-dark-border-four hover:!bg-primary-200 dark:hover:!bg-primary-500 [&amp;.active]:bg-primary-200 dark:[&amp;.active]:bg-primary-500 group-data-[sidebar-size=sm]:bg-white dark:group-data-[sidebar-size=sm]:bg-dark-card group-data-[sidebar-size=sm]:hover:bg-primary-500 group-data-[sidebar-size=sm]:[&amp;.active]:bg-primary-200 dark:group-data-[sidebar-size=sm]:[&amp;.active]:bg-primary-500 group/menu-link peer/dp-btn dk-theme-card-square ac-transition">
-                            <span class="shrink-0 group-data-[sidebar-size=sm]:w-[calc(theme('spacing.app-menu-sm')_*_0.43)] group-data-[sidebar-size=sm]:flex-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewbox="0 0 32 32">
-                                    <path fill="currentColor" d="m16 24l-6.09-8.6A8.14 8.14 0 0 1 16 2a8.08 8.08 0 0 1 8 8.13a8.2 8.2 0 0 1-1.8 5.13Zm0-20a6.07 6.07 0 0 0-6 6.13a6.2 6.2 0 0 0 1.49 4L16 20.52L20.63 14A6.24 6.24 0 0 0 22 10.13A6.07 6.07 0 0 0 16 4"></path>
-                                    <circle cx="16" cy="9" r="2" fill="currentColor"></circle>
-                                    <path fill="currentColor" d="M28 12h-2v2h2v14H4V14h2v-2H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h24a2 2 0 0 0 2-2V14a2 2 0 0 0-2-2"></path>
-                                </svg>
-                            </span>
-                            <span class="group-data-[sidebar-size=sm]:hidden group-data-[sidebar-size=sm]:ml-6 group-data-[sidebar-size=sm]:group-hover/sm:block ml-3 shrink-0">
-                                Menu Category Sample
-                            </span>
-                        </a>
-                        <div class="dropdown-content max-h-0 group-data-[sidebar-size=sm]:!max-h-max overflow-hidden group-data-[sidebar-size=sm]:overflow-visible hidden group-data-[sidebar-size=lg]:block peer-[.show]/dp-btn:my-1.5 group-data-[sidebar-size=sm]:!my-0 group-data-[sidebar-size=lg]:w-[calc(theme('spacing.app-menu')_-_16px)] group-data-[sidebar-size=sm]:w-[calc(theme('spacing.app-menu-sm')_*_2.5)] group-data-[sidebar-size=sm]:absolute group-data-[sidebar-size=sm]:left-[calc(theme('spacing.app-menu-sm')_*_0.9)] top-full group-data-[sidebar-size=sm]:group-hover/sm:block group-data-[sidebar-size=sm]:bg-white dark:group-data-[sidebar-size=sm]:bg-dark-tooltip group-data-[sidebar-size=sm]:shadow-menu-dropdown transition-all duration-300">
-                            <ul class="text-[14px] pl-1.5 group-data-[sidebar-size=sm]:pl-0">
-                                <li class="relative group/sub">
-                                    <a href="all-country.html" class="relative peer/link text-gray-500 dark:text-dark-text-two font-medium leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 hover:before:border-none hover:before:bg-primary-400 [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 group-data-[sidebar-size=sm]:before:hidden">
-                                        Submenu 1
-                                    </a>
-                                </li>
-                                <li class="relative group/sub">
-                                    <a href="all-state.html" class="relative peer/link text-gray-500 dark:text-dark-text-two font-medium leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 hover:before:border-none hover:before:bg-primary-400 [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 group-data-[sidebar-size=sm]:before:hidden">
-                                        Submenu 2
-                                    </a>
-                                </li>
-                                <li class="relative group/sub">
-                                    <a href="all-city.html" class="relative peer/link text-gray-500 dark:text-dark-text-two font-medium leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 hover:before:border-none hover:before:bg-primary-400 [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 group-data-[sidebar-size=sm]:before:hidden">
-                                        Submenu 3
-                                    </a>
-                                </li>
-                                <li class="relative group/sub">
-                                    <a href="all-time-zone.html" class="relative peer/link text-gray-500 dark:text-dark-text-two font-medium leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 hover:before:border-none hover:before:bg-primary-400 [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 group-data-[sidebar-size=sm]:before:hidden">
-                                        Submenu 4
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </li>
-                    
-                    <li class="relative group/sm w-full group-data-[sidebar-size=sm]:hover:w-[calc(theme('spacing.app-menu-sm')_*_3.4)] group-data-[sidebar-size=sm]:flex-center">
-                        <a href="#" class="dropdown-button top-layer relative leading-none px-3.5 py-3 h-[42px] flex items-center rounded-md group-data-[sidebar-size=sm]:p-3 group-data-[sidebar-size=sm]:w-full text-gray-500 dark:text-dark-text-two hover:text-primary-500 dark:hover:text-white [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-white group-data-[sidebar-size=sm]:border group-data-[sidebar-size=sm]:border-gray-200 dark:group-data-[sidebar-size=sm]:border-dark-border-four hover:!bg-primary-200 dark:hover:!bg-primary-500 [&amp;.active]:bg-primary-200 dark:[&amp;.active]:bg-primary-500 group-data-[sidebar-size=sm]:bg-white dark:group-data-[sidebar-size=sm]:bg-dark-card group-data-[sidebar-size=sm]:hover:bg-primary-500 group-data-[sidebar-size=sm]:[&amp;.active]:bg-primary-200 dark:group-data-[sidebar-size=sm]:[&amp;.active]:bg-primary-500 group/menu-link peer/dp-btn dk-theme-card-square ac-transition">
-                            <span class="shrink-0 group-data-[sidebar-size=sm]:w-[calc(theme('spacing.app-menu-sm')_*_0.43)] group-data-[sidebar-size=sm]:flex-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewbox="0 0 14 14">
-                                    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M7 13.39a5 5 0 0 0 5-5V5.61a5 5 0 0 0-1.27-3.33M2 6.72v1.67A5 5 0 0 0 5.06 13M9.5 1.28a5 5 0 0 0-6.83 1.83a4.91 4.91 0 0 0-.57 1.52"></path>
-                                        <path d="M6.48 3.51A2.51 2.51 0 0 1 9.5 6v1.61m-.64 2.1A2.5 2.5 0 0 1 4.5 8V6a2.53 2.53 0 0 1 .2-1M7 6.11v1.67"></path>
-                                    </g>
-                                </svg>
-                            </span>
-                            <span class="group-data-[sidebar-size=sm]:hidden group-data-[sidebar-size=sm]:ml-6 group-data-[sidebar-size=sm]:group-hover/sm:block ml-3 shrink-0">
-                                Authentication
-                            </span>
-                        </a>
-                        <div class="dropdown-content transition-all duration-300 max-h-0 overflow-hidden hidden group-data-[sidebar-size=sm]:bg-white dark:group-data-[sidebar-size=sm]:bg-dark-tooltip group-data-[sidebar-size=sm]:!max-h-max group-data-[sidebar-size=sm]:overflow-visible group-data-[sidebar-size=lg]:block peer-[.show]/dp-btn:my-1.5 group-data-[sidebar-size=sm]:!my-0 group-data-[sidebar-size=lg]:w-[calc(theme('spacing.app-menu')_-_16px)] group-data-[sidebar-size=sm]:w-[calc(theme('spacing.app-menu-sm')_*_2.5)] group-data-[sidebar-size=sm]:absolute group-data-[sidebar-size=sm]:left-[calc(theme('spacing.app-menu-sm')_*_0.9)] top-full group-data-[sidebar-size=sm]:group-hover/sm:block group-data-[sidebar-size=sm]:shadow-menu-dropdown">
-                            <ul class="text-[14px] pl-1.5 group-data-[sidebar-size=sm]:pl-0">
-                                <li class="relative group/sub">
-                                    <a href="sign-up.html" class="relative peer/link text-gray-500 dark:text-dark-text-two leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 dark:before:border-text-dark hover:before:border-none hover:before:bg-primary-400 dark:hover:before:bg-text-dark [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 dark:[&amp;.active]:before:bg-text-dark group-data-[sidebar-size=sm]:before:hidden">
-                                        Sign up
-                                    </a>
-                                </li>
-                                <li class="relative group/sub">
-                                    <a href="sign-in.html" class="relative peer/link text-gray-500 dark:text-dark-text-two leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 dark:before:border-text-dark hover:before:border-none hover:before:bg-primary-400 dark:hover:before:bg-text-dark [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 dark:[&amp;.active]:before:bg-text-dark group-data-[sidebar-size=sm]:before:hidden">
-                                        Sign In
-                                    </a>
-                                </li>
-                                <li class="relative group/sub">
-                                    <a href="two-step.html" class="relative peer/link text-gray-500 dark:text-dark-text-two leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 dark:before:border-text-dark hover:before:border-none hover:before:bg-primary-400 dark:hover:before:bg-text-dark [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 dark:[&amp;.active]:before:bg-text-dark group-data-[sidebar-size=sm]:before:hidden">
-                                        Two Step
-                                    </a>
-                                </li>
-                                <li class="relative group/sub">
-                                    <a href="forgot-password.html" class="relative peer/link text-gray-500 dark:text-dark-text-two leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 dark:before:border-text-dark hover:before:border-none hover:before:bg-primary-400 dark:hover:before:bg-text-dark [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 dark:[&amp;.active]:before:bg-text-dark group-data-[sidebar-size=sm]:before:hidden">
-                                        Forgot Password
-                                    </a>
-                                </li>
-                                <li class="relative group/sub">
-                                    <a href="new-password.html" class="relative peer/link text-gray-500 dark:text-dark-text-two leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 dark:before:border-text-dark hover:before:border-none hover:before:bg-primary-400 dark:hover:before:bg-text-dark [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 dark:[&amp;.active]:before:bg-text-dark group-data-[sidebar-size=sm]:before:hidden">
-                                        New Password
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </li>
-                    
                     <li class="!mt-5 pt-5 border-t border-gray-200 dark:border-dark-border-two mx-4 group-data-[sidebar-size=sm]:hidden">
-                        <h5 class="text-heading text-lg leading-none font-semibold mb-5">Help</h5>
+                        <h5 class="text-heading text-lg leading-none font-semibold mb-5">{% trans "Help" %}</h5>
                     </li>
                     <li class="relative group/sm w-full group-data-[sidebar-size=sm]:hover:w-[calc(theme('spacing.app-menu-sm')_*_3.4)] group-data-[sidebar-size=sm]:flex-center">
                         <a href="#" class="leading-none px-3.5 py-3 h-[42px] flex items-center rounded-md group-data-[sidebar-size=sm]:p-3 group-data-[sidebar-size=sm]:w-full text-gray-500 dark:text-dark-text-two hover:text-primary-500 dark:hover:text-white [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-white group-data-[sidebar-size=sm]:border group-data-[sidebar-size=sm]:border-gray-200 dark:group-data-[sidebar-size=sm]:border-dark-border-four hover:!bg-primary-200 dark:hover:!bg-primary-500 [&amp;.active]:bg-primary-200 dark:[&amp;.active]:bg-primary-500 group-data-[sidebar-size=sm]:bg-white dark:group-data-[sidebar-size=sm]:bg-dark-card group-data-[sidebar-size=sm]:hover:bg-primary-500 group-data-[sidebar-size=sm]:[&amp;.active]:bg-primary-200 dark:group-data-[sidebar-size=sm]:[&amp;.active]:bg-primary-500 group/menu-link dk-theme-card-square ac-transition">
@@ -262,7 +196,7 @@
                                 </svg>
                             </span>
                             <span class="group-data-[sidebar-size=sm]:hidden group-data-[sidebar-size=sm]:ml-6 group-data-[sidebar-size=sm]:group-hover/sm:block ml-3 shrink-0">
-                                Documentation
+                                {% trans "Documentation" %}
                             </span>
                         </a>
                     </li>
@@ -274,32 +208,32 @@
                                 </svg>
                             </span>
                             <span class="group-data-[sidebar-size=sm]:hidden group-data-[sidebar-size=sm]:ml-6 group-data-[sidebar-size=sm]:group-hover/sm:block ml-3 shrink-0">
-                                Support
+                                {% trans "Support" %}
                             </span>
                         </a>
                         <div class="dropdown-content max-h-0 group-data-[sidebar-size=sm]:!max-h-max overflow-hidden group-data-[sidebar-size=sm]:overflow-visible hidden group-data-[sidebar-size=lg]:block peer-[.show]/dp-btn:my-1.5 group-data-[sidebar-size=sm]:!my-0 group-data-[sidebar-size=lg]:w-[calc(theme('spacing.app-menu')_-_16px)] group-data-[sidebar-size=sm]:w-[calc(theme('spacing.app-menu-sm')_*_2.5)] group-data-[sidebar-size=sm]:absolute group-data-[sidebar-size=sm]:left-[calc(theme('spacing.app-menu-sm')_*_0.9)] top-full group-data-[sidebar-size=sm]:group-hover/sm:block group-data-[sidebar-size=sm]:bg-white dark:group-data-[sidebar-size=sm]:bg-dark-tooltip group-data-[sidebar-size=sm]:shadow-menu-dropdown transition-all duration-300">
                             <ul class="text-[14px] pl-1.5 group-data-[sidebar-size=sm]:pl-0">
                                 <li class="relative group/sub">
                                     <a href="all-support.html" class="relative peer/link text-gray-500 dark:text-dark-text-two font-medium leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 hover:before:border-none hover:before:bg-primary-400 [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 group-data-[sidebar-size=sm]:before:hidden">
-                                        All Support
+                                        {% trans "All Support" %}
                                     </a>
                                 </li>
                                 <li class="relative group/sub">
                                     <a href="create-support.html" class="relative peer/link text-gray-500 dark:text-dark-text-two font-medium leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 hover:before:border-none hover:before:bg-primary-400 [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 group-data-[sidebar-size=sm]:before:hidden">
-                                        Create Support
+                                        {% trans "Create Support" %}
                                     </a>
                                 </li>
                             </ul>
                         </div>
                     </li>
-                    
+
                 </ul>
             </div>
         </div>
         <!-- Logout Link -->
         <div class="mt-auto px-2.5 py-6 group-data-[sidebar-size=sm]:px-2">
-            <a href="sign-in.html" class="flex-center-between text-gray-500 font-semibold leading-none bg-gray-200 dark:bg-dark-icon dark:text-dark-text rounded-[10px] px-6 py-4 group-data-[sidebar-size=sm]:p-[12px_8px] group-data-[sidebar-size=sm]:justify-center dk-theme-card-square">
-                <span class="group-data-[sidebar-size=sm]:hidden block">Logout</span>
+            <a href="{% url 'logout' %}" class="flex-center-between text-gray-500 font-semibold leading-none bg-gray-200 dark:bg-dark-icon dark:text-dark-text rounded-[10px] px-6 py-4 group-data-[sidebar-size=sm]:p-[12px_8px] group-data-[sidebar-size=sm]:justify-center dk-theme-card-square">
+                <span class="group-data-[sidebar-size=sm]:hidden block">{% trans "Logout" %}</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewbox="0 0 24 24">
                     <path fill="currentColor" d="M5 5h7V3H3v18h9v-2H5z"></path>
                     <path fill="currentColor" d="m21 12l-4-4v3H9v2h8v3z"></path>
@@ -314,26 +248,26 @@
             <i class="ri-close-line text-gray-500 dark:text-dark-text"></i>
         </button>
         <div class="p-6 py-3 border-b border-gray-200 dark:border-dark-border-four">
-            <h6 class="text-lg font-medium text-gray-500 dark:text-dark-text">Adjust Configurations</h6>
+            <h6 class="text-lg font-medium text-gray-500 dark:text-dark-text">{% trans "Adjust Configurations" %}</h6>
             <p class="text-sm text-gray-500 dark:text-dark-text mt-1">
-                Transform your space to reflect your personality!
+                {% trans "Transform your space to reflect your personality!" %}
             </p>
         </div>
         <!-- Customizatin Options -->
         <div class="p-6 pt-3 divide-y divide-input-border/50 dark:divide-dark-border-four space-y-10">
             <!-- Theme Mode -->
             <div class="pt-3 first:pt-0">
-                <h6 class="card-title text-base font-medium">Theme Mode</h6>
+                <h6 class="card-title text-base font-medium">{% trans "Theme Mode" %}</h6>
                 <div class="grid grid-cols-6 gap-4 mt-2">
                     <div class="col-span-2">
-                        <label class="text-xs text-gray-500 dark:text-dark-text-two font-medium mb-1.5 inline-block">Light</label>
+                        <label class="text-xs text-gray-500 dark:text-dark-text-two font-medium mb-1.5 inline-block">{% trans "Light" %}</label>
                         <label for="radioThemeLight" class="text-gray-500 dark:text-dark-text-two border border-gray-200 hover:border-input-border dark:border-dark-border dark:hover:border-dark-border-five has-[:checked]:border-none rounded-md flex-center py-2 select-none cursor-pointer ring-2 ring-transparent has-[:checked]:ring-primary-500 leading-none dk-theme-card-square">
                             <i class="ri-sun-line text-inherit text-xl"></i>
                             <input name="radioThemeMode" type="radio" id="radioThemeLight" hidden checked onchange="toggleThemeMode()">
                         </label>
                     </div>
                     <div class="col-span-2">
-                        <label class="text-xs text-gray-500 dark:text-dark-text-two font-medium mb-1.5 inline-block">Dark</label>
+                        <label class="text-xs text-gray-500 dark:text-dark-text-two font-medium mb-1.5 inline-block">{% trans "Dark" %}</label>
                         <label for="radioThemeDark" class="text-gray-500 dark:text-dark-text-two border border-gray-200 hover:border-input-border dark:border-dark-border dark:hover:border-dark-border-five has-[:checked]:border-none rounded-md flex-center py-2 select-none cursor-pointer ring-2 ring-transparent has-[:checked]:ring-primary-500 leading-none dk-theme-card-square">
                             <i class="ri-moon-clear-line text-inherit text-xl"></i>
                             <input name="radioThemeMode" type="radio" id="radioThemeDark" hidden onchange="toggleThemeMode()">
@@ -343,17 +277,17 @@
             </div>
             <!-- Theme Card Style -->
             <div class="pt-3 first:pt-0">
-                <h6 class="card-title text-base font-medium">Theme Card Style</h6>
+                <h6 class="card-title text-base font-medium">{% trans "Theme Card Style" %}</h6>
                 <div class="grid grid-cols-6 gap-4 mt-2">
                     <div class="col-span-2">
-                        <label class="text-xs text-gray-500 dark:text-dark-text-two font-medium mb-1.5 inline-block">Square</label>
+                        <label class="text-xs text-gray-500 dark:text-dark-text-two font-medium mb-1.5 inline-block">{% trans "Square" %}</label>
                         <label for="radioThemeCardSquare" class="text-gray-500 dark:text-dark-text-two border border-gray-200 hover:border-input-border dark:border-dark-border dark:hover:border-dark-border-five has-[:checked]:border-none rounded-md flex-center py-2 select-none cursor-pointer ring-2 ring-transparent has-[:checked]:ring-primary-500 leading-none dk-theme-card-square">
                             <i class="ri-square-line text-inherit text-xl"></i>
                             <input name="radioThemeCardStyle" type="radio" id="radioThemeCardSquare" hidden checked onchange="toggleCardStyle()">
                         </label>
                     </div>
                     <div class="col-span-2">
-                        <label class="text-xs text-gray-500 dark:text-dark-text-two font-medium mb-1.5 inline-block">Round</label>
+                        <label class="text-xs text-gray-500 dark:text-dark-text-two font-medium mb-1.5 inline-block">{% trans "Round" %}</label>
                         <label for="radioThemeCardRound" class="text-gray-500 dark:text-dark-text-two border border-gray-200 hover:border-input-border dark:border-dark-border dark:hover:border-dark-border-five has-[:checked]:border-none rounded-md flex-center py-2 select-none cursor-pointer ring-2 ring-transparent has-[:checked]:ring-primary-500 leading-none dk-theme-card-square">
                             <i class="ri-rounded-corner text-inherit text-xl"></i>
                             <input name="radioThemeCardStyle" type="radio" id="radioThemeCardRound" hidden onchange="toggleCardStyle()">
@@ -363,17 +297,17 @@
             </div>
             <!-- Theme Width -->
             <div class="pt-3 first:pt-0">
-                <h6 class="card-title text-base font-medium">Theme Layout Width</h6>
+                <h6 class="card-title text-base font-medium">{% trans "Theme Layout Width" %}</h6>
                 <div class="grid grid-cols-6 gap-4 mt-2">
                     <div class="col-span-2">
-                        <label class="text-xs text-gray-500 dark:text-dark-text-two font-medium mb-1.5 inline-block">Full Width</label>
+                        <label class="text-xs text-gray-500 dark:text-dark-text-two font-medium mb-1.5 inline-block">{% trans "Full Width" %}</label>
                         <label for="radioThemeWidthFluid" class="text-gray-500 dark:text-dark-text-two border border-gray-200 hover:border-input-border dark:border-dark-border dark:hover:border-dark-border-five has-[:checked]:border-none rounded-md flex-center py-2 select-none cursor-pointer ring-2 ring-transparent has-[:checked]:ring-primary-500 leading-none dk-theme-card-square">
                             <i class="ri-fullscreen-fill text-inherit text-xl"></i>
                             <input name="radioThemeWidth" type="radio" id="radioThemeWidthFluid" hidden checked onchange="settingThemeWidth()">
                         </label>
                     </div>
                     <div class="col-span-2">
-                        <label class="text-xs text-gray-500 dark:text-dark-text-two font-medium mb-1.5 inline-block">Container</label>
+                        <label class="text-xs text-gray-500 dark:text-dark-text-two font-medium mb-1.5 inline-block">{% trans "Container" %}</label>
                         <label for="radioThemeWidthBox" class="text-gray-500 dark:text-dark-text-two border border-gray-200 hover:border-input-border dark:border-dark-border dark:hover:border-dark-border-five has-[:checked]:border-none rounded-md flex-center py-2 select-none cursor-pointer ring-2 ring-transparent has-[:checked]:ring-primary-500 leading-none dk-theme-card-square">
                             <i class="ri-exchange-box-line text-inherit text-xl"></i>
                             <input name="radioThemeWidth" type="radio" id="radioThemeWidthBox" hidden onchange="settingThemeWidth()">
@@ -384,7 +318,7 @@
         </div>
         <!-- Reset All Customization -->
         <div class="flex-center justify-end p-3 absolute bottom-0 left-0 right-0 z-[1] bg-gray-200 dark:bg-dark-icon">
-            <button type="reset" class="btn b-solid btn-danger-solid btn-sm" onclick="resetThemeConfig()">Reset</button>
+            <button type="reset" class="btn b-solid btn-danger-solid btn-sm" onclick="resetThemeConfig()">{% trans "Reset" %}</button>
         </div>
     </div>
     <!-- End App Settings Sidebar -->

@@ -1,23 +1,24 @@
 {% extends 'main.html' %}
 {% load static %}
+{% load i18n %}
 {% block main_content %}
 
 <div class="grid grid-cols-12 gap-x-4">
     <!-- Start Bread Crumb Section -->
     <div class="col-span-full card flex-center-btween sm:flex-center-between sm:flex-row">
             <div>
-                <h5 class="card-title">Student</h5>
+                <h5 class="card-title">{% trans "Student" %}</h5>
                 <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
                     <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two">
-                        <a href="index.html">Home</a>
+                        <a href="index.html">{% trans "Home" %}</a>
                     </li>
                     <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two current-page">
-                        <a href="#">Student Dashboard</a>
+                        <a href="#">{% trans "Student Dashboard" %}</a>
                     </li>
                 </ul>
-            </div>           
-                <a href="{% url 'student_activity_live' student.user_id %}" class="btn b-solid btn-primary-solid">View Live Activities</a> 
-            
+            </div>
+                <a href="{% url 'student_activity_live' student.user_id %}" class="btn b-solid btn-primary-solid">{% trans "View Live Activities" %}</a>
+
 
     </div>
     <!-- End Bread Crumb Section -->
@@ -28,14 +29,14 @@
                 <img src="{% static 'images/profile/cover.png' %}" alt="cover-image" class="w-full h-full">
                 <label for="thumbnailsrc" class="file-container bg-white bg-no-repeat bg-cover absolute left-1/2 -translate-x-1/2 -bottom-[calc(theme('spacing.ins-pro-img')_/_2)] w-[calc(theme('spacing.ins-pro-img')_+_5px)] h-[theme('spacing.ins-pro-img')] border-2 border-white dark:border-dark-border-two rounded-20 dk-theme-card-square"
                     style="background-image: url('{% static 'images/user/profile-img.png' %}');">
-                    <input type="file" id="thumbnailsrc" hidden class="img-src peer/file">   
-                    <span class="absolute bottom-0 right-0 flex-center size-5 rounded-50 border border-white dark:border-dark-border-two text-primary-500 bg-primary-200">             
+                    <input type="file" id="thumbnailsrc" hidden class="img-src peer/file">
+                    <span class="absolute bottom-0 right-0 flex-center size-5 rounded-50 border border-white dark:border-dark-border-two text-primary-500 bg-primary-200">
                         {% if student.last_action_time.is_online %}
                             <i class="ri-circle-fill text-success text-[5px]"></i>
                         {% else %}
                             <i class="ri-circle-fill text-muted text-[5px]"></i>
                         {% endif %}
-                    </span>              
+                    </span>
                 </label>
 
             </div>
@@ -44,36 +45,39 @@
                     <div class="flex-center">
                         <h4 class="text-[22px] leading-none text-heading font-semibold relative">
                             {{ student.firstname }} {{ student.lastname }}
-                        </h4>                       
+                        </h4>
                     </div>
-                    <p class="font-spline_sans leading-[1.62] text-heading dark:!text-dark-text mt-2.5">Xxxxxx Xxxxxx</p>
-                    <p class="font-spline_sans text-sm leading-[1.62] text-gray-500 dark:text-dark-text mt-1">Xxxxxx Xxxxxx</p>
+                    {% if student.basic_info.city and student.basic_info.country %}
+                        <p class="font-spline_sans leading-[1.62] text-heading dark:!text-dark-text mt-2.5">{{ student.basic_info.city }}, {{ student.basic_info.country }}</p>
+                    {% endif %}
+
                 </div>
                 <div class="py-5 border-t border-gray-200 dark:border-dark-border text-left">
                     <div class="flex-center-between">
-                        <h6 class="text-gray-500 dark:text-dark-text leading-none font-semibold">About</h6>
+                        <h6 class="text-gray-500 dark:text-dark-text leading-none font-semibold">{% trans "About" %}</h6>
                     </div>
                     <ul class="flex flex-col gap-y-3 *:flex *:gap-x-2.5 *:leading-none *:text-gray-500 dark:*:text-dark-text *:font-medium mt-4">
                         <li>
                             <i class="ri-mail-line text-inherit"></i>
-                            <div>Email: <span class="text-heading dark:!text-dark-text"> {{ student.email }}</span>
+                            <div>{% trans "Email" %}: <span class="text-heading dark:!text-dark-text"> {{ student.email }}</span>
                             </div>
                         </li>
                         <li>
-                            <i class="ri-briefcase-line text-inherit"></i>
-                            <div>Xxxxx <span class="text-heading dark:!text-dark-text">Xxxxxx</span>
+                            <i class="ri-calendar-line text-inherit"></i>
+                            <div>{% trans "Last Access" %}: <span class="text-heading dark:!text-dark-text"> {{student.last_action_time.last_action_time }}</span>
                             </div>
                         </li>
                     </ul>
                 </div>
+                <!--
                 <div class="py-5 border-t border-gray-200 dark:border-dark-border text-left">
                     <div class="flex-center-between">
-                        <h6 class="text-gray-500 dark:text-dark-text leading-none font-semibold">Sub Content</h6>
+                        <h6 class="text-gray-500 dark:text-dark-text leading-none font-semibold">{% trans "Sub Content" %}</h6>
                     </div>
                     <ul class="flex flex-col gap-y-3 *:flex *:items-center *:gap-x-2.5 *:leading-none *:text-gray-500 dark:*:text-dark-text *:font-medium mt-4">
                         <li>
                             <i class="ri-arrow-right-box-fill text-inherit"></i>
-                            <div>Last Access: <span class="text-heading dark:!text-dark-text"> {{ student.last_action_time.last_action_time }}</span>
+                            <div>{% trans "Last Access" %}: <span class="text-heading dark:!text-dark-text"> {{ student.last_action_time.last_action_time }}</span>
                             </div>
                         </li>
                         <li>
@@ -82,6 +86,7 @@
                         </li>
                     </ul>
                 </div>
+                -->
             </div>
         </div>
     </div>
@@ -93,43 +98,43 @@
                 <div class="size-11 flex-center bg-[#F7F3FF] dark:bg-dark-icon rounded-10 mb-4">
                     <img src="{% static 'images/icons/course-overview/progress.svg' %}" alt="icon" class="dark:brightness-[5]">
                 </div>
-                <p class="text-gray-500 dark:text-dark-text-two font-medium leading-none mb-2">Active Courses</p>
+                <p class="text-gray-500 dark:text-dark-text-two font-medium leading-none mb-2">{% trans "Active Courses" %}</p>
                 <div class="counter-value text-primary-500 text-[32px] font-semibold leading-none" data-value="{{student.enrollments|length}}">0</div>
             </div>
             <div class="col-span-full md:col-span-6 lg:col-span-3 dk-border-one p-5 mb-0">
                 <div class="size-11 flex-center bg-[#F7F3FF] dark:bg-dark-icon rounded-10 mb-4">
                     <img src="{% static 'images/icons/course-overview/complete.svg' %}" alt="icon" class="dark:brightness-[5]">
                 </div>
-                <p class="text-gray-500 dark:text-dark-text-two font-medium leading-none mb-2">Archived course</p>
+                <p class="text-gray-500 dark:text-dark-text-two font-medium leading-none mb-2">{% trans "Archived course" %}</p>
                 <div class="counter-value text-primary-500 text-[32px] font-semibold leading-none" data-value="{{student.archived_courses}}">0</div>
-            </div>           
+            </div>
             <div class="col-span-full md:col-span-6 lg:col-span-3 dk-border-one p-5 mb-0">
                 <div class="size-11 flex-center bg-[#F7F3FF] dark:bg-dark-icon rounded-10 mb-4">
                     <img src="{% static 'images/icons/course-overview/certificate.svg' %}" alt="icon" class="dark:brightness-[5]">
                 </div>
-                <p class="text-gray-500 dark:text-dark-text-two font-medium leading-none mb-2">Accessed Contents</p>
+                <p class="text-gray-500 dark:text-dark-text-two font-medium leading-none mb-2">{% trans "Accessed Contents" %}</p>
                 <div class="counter-value text-primary-500 text-[32px] font-semibold leading-none" data-value="{{student.contents_ids | length}}">0</div>
             </div>
             <div class="col-span-full md:col-span-6 lg:col-span-3 dk-border-one p-5 mb-0">
                 <div class="size-11 flex-center bg-[#F7F3FF] dark:bg-dark-icon rounded-10 mb-4">
                     <img src="{% static 'images/icons/course-overview/purchase.svg' %}" alt="icon" class="dark:brightness-[5]">
                 </div>
-                <p class="text-gray-500 dark:text-dark-text-two font-medium leading-none mb-2">Quiz Answers</p>
+                <p class="text-gray-500 dark:text-dark-text-two font-medium leading-none mb-2">{% trans "Quiz Answers" %}</p>
                 <div class="counter-value text-primary-500 text-[32px] font-semibold leading-none" data-value="{{student.quiz_answers|length}}">0</div>
             </div>
         </div>
         <!-- Student Average Learning Section -->
         <div class="col-span-full 3xl:col-span-8 card mb-0 mt-4 p-5 dk-border-one">
             <div class="flex-center-between">
-                <h6 class="card-title">Daily Activities</h6>
+                <h6 class="card-title">{% trans "Daily Activities" %}</h6>
                 <select class="form-input form-select">
-                    <option value="this-month">This Year</option>
-                    <option value="last-month">This Month</option>
+                    <option value="this-month">{% trans "This Year" %}</option>
+                    <option value="last-month">{% trans "This Month" %}</option>
                 </select>
-            </div>   
+            </div>
             <script id="dailystudentactivity" type="application/json">
                 {{ activity_by_day|safe }}
-            </script>    
+            </script>
             <div id="student-average-learning-chart"></div>
         </div>
     </div>
@@ -137,16 +142,16 @@
     <!-- Start Student Course List Table -->
     <div class="col-span-full lg:col-span-6 2xl:col-span-6 card px-0 card">
         <div class="flex-center-between px-3">
-            <h6 class="card-title">Enrolled Courses</h6>
+            <h6 class="card-title">{% trans "Enrolled Courses" %}</h6>
         </div>
         <!-- Course Table -->
-        <div class="overflow-x-auto scrollbar-table mt-5 px-3"> 
+        <div class="overflow-x-auto scrollbar-table mt-5 px-3">
             <table class="table-auto w-full whitespace-nowrap text-left text-gray-500 dark:text-dark-text font-medium leading-none">
                 <thead>
                     <tr>
-                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">Course title</th>
-                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">Category</th>
-                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square w-10">Action</th>
+                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">{% trans "Course title" %}</th>
+                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">{% trans "Category" %}</th>
+                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square w-10">{% trans "Action" %}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-dark-border">
@@ -163,13 +168,13 @@
                                 </div>
                             </td>
                             <td class="px-3.5 py-4">{{course.category_path}}</td>
-                            
+
                             <td class="px-3.5 py-4">
-                                <a href="#" class="btn b-solid btn-primary-solid btn-sm">View course</a>
+                                <a href="#" class="btn b-solid btn-primary-solid btn-sm">{% trans "View course" %}</a>
                             </td>
                         </tr>
                     {% endfor %}
-                    
+
                 </tbody>
             </table>
         </div>
@@ -202,16 +207,16 @@
     <!-- Start Recent Viewed Course -->
     <div class="col-span-full lg:col-span-6 2xl:col-span-6 card px-0 card">
         <div class="flex-center-between px-3">
-            <h6 class="card-title">Redently Visitied Courses</h6>
+            <h6 class="card-title">{% trans "Recently Visited Courses" %}</h6>
         </div>
         <!-- Course Table -->
-        <div class="overflow-x-auto scrollbar-table mt-5 px-3"> 
+        <div class="overflow-x-auto scrollbar-table mt-5 px-3">
             <table class="table-auto w-full whitespace-nowrap text-left text-gray-500 dark:text-dark-text font-medium leading-none">
                 <thead>
                     <tr>
-                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">Course title</th>
-                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">Category</th>
-                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square w-10">Action</th>
+                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">{% trans "Course title" %}</th>
+                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">{% trans "Category" %}</th>
+                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square w-10">{% trans "Action" %}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-dark-border">
@@ -228,13 +233,13 @@
                                 </div>
                             </td>
                             <td class="px-3.5 py-4">{{course.category_path}}</td>
-                            
+
                             <td class="px-3.5 py-4">
-                                <a href="#" class="btn b-solid btn-primary-solid btn-sm">View course</a>
+                                <a href="#" class="btn b-solid btn-primary-solid btn-sm">{% trans "View course" %}</a>
                             </td>
                         </tr>
                     {% endfor %}
-                    
+
                 </tbody>
             </table>
         </div>
