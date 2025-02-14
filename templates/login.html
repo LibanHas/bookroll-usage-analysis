@@ -5,7 +5,45 @@
 {% load i18n %}
 
  <!-- Start Main Content -->
- <div class="main-content m-4">
+ <div class="main-content m-0 sm:m-4 p-0 sm:p-4 card">
+    <!-- Language Selector -->
+    <div class="flex justify-end mb-4 px-4">
+        <div class="relative">
+            <button type="button" data-popover-target="dropdownLanguage" data-popover-trigger="click" data-popover-placement="bottom-end" class="size-8 flex-center hover:bg-gray-200 dark:hover:bg-dark-icon rounded-md dk-theme-card-square">
+                {% get_current_language as LANGUAGE_CODE %}
+                {% if LANGUAGE_CODE == 'ja' %}
+                    <img id="header-lang-img" src="{% static 'images/flag/jp.svg' %}" alt="flag" class="size-5 rounded-sm border border-gray-200" title="Japanese">
+                {% else %}
+                    <img id="header-lang-img" src="{% static 'images/flag/us.svg' %}" alt="flag" class="size-5 rounded-sm border border-gray-200" title="English">
+                {% endif %}
+            </button>
+            <!-- Dropdown -->
+            <div id="dropdownLanguage" class="absolute invisible z-backdrop py-2 bg-white rounded-md shadow-md min-w-[10rem] flex flex-col dark:bg-dark-card-shade dk-theme-card-square">
+                <form action="{% url 'set_language' %}" method="post" id="language-form-en">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="/">
+                    <input type="hidden" name="language" value="en">
+                    <a href="#" class="flex items-center gap-3 hover:bg-gray-200 px-4 py-2 dark:hover:bg-dark-icon relative after:absolute after:inset-0 after:size-full"
+                       onclick="document.getElementById('language-form-en').submit(); return false;"
+                       data-lang="en" title="English">
+                        <img src="{% static 'images/flag/us.svg' %}" alt="flag" class="object-cover size-4 rounded-50 dk-theme-card-square">
+                        <h6 class="font-medium text-gray-500 dark:text-white">English</h6>
+                    </a>
+                </form>
+                <form action="{% url 'set_language' %}" method="post" id="language-form-ja">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{% if LANGUAGE_CODE == 'ja' %}/{% else %}/ja/{% endif %}">
+                    <input type="hidden" name="language" value="ja">
+                    <a href="#" class="flex items-center gap-3 hover:bg-gray-200 px-4 py-2 dark:hover:bg-dark-icon relative after:absolute after:inset-0 after:size-full"
+                       onclick="document.getElementById('language-form-ja').submit(); return false;"
+                       data-lang="ja" title="Japanese">
+                        <img src="{% static 'images/flag/jp.svg' %}" alt="flag" class="object-cover size-4 rounded-50 dk-theme-card-square">
+                        <h6 class="font-medium text-gray-500 dark:text-white">Japanese</h6>
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
     <div class="grid grid-cols-12 gap-y-7 sm:gap-7 card px-4 sm:px-10 2xl:px-[70px] py-15 lg:items-center lg:min-h-[calc(100vh_-_32px)] dk-theme-card-square">
         <!-- Start Overview Area -->
         <div class="col-span-full lg:col-span-6">
@@ -19,7 +57,7 @@
                         {% trans "Welcome back!" %}
                     </h3>
                     <p class="font-medium text-gray-500 dark:text-dark-text mt-4 px-[10%]">
-                        {% trans "A tag line goes here." %}
+                        {% trans "All students activity dashboard." %}
                     </p>
                 </div>
             </div>
@@ -36,8 +74,42 @@
                 </p>
                 <form class="leading-none mt-8" method="post">
                     {% csrf_token %}
-                    {{ form.non_field_errors }}
-                    {{ form|crispy }}
+                    {% if form.non_field_errors %}
+                    <div class="alert mb-4">
+                        <div class="border border-red-400 rounded-b bg-red-100 px-4 py-3 text-red-700">
+                            <ul>
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% for field in form %}
+                        <div id="div_{{ field.auto_id }}" class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">
+                                {{ field.label }}{% if field.field.required %}<span class="asteriskField">*</span>{% endif %}
+                            </label>
+                            {% if field.errors %}
+                                {% for error in field.errors %}
+                                    <div class="alert mb-4">
+                                        <div class="border border-red-400 rounded-b bg-red-100 px-4 py-3 text-red-700">
+                                            {{ error }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                            <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}" {% if field.value %}value="{{ field.value }}"{% endif %}
+                                class="textinput py-2 px-4 border appearance-none text-gray-700 border-gray-300 leading-normal focus:outline-none rounded-lg block w-full bg-white"
+                                {% if field.field.required %}required{% endif %}
+                                id="{{ field.auto_id }}"
+                                {% if field.field.widget.attrs.autofocus %}autofocus{% endif %}
+                                {% if field.field.widget.attrs.autocomplete %}autocomplete="{{ field.field.widget.attrs.autocomplete }}"{% endif %}
+                                {% if field.field.widget.attrs.maxlength %}maxlength="{{ field.field.widget.attrs.maxlength }}"{% endif %}
+                                {% if field.field.widget.attrs.autocapitalize %}autocapitalize="{{ field.field.widget.attrs.autocapitalize }}"{% endif %}
+                            >
+                        </div>
+                    {% endfor %}
 
                     <!-- Submit Button -->
                     <button type="submit" class="btn b-solid btn-primary-solid w-full">{% trans "Sign In" %}</button>
@@ -54,10 +126,11 @@
                         <span class="shrink-0">{% trans "Continue with Apple" %}</span>
                     </a>
                 </div>
+                <!--
                 <div class="text-gray-900 dark:text-dark-text font-medium leading-none mt-5">
                     {% trans "Don't have an account yet?" %}
                     <a href="sign-up.html" class="text-primary-500 font-semibold">{% trans "Sign Up" %}</a>
-                </div>
+                </div> -->
             </div>
         </div>
         <!-- End Form Area -->

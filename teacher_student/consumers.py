@@ -197,7 +197,7 @@ class ActivityConsumer(AsyncWebsocketConsumer):
                 context_label
             FROM statements_mv
             WHERE actor_account_name = %(user_id)s
-            AND timestamp >= now() - INTERVAL 1 HOUR
+            AND timestamp >= now() - INTERVAL 0.5 HOUR
             ORDER BY id, timestamp ASC
             LIMIT 100
         """

@@ -10,7 +10,7 @@
                 <h5 class="card-title">{% trans "Student" %}</h5>
                 <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
                     <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two">
-                        <a href="index.html">{% trans "Home" %}</a>
+                        <a href="{% url 'index' %}">{% trans "Home" %}</a>
                     </li>
                     <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two current-page">
                         <a href="#">{% trans "Student Dashboard" %}</a>

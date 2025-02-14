@@ -44,26 +44,9 @@
                                 Notifications
                             </div>
                             <div class="divide-y divide-gray-100 dark:divide-dark-border-four">
-                                <a href="all-notice.html" class="flex px-4 py-3 hover:bg-gray-100 dark:hover:bg-dark-icon">
-                                    <div class="flex-shrink-0">
-                                        <img class="size-10 rounded-50 dk-theme-card-square" src="{% static 'images/user/user-1.png' %}" alt="user">
-                                    </div>
-                                    <div class="w-full ps-3">
-                                        <div class="text-gray-500 dark:text-gray-400 text-sm mb-1.5">New message from <span class="font-semibold text-gray-900 dark:text-white">Jese Leos</span>: "Hey, what's up? All set for the presentation?"</div>
-                                        <div class="text-xs text-blue-600 dark:text-blue-500">a few moments ago</div>
-                                    </div>
-                                </a>
-                                <a href="all-notice.html" class="flex px-4 py-3 hover:bg-gray-100 dark:hover:bg-dark-icon">
-                                    <div class="flex-shrink-0">
-                                        <img class="size-10 rounded-50 dk-theme-card-square" src="{% static 'images/user/user-2.png' %}" alt="user">
-                                    </div>
-                                    <div class="w-full ps-3">
-                                        <div class="text-gray-500 dark:text-gray-400 text-sm mb-1.5">New message from <span class="font-semibold text-gray-900 dark:text-white">Jese Leos</span>: "Hey, what's up? All set for the presentation?"</div>
-                                        <div class="text-xs text-blue-600 dark:text-blue-500">10 min ago</div>
-                                    </div>
-                                </a>
+
                             </div>
-                            <a href="all-notice.html" class="flex-center py-2 text-sm font-medium text-center text-heading rounded-b-lg bg-gray-50 dark:bg-dark-card-shade dark:text-white dk-theme-card-square">
+                            <a href="" class="flex-center py-2 text-sm font-medium text-center text-heading rounded-b-lg bg-gray-50 dark:bg-dark-card-shade dark:text-white dk-theme-card-square">
                                 View all
                             </a>
                         </div>
@@ -123,10 +106,10 @@
                             </div>
                             <ul class="py-2 text-sm text-gray-700 dark:text-gray-200">
                                 <li>
-                                    <a href="index.html" class="flex font-medium px-4 py-2 hover:bg-gray-200 dark:hover:bg-dark-icon dark:hover:text-white">Dashboard</a>
+                                    <a href="{% url 'index' %}" class="flex font-medium px-4 py-2 hover:bg-gray-200 dark:hover:bg-dark-icon dark:hover:text-white">Dashboard</a>
                                 </li>
                                 <li>
-                                    <a href="account-setting.html" class="flex font-medium px-4 py-2 hover:bg-gray-200 dark:hover:bg-dark-icon dark:hover:text-white">Settings</a>
+                                    <a href="" class="flex font-medium px-4 py-2 hover:bg-gray-200 dark:hover:bg-dark-icon dark:hover:text-white">Settings</a>
                                 </li>
                             </ul>
                             <div class="py-2">
@@ -214,12 +197,12 @@
                         <div class="dropdown-content max-h-0 group-data-[sidebar-size=sm]:!max-h-max overflow-hidden group-data-[sidebar-size=sm]:overflow-visible hidden group-data-[sidebar-size=lg]:block peer-[.show]/dp-btn:my-1.5 group-data-[sidebar-size=sm]:!my-0 group-data-[sidebar-size=lg]:w-[calc(theme('spacing.app-menu')_-_16px)] group-data-[sidebar-size=sm]:w-[calc(theme('spacing.app-menu-sm')_*_2.5)] group-data-[sidebar-size=sm]:absolute group-data-[sidebar-size=sm]:left-[calc(theme('spacing.app-menu-sm')_*_0.9)] top-full group-data-[sidebar-size=sm]:group-hover/sm:block group-data-[sidebar-size=sm]:bg-white dark:group-data-[sidebar-size=sm]:bg-dark-tooltip group-data-[sidebar-size=sm]:shadow-menu-dropdown transition-all duration-300">
                             <ul class="text-[14px] pl-1.5 group-data-[sidebar-size=sm]:pl-0">
                                 <li class="relative group/sub">
-                                    <a href="all-support.html" class="relative peer/link text-gray-500 dark:text-dark-text-two font-medium leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 hover:before:border-none hover:before:bg-primary-400 [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 group-data-[sidebar-size=sm]:before:hidden">
+                                    <a href="" class="relative peer/link text-gray-500 dark:text-dark-text-two font-medium leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 hover:before:border-none hover:before:bg-primary-400 [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 group-data-[sidebar-size=sm]:before:hidden">
                                         {% trans "All Support" %}
                                     </a>
                                 </li>
                                 <li class="relative group/sub">
-                                    <a href="create-support.html" class="relative peer/link text-gray-500 dark:text-dark-text-two font-medium leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 hover:before:border-none hover:before:bg-primary-400 [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 group-data-[sidebar-size=sm]:before:hidden">
+                                    <a href="" class="relative peer/link text-gray-500 dark:text-dark-text-two font-medium leading-none px-5 py-2.5 group-data-[sidebar-size=lg]:pl-8 flex hover:text-primary-500 dark:hover:text-dark-text [&amp;.active]:text-primary-500 dark:[&amp;.active]:text-dark-text before:absolute before:top-[49%] before:-translate-y-1/2 before:left-4 before:size-1.5 before:rounded-50 before:border before:border-gray-400 hover:before:border-none hover:before:bg-primary-400 [&amp;.active]:before:border-none group-data-[sidebar-size=sm]:after:block group-data-[sidebar-size=sm]:after:right-3 [&amp;.active]:before:bg-primary-400 group-data-[sidebar-size=sm]:before:hidden">
                                         {% trans "Create Support" %}
                                     </a>
                                 </li>
