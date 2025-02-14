@@ -17,8 +17,9 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libffi-dev \
     wget \
-    curl \   
-    npm \ 
+    curl \
+    npm \
+    gettext \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pip and ensure it's the latest version

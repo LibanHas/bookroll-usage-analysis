@@ -26,14 +26,14 @@ SECRET_KEY = 'django-insecure-g$m4*j)xs_v8*e8u6^0ia^if05+l_-w3@p(zdaz2e*a$68z^d_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['10.236.173.129', '0.0.0.0', '127.0.0.1']
+ALLOWED_HOSTS = ['10.236.173.129', '0.0.0.0', '127.0.0.1', '10.236.173.129.nip.io']
 INTERNAL_IPS = [
     '127.0.0.1',
     'localhost',
     '172.17.0.1',
-    'school_dashboard',  
+    'school_dashboard',
 ]
-CSRF_TRUSTED_ORIGINS = ['http://10.236.173.129',]
+CSRF_TRUSTED_ORIGINS = ['http://10.236.173.129', 'http://10.236.173.129.nip.io']
 # Application definition
 
 INSTALLED_APPS = [
@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'channels',
-    'django.contrib.staticfiles',    
+    'django.contrib.staticfiles',
     'debug_toolbar',
     'crispy_forms',
     'crispy_tailwind',
@@ -56,13 +56,13 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
 ]
 
 ROOT_URLCONF = 'leaf_school.urls'
@@ -95,7 +95,7 @@ DATABASES = {
         'NAME': 'school_db',
         'USER': 'postgres',
         'PASSWORD': '$m8.Z&81Tr$B',
-        'HOST': 'db', 
+        'HOST': 'db',
         'PORT': '5432',
     },
     'moodle_db': {
@@ -127,7 +127,7 @@ DATABASES = {
         'PASSWORD': 'd747434901294ec655d180dd52acd67579f702584fda8e293a50cf682227689f',
         'HOST': '10.236.173.177',
         'PORT': '9001',  # Changed to HTTP port
-        'OPTIONS': {             
+        'OPTIONS': {
             'settings': {
                 'allow_experimental_window_functions': 1,  # Enable specific ClickHouse settings if needed
             }
@@ -159,13 +159,31 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'en'
 
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
+USE_L10N = True
+
 USE_TZ = True
+
+# Available languages
+LANGUAGES = [
+    ('en', 'English'),
+    ('ja', 'Japanese'),
+]
+
+# Location of translation files
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',
+]
+
+# Default language
+LANGUAGE_COOKIE_NAME = 'django_language'
+LANGUAGE_COOKIE_AGE = None
+LANGUAGE_COOKIE_PATH = '/'
 
 
 # Static files (CSS, JavaScript, Images)
@@ -173,7 +191,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
-    BASE_DIR / "static", 
+    BASE_DIR / "static",
 ]
 
 # Default primary key field type

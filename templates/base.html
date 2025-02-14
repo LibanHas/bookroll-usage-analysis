@@ -1,11 +1,12 @@
 {% load static %}
+{% load i18n %}
 <!DOCTYPE html>
-<html lang="en" class="group" data-sidebar-size="lg" data-card-style="square">
+<html lang="{{ LANGUAGE_CODE }}" class="group" data-sidebar-size="lg" data-card-style="square">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
-        <title>LEAF School &amp; Dashboard</title>
+        <title>{% trans "LEAF School & Dashboard" %}</title>
         <meta name="robots" content="noindex, follow">
         <meta name="description" content="web development agency">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -18,15 +19,16 @@
         <div id="loader" class="w-screen h-screen flex-center bg-white dark:bg-dark-card fixed inset-0 z-[9999]">
             <img src="{% static 'images/loader.gif' %}" alt="loader">
         </div>
+
         {% block content %}{% endblock %}
         {% block non_auth_content %}{% endblock %}
     <script src="{% static 'js/vendor/jquery.min.js' %}"></script>
     <script src="{% static 'js/vendor/apexcharts.min.js' %}"></script>
     <script src="{% static 'js/vendor/flowbite.min.js' %}"></script>
     <script src="{% static 'js/vendor/smooth-scrollbar/smooth-scrollbar.min.js' %}"></script>
-    
+
     {% block page_specific_js %}{% endblock %}
-    
+
     <script src="{% static 'js/component/app-menu-bar.js' %}"></script>
     <script src="{% static 'js/switcher.js' %}"></script>
     <script src="{% static 'js/layout.js' %}"></script>

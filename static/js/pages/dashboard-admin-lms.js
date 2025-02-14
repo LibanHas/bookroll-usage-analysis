@@ -1,4 +1,5 @@
 // Total Revenue
+/*
 const revenueOptions = {
   series: [
     {
@@ -60,7 +61,7 @@ const revenueChart = new ApexCharts(
   revenueOptions
 );
 revenueChart.render();
-
+*/
 // Total Enrollment
 var enrollOptions = {
   series: [
@@ -261,7 +262,7 @@ ratingChart.render();
  // Read the raw JSON from the hidden script blocks
  const dailyActiveUsersRaw = document.getElementById('dailyActiveUsersData').textContent;
  const dailyActivitiesRaw = document.getElementById('dailyActivitiesData').textContent;
- 
+
  //Parse into JavaScript objects/arrays
  const dailyActiveUsers = JSON.parse(dailyActiveUsersRaw);
  const dailyActivities = JSON.parse(dailyActivitiesRaw);
@@ -297,7 +298,7 @@ ratingChart.render();
   colors: ['#76d466'],
   xaxis: {
     categories: datesActive, // Use the dates from dailyActiveUsers
-    type: 'datetime', 
+    type: 'datetime',
   },
   yaxis: {
     labels: {
@@ -370,7 +371,7 @@ const dailyActivitiesChartOptions = {
   },
   xaxis: {
     categories: datesActivities, // Use the dates from dailyActivities
-    type: 'datetime', 
+    type: 'datetime',
   },
   yaxis: {
     labels: {
@@ -697,7 +698,7 @@ const categoryFiveChart = new ApexCharts(
   catrgoryFiveOptions
 );
 categoryFiveChart.render();
-
+/*
 // Learn Activity Chart
 const learnActivityOptions = {
   series: [
@@ -786,3 +787,4 @@ const learnActivity = new ApexCharts(
   learnActivityOptions
 );
 learnActivity.render();
+*/

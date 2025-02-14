@@ -25,7 +25,7 @@ class LeafAPIConfig:
     cache_ttl: int
     token_cache_key: str
     content_cache_prefix: str
-    
+
     @property
     def base_url(self) -> str:
         return f"http://{self.host}:{self.port}"
@@ -91,10 +91,10 @@ class LeafAPIClient:
         headers = {
             'Content-Type': 'application/json'
         }
-        
+
         try:
             response = await self._client.post(
-                url, 
+                url,
                 json=data,  # Use json parameter to send JSON data
                 headers=headers
             )
@@ -115,13 +115,13 @@ class LeafAPIClient:
     async def get_content_info(self, content_id: str, page_no: int, image_type: str = "thumb") -> Optional[Dict]:
         """Fetch content information with automatic token refresh"""
         token = await self.get_token()
-        
+
         # First, construct the image URL that the frontend will use
         image_url = urljoin(
             self.config.base_url,
             f"/api/get_image_by_id_page_no?content_id={content_id}&page_no={page_no}&image_type={image_type}"
         )
-        
+
         # Return both the URL and the token that will be needed to fetch the image
         return {
             "image_url": image_url,
@@ -158,7 +158,7 @@ class ActivityConsumer(AsyncWebsocketConsumer):
                 await self.activity_stream_task
             except asyncio.CancelledError:
                 print(">>> Activity stream task cancelled successfully")
-        
+
         if self.api_client:
             await self.api_client.close()
 
@@ -194,18 +194,18 @@ class ActivityConsumer(AsyncWebsocketConsumer):
                 contents_id,
                 contents_name,
                 page_no,
-                context_label 
+                context_label
             FROM statements_mv
             WHERE actor_account_name = %(user_id)s
-            AND timestamp >= now() - INTERVAL 1 HOUR
+            AND timestamp >= now() - INTERVAL 0.5 HOUR
             ORDER BY id, timestamp ASC
             LIMIT 100
         """
-        
+
         with connections['clickhouse_db'].cursor() as ch_cursor:
             ch_cursor.execute(clickhouse_query, {'user_id': self.user_id})
             rows = ch_cursor.fetchall()
-        
+
         return [self._process_activity_row(row) for row in rows]
 
     @database_sync_to_async
@@ -227,35 +227,35 @@ class ActivityConsumer(AsyncWebsocketConsumer):
                 contents_id,
                 contents_name,
                 page_no,
-                context_label  
+                context_label
             FROM statements_mv
             WHERE actor_account_name = %(user_id)s
               AND timestamp > %(last_timestamp)s
             ORDER BY timestamp ASC
         """
-        
+
         with connections['clickhouse_db'].cursor() as ch_cursor:
             ch_cursor.execute(clickhouse_query, {
                 'user_id': self.user_id,
                 'last_timestamp': last_timestamp
             })
             rows = ch_cursor.fetchall()
-        
+
         return [self._process_activity_row(row) for row in rows]
 
     def _process_activity_row(self, row):
         """Process a database row into an activity dict."""
         id, type_, timestamp, platform, object_id, description, marker_color, \
         marker_position, marker_text, memo_title, memo_text, contents_id, \
-        contents_name, page_no, context_label = row       
-    
-        
+        contents_name, page_no, context_label = row
+
+
         # Format timestamp as 'YYYY-MM-DD HH:MM:SS.mmm'
         timestamp_formatted = timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] if timestamp else None
-        
+
         # Generate a human-readable label
         label = self.get_activity_label(type_, contents_name, page_no)
-        
+
         return {
             "id": id,
             "type": type_,
@@ -295,7 +295,7 @@ class ActivityConsumer(AsyncWebsocketConsumer):
             activity['contents_id'],
             activity['page_no']
         )
-        
+
         content_info = await self.get_cached_content(cache_key)
         print(f"Content info for {cache_key}: {content_info}")
 
@@ -327,7 +327,7 @@ class ActivityConsumer(AsyncWebsocketConsumer):
                 # print(f"Last timestamp: {last_timestamp_iso}")
                 # print(f"New activities: {new_activities}")
                 self.reconnect_attempt = 0  # Reset reconnect attempts on success
-                
+
                 for activity in new_activities:
                     print(f"Sending activity: {activity}")
                     last_timestamp_iso = activity["timestamp"]
@@ -340,7 +340,7 @@ class ActivityConsumer(AsyncWebsocketConsumer):
                     try:
                         # Then enrich and send if there's additional info
                         enriched_activity = await self.enrich_activity(activity)
-                        
+
                         await self.send_json({
                                 'type': 'enriched_activity',
                                 'activity': enriched_activity,

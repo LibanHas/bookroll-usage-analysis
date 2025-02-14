@@ -1,48 +1,49 @@
 {% extends 'main.html' %}
 {% load static %}
-{% block main_content %}   
+{% load i18n %}
+{% block main_content %}
 <script type="application/json" id="initial-activities-data">
     {{ initial_activities|safe }}
 </script>
 <div class="timeline-container">
-    <div class="timeline-card">        
+    <div class="timeline-card">
         <div class="col-span-full lg:col-span-4 card p-0">
             <div class="bg-white dark:bg-dark-card rounded-15 overflow-hidden dk-theme-card-square">
                 <div class="relative w-full h-[42px]">
-                   
+
                     <label for="thumbnailsrc" class="file-container bg-white bg-no-repeat bg-cover absolute left-1/2 -translate-x-1/2 -bottom-[calc(theme('spacing.ins-pro-img')_/_2)] w-[calc(theme('spacing.ins-pro-img')_+_5px)] h-[theme('spacing.ins-pro-img')] border-2 border-white dark:border-dark-border-two rounded-20 dk-theme-card-square"
                         style="background-image: url('{% static 'images/user/profile-img.png' %}');">
-                        <input type="file" id="thumbnailsrc" hidden class="img-src peer/file">   
-                        <span class="absolute bottom-0 right-0 flex-center size-5 rounded-50 border border-white dark:border-dark-border-two text-primary-500 bg-primary-200">             
+                        <input type="file" id="thumbnailsrc" hidden class="img-src peer/file">
+                        <span class="absolute bottom-0 right-0 flex-center size-5 rounded-50 border border-white dark:border-dark-border-two text-primary-500 bg-primary-200">
                             {% if last_action_time.is_online %}
                                 <i class="ri-circle-fill text-success text-[5px]"></i>
                             {% else %}
                                 <i class="ri-circle-fill text-muted text-[5px]"></i>
                             {% endif %}
-                        </span>              
+                        </span>
                     </label>
-    
+
                 </div>
                 <div class="mt-7 px-6 text-center">
                     <div class="py-5">
                         <div class="flex-center">
                             <h4 class="text-[22px] leading-none text-heading font-semibold relative">
-                                {{ basic_info.lastname }} {{ basic_info.firstname }} 
-                            </h4>                       
+                                {{ basic_info.lastname }} {{ basic_info.firstname }}
+                            </h4>
                         </div>
-                        
+
                     </div>
                 </div>
             </div>
         </div>
         <div class="card border-b pt-0">
-            <h1 class="timeline-title flex-center">Live Activity Timeline</h1>
+            <h1 class="timeline-title flex-center">{% trans "Live Activity Timeline" %}</h1>
             <p class="font-spline_sans dark:!text-gray-text mt-2.5 flex-center text-center ri-1x">
-                This live view enables seamless monitoring of students' real-time activities and actions.
+                {% trans "This live view enables seamless monitoring of students' real-time activities and actions." %}
             </p>
         </div>
         <div class="timeline-header">
-            <span class="timer-label">Current Activity Duration:</span>
+            <span class="timer-label">{% trans "Current Activity Duration:" %}</span>
             <span class="activity-timer">0s</span>
         </div>
         <div class="timeline-events py-5">
@@ -55,7 +56,7 @@
 <script>
 
 
-function getIconSVG(type) {        
+function getIconSVG(type) {
         const icons = {
         // Existing Icons
         OPEN: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #3b82f6">
@@ -75,7 +76,7 @@ function getIconSVG(type) {
         CLOSE_QUIZ: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #ef4444">
                     <path d="M18 6L6 18M6 6l12 12"></path>
                 </svg>`,
-        
+
         // Custom Icons
         ZOOM_FIT: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="event-icon" style="color: #8b5cf6">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -467,18 +468,18 @@ class ActivityTimeline {
             this.timerInterval = null;
             this.lastEventTime = null;
             this.timerElement = document.querySelector('.timeline-header .activity-timer');
-            
+
             // Add initial activities if provided
             if (initialActivities && initialActivities.length > 0) {
-                const sortedActivities = [...initialActivities].sort((a, b) => 
+                const sortedActivities = [...initialActivities].sort((a, b) =>
                     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
                 );
-                // console.log('Initial activities----:', sortedActivities) 
-                
+                // console.log('Initial activities----:', sortedActivities)
+
                 sortedActivities.forEach(activity => {
                     this.addOrUpdateEvent(activity);
                 });
-                
+
                 this.isInitialDataLoaded = true;
                 if (this.events.size > 0) {
                     const firstEvent = Array.from(this.events.values())[0];
@@ -487,14 +488,14 @@ class ActivityTimeline {
                     this.startCurrentActivityTimer();
                 }
             }
-            
+
             this.setupWebSocket();
         }
 
         setupWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const ws = new WebSocket(`${protocol}//${window.location.host}/ws/activity/{{user_id}}`);
-            
+
             ws.onopen = () => {
                 console.log('WebSocket connection established');
             };
@@ -503,7 +504,7 @@ class ActivityTimeline {
                 try {
                     const data = JSON.parse(event.data);
                     console.log('WebSocket message received:', data);
-                    
+
                     if ((data.type === 'new_activity' || data.type === 'enriched_activity') && data.activity) {
                         this.lastEventTime = new Date().getTime();
                         this.addOrUpdateEvent(data.activity);
@@ -527,7 +528,7 @@ class ActivityTimeline {
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
         }
-        
+
         this.updateTimer();
         this.timerInterval = setInterval(() => this.updateTimer(), 1000);
     }
@@ -556,18 +557,18 @@ class ActivityTimeline {
 
     formatTimeGap(start, end) {
         if (!start || !end) return '';
-        
+
         try {
             const startDate = new Date(start);
             const endDate = new Date(end);
-            
+
             if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
                 return '';
             }
-            
+
             const startTime = startDate.getTime();
             const endTime = endDate.getTime();
-            
+
             // Special handling for the transition between historical and live data
             if (this.isInitialDataLoaded && this.firstLiveEventTime) {
                 // If this gap spans the transition point
@@ -575,21 +576,21 @@ class ActivityTimeline {
                     const diff = Math.abs(startTime - this.lastHistoricalEventTime);
                     const minutes = Math.floor(diff / 60000);
                     const seconds = Math.floor((diff % 60000) / 1000);
-                    
+
                     return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
                 }
             }
-            
+
             const diff = Math.abs(startTime - endTime);
             const maxTimeGap = 30 * 60 * 1000; // 30 minutes in milliseconds
-            
+
             if (diff > maxTimeGap) {
                 return '';
             }
-            
+
             const minutes = Math.floor(diff / 60000);
             const seconds = Math.floor((diff % 60000) / 1000);
-            
+
             return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
         } catch (error) {
             console.error('Error formatting time gap:', error);
@@ -607,9 +608,9 @@ class ActivityTimeline {
             } else {
                 date = new Date(timestamp);
             }
-            
+
             if (isNaN(date.getTime())) return '';
-            
+
             return date.toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -625,16 +626,16 @@ class ActivityTimeline {
     updateConnections() {
         try {
             this.svg.innerHTML = '';
-            
+
             const sortedEvents = Array.from(this.events.values())
                 .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
+
             sortedEvents.forEach((event, idx) => {
                 if (idx === 0) return;
-                
+
                 const startY = (idx - 1) * 200 + 16;
                 const endY = idx * 200 + 16;
-                
+
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 line.setAttribute('x1', '16');
                 line.setAttribute('y1', startY);
@@ -643,7 +644,7 @@ class ActivityTimeline {
                 line.setAttribute('stroke', '#94a3b8');
                 line.setAttribute('stroke-width', '2');
                 line.setAttribute('stroke-dasharray', '4');
-                
+
                 this.svg.appendChild(line);
             });
         } catch (error) {
@@ -660,17 +661,17 @@ class ActivityTimeline {
         try {
             const eventKey = this.getEventKey(activity);
             const existingEvent = this.events.get(eventKey);
-            
+
             if (existingEvent) {
                 this.events.set(eventKey, { ...existingEvent, ...activity });
-                
+
             } else {
                 const timestamp = new Date(activity.timestamp).getTime();
-                if (this.isInitialDataLoaded && this.lastHistoricalEventTime && 
+                if (this.isInitialDataLoaded && this.lastHistoricalEventTime &&
                     timestamp > this.lastHistoricalEventTime && !this.firstLiveEventTime) {
                     this.firstLiveEventTime = timestamp;
                 }
-                
+
                 this.events.set(eventKey, activity);
             }
 
@@ -683,7 +684,7 @@ class ActivityTimeline {
                         return timestampB - timestampA;
                     })
                     .slice(0, this.maxEvents); // Keep only the top `maxEvents`
-                
+
                 this.events = new Map(sortedKeys.map(key => [key, this.events.get(key)]));
             }
 
@@ -709,7 +710,7 @@ class ActivityTimeline {
         }
 
         return `
-            <img 
+            <img
                 src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
                 class="activity-thumbnail"
                 alt="Page thumbnail"
@@ -748,24 +749,24 @@ class ActivityTimeline {
     render() {
         try {
             this.container.innerHTML = '';
-            
+
             // Enhanced sorting logic
             const sortedEvents = Array.from(this.events.values())
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); 
-            
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
             // Modified: Prepend new events instead of appending
             sortedEvents.forEach((event, idx) => {
-               
+
                 const eventEl = document.createElement('div');
                 eventEl.className = 'timeline-event';
-                
-                const timeGap = idx < sortedEvents.length - 1 ? 
+
+                const timeGap = idx < sortedEvents.length - 1 ?
                     this.formatTimeGap(event.timestamp, sortedEvents[idx + 1].timestamp) : '';
-                
+
                 const thumbnailHTML = this.renderThumbnail(event);
                 const sanitizedLabel = this.sanitizeHTML(event.label || '');
-                const sanitizedType = this.sanitizeHTML(event.type || ''); 
-                console.log('event.timestamp:', event.timestamp);               
+                const sanitizedType = this.sanitizeHTML(event.type || '');
+                console.log('event.timestamp:', event.timestamp);
                 const formattedTime = this.formatTimestamp(event.timestamp);
                 console.log('Formatted time:', formattedTime);
 
@@ -780,15 +781,15 @@ class ActivityTimeline {
                             <p class="event-label flex self-center">${sanitizedLabel}</p>
                             <time class="event-time flex self-center">${formattedTime}</time>
                         </div>
-                        <p class="event-type">${sanitizedType.replace('_', ' ')} | 
+                        <p class="event-type">${sanitizedType.replace('_', ' ')} |
                         ${timeGap ? `<span class="time-gap lowercase">Time spent: ${timeGap}</span>` : ''}
                         </p>
                     </div>
                 `;
-                
+
                 this.container.appendChild(eventEl);
             });
-            
+
             // Handle image loading
             const images = this.container.querySelectorAll('img[data-original-url]');
             images.forEach(img => {
@@ -798,7 +799,7 @@ class ActivityTimeline {
                     this.loadImage(img, url, token);
                 }
             });
-            
+
             // Update SVG height and connections
             this.svg.style.height = `${sortedEvents.length * 196}px`;
             this.updateConnections();
@@ -806,7 +807,7 @@ class ActivityTimeline {
             console.error('Error rendering timeline:', error);
         }
     }
-    
+
 }
 
 
@@ -981,16 +982,16 @@ const timeline = new ActivityTimeline('events-container', initialActivities);
         .timeline-container {
             padding: 10px;
         }
-        
+
         .timeline-card {
             padding: 15px;
         }
-        
+
         .event-header {
             flex-direction: column;
             align-items: flex-start;
         }
-        
+
         .event-time {
             margin-top: 4px;
         }
