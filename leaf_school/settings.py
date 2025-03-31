@@ -16,24 +16,36 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Environment settings
+ENVIRONMENT = os.getenv('DJANGO_ENVIRONMENT', 'development')
+IS_PRODUCTION = ENVIRONMENT == 'production'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-g$m4*j)xs_v8*e8u6^0ia^if05+l_-w3@p(zdaz2e*a$68z^d_'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-g$m4*j)xs_v8*e8u6^0ia^if05+l_-w3@p(zdaz2e*a$68z^d_')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = not IS_PRODUCTION
 
-ALLOWED_HOSTS = ['10.236.173.129', '0.0.0.0', '127.0.0.1', '10.236.173.129.nip.io']
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if IS_PRODUCTION else [
+    '10.236.173.129',
+    '0.0.0.0',
+    '127.0.0.1',
+    '10.236.173.129.nip.io'
+]
 INTERNAL_IPS = [
     '127.0.0.1',
     'localhost',
     '172.17.0.1',
     'school_dashboard',
+] if not IS_PRODUCTION else []
+CSRF_TRUSTED_ORIGINS = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if IS_PRODUCTION else [
+    'http://10.236.173.129',
+    'http://10.236.173.129.nip.io'
 ]
-CSRF_TRUSTED_ORIGINS = ['http://10.236.173.129', 'http://10.236.173.129.nip.io']
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -45,13 +57,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'channels',
     'django.contrib.staticfiles',
-    'debug_toolbar',
     'crispy_forms',
     'crispy_tailwind',
     'core',
     'clickhouse_backend',
     'teacher_student',
 ]
+
+if not IS_PRODUCTION:
+    INSTALLED_APPS.append('debug_toolbar')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -61,9 +75,11 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if not IS_PRODUCTION:
+    MIDDLEWARE.append('debug_toolbar.middleware.DebugToolbarMiddleware')
 
 ROOT_URLCONF = 'leaf_school.urls'
 
@@ -92,41 +108,41 @@ WSGI_APPLICATION = 'leaf_school.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'school_db',
-        'USER': 'postgres',
-        'PASSWORD': '$m8.Z&81Tr$B',
-        'HOST': 'db',
-        'PORT': '5432',
+        'NAME': os.getenv('POSTGRES_DB', 'school_db'),
+        'USER': os.getenv('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', '$m8.Z&81Tr$B'),
+        'HOST': os.getenv('POSTGRES_HOST', 'db'),
+        'PORT': os.getenv('POSTGRES_PORT', '5432'),
     },
     'moodle_db': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'moodle',
-        'USER': 'moodle',
-        'PASSWORD': 'moodle',
-        'HOST': '10.236.173.177',
-        'PORT': '33307',
+        'NAME': os.getenv('MOODLE_DB_NAME', 'moodle'),
+        'USER': os.getenv('MOODLE_DB_USER', 'moodle'),
+        'PASSWORD': os.getenv('MOODLE_DB_PASSWORD', 'moodle'),
+        'HOST': os.getenv('MOODLE_DB_HOST', '10.236.173.177'),
+        'PORT': os.getenv('MOODLE_DB_PORT', '33307'),
         'OPTIONS': {
             'init_command': "SET SESSION TRANSACTION READ ONLY"
         },
     },
     'bookroll_db': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'bookroll',
-        'USER': 'bookroll',
-        'PASSWORD': 'sz8Ag9JMDnVp',
-        'HOST': '10.236.173.177',
-        'PORT': '33306',
+        'NAME': os.getenv('BOOKROLL_DB_NAME', 'bookroll'),
+        'USER': os.getenv('BOOKROLL_DB_USER', 'bookroll'),
+        'PASSWORD': os.getenv('BOOKROLL_DB_PASSWORD', 'sz8Ag9JMDnVp'),
+        'HOST': os.getenv('BOOKROLL_DB_HOST', '10.236.173.177'),
+        'PORT': os.getenv('BOOKROLL_DB_PORT', '33306'),
         'OPTIONS': {
             'init_command': "SET SESSION TRANSACTION READ ONLY"
         },
     },
     'clickhouse_db': {
         'ENGINE': 'clickhouse_backend.backend',  # Requires django-clickhouse-backend
-        'NAME': 'leaf_newleaf',
-        'USER': 'default',
-        'PASSWORD': 'd747434901294ec655d180dd52acd67579f702584fda8e293a50cf682227689f',
-        'HOST': '10.236.173.177',
-        'PORT': '9001',  # Changed to HTTP port
+        'NAME': os.getenv('CLICKHOUSE_DB_NAME', 'leaf_newleaf'),
+        'USER': os.getenv('CLICKHOUSE_DB_USER', 'default'),
+        'PASSWORD': os.getenv('CLICKHOUSE_DB_PASSWORD', 'd747434901294ec655d180dd52acd67579f702584fda8e293a50cf682227689f'),
+        'HOST': os.getenv('CLICKHOUSE_DB_HOST', '10.236.173.177'),
+        'PORT': os.getenv('CLICKHOUSE_DB_PORT', '9001'),  # Changed to HTTP port
         'OPTIONS': {
             'settings': {
                 'allow_experimental_window_functions': 1,  # Enable specific ClickHouse settings if needed
@@ -190,9 +206,17 @@ LANGUAGE_COOKIE_PATH = '/'
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
+if IS_PRODUCTION:
+    STATIC_ROOT = BASE_DIR / 'staticfiles'
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+else:
+    STATICFILES_DIRS = [
+        BASE_DIR / "static",
+    ]
+
+# Media files configuration
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -231,16 +255,16 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console', 'file'] if not IS_PRODUCTION else ['file'],
             'level': 'INFO',
         },
         'django.channels.server': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
+            'handlers': ['console'] if not IS_PRODUCTION else ['file'],
+            'level': 'DEBUG' if not IS_PRODUCTION else 'INFO',
         },
         # Add custom logger for authentication events
         'core.views': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console', 'file'] if not IS_PRODUCTION else ['file'],
             'level': 'WARNING',
             'propagate': True,
         },
@@ -248,38 +272,55 @@ LOGGING = {
 }
 
 
-DEBUG_TOOLBAR_PANELS = [
-    'debug_toolbar.panels.timer.TimerPanel',
-    'debug_toolbar.panels.settings.SettingsPanel',
-    'debug_toolbar.panels.headers.HeadersPanel',
-    'debug_toolbar.panels.request.RequestPanel',
-    'debug_toolbar.panels.sql.SQLPanel',
-    'debug_toolbar.panels.templates.TemplatesPanel',
-    'debug_toolbar.panels.staticfiles.StaticFilesPanel',
-    'debug_toolbar.panels.cache.CachePanel',
-    'debug_toolbar.panels.signals.SignalsPanel',
-    'debug_toolbar.panels.logging.LoggingPanel',
-]
+# Debug Toolbar settings (development only)
+if not IS_PRODUCTION:
+    DEBUG_TOOLBAR_PANELS = [
+        'debug_toolbar.panels.timer.TimerPanel',
+        'debug_toolbar.panels.settings.SettingsPanel',
+        'debug_toolbar.panels.headers.HeadersPanel',
+        'debug_toolbar.panels.request.RequestPanel',
+        'debug_toolbar.panels.sql.SQLPanel',
+        'debug_toolbar.panels.templates.TemplatesPanel',
+        'debug_toolbar.panels.staticfiles.StaticFilesPanel',
+        'debug_toolbar.panels.cache.CachePanel',
+        'debug_toolbar.panels.signals.SignalsPanel',
+        'debug_toolbar.panels.logging.LoggingPanel',
+    ]
 
-DEBUG_TOOLBAR_CONFIG = {
-    'SHOW_TOOLBAR_CALLBACK': lambda request: True,
-}
+    DEBUG_TOOLBAR_CONFIG = {
+        'SHOW_TOOLBAR_CALLBACK': lambda request: True,
+    }
 
 MEMCACHED_HOST = '127.0.0.1'
 MEMCACHED_PORT = '11211'
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
-        'LOCATION': f'{MEMCACHED_HOST}:{MEMCACHED_PORT}',
-        'OPTIONS': {
-            'no_delay': True,
-            'ignore_exc': True,
-            'max_pool_size': 4,
-            'use_pooling': True,
+# Cache configuration
+if IS_PRODUCTION:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
+            'LOCATION': f"{os.getenv('MEMCACHED_HOST', 'memcached')}:{os.getenv('MEMCACHED_PORT', '11211')}",
+            'OPTIONS': {
+                'no_delay': True,
+                'ignore_exc': True,
+                'max_pool_size': 4,
+                'use_pooling': True,
+            }
         }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
+            'LOCATION': f"{MEMCACHED_HOST}:{MEMCACHED_PORT}",
+            'OPTIONS': {
+                'no_delay': True,
+                'ignore_exc': True,
+                'max_pool_size': 4,
+                'use_pooling': True,
+            }
+        }
+    }
 
 ASGI_APPLICATION = "leaf_school.asgi.application"
 

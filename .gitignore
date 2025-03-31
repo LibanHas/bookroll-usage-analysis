@@ -29,7 +29,6 @@ staticfiles/
 
 # Secrets
 *.env
-.env.*
 
 # direnv
 .envrc

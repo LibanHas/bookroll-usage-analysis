@@ -5,16 +5,24 @@ services:
     image: postgres:latest
     container_name: school_dashboard_db_prod
     restart: always
+    env_file:
+      - .env
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-school_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
+      - newleaf_analysis_db_net
+      - newleaf_bookroll_db_net
+      - newleaf_moodle_db_net
       - school_dashboard_net
+      - moodle_db_net
+    ports:
+      - "5433:5432"  # Different port to avoid conflict with dev
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-school_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -23,6 +31,8 @@ services:
     image: redis:alpine
     container_name: school_dashboard_redis_prod
     command: redis-server --appendonly yes
+    env_file:
+      - .env
     volumes:
       - redis_data:/data
     networks:
@@ -36,12 +46,16 @@ services:
   memcached:
     image: memcached:latest
     container_name: school_dashboard_memcached_prod
+    env_file:
+      - .env
     command: [
-      "-m", "128",
-      "-c", "1024",
-      "-I", "4m",
-      "-t", "4"
+        "-m", "128",           # More memory for production
+        "-c", "1024",          # Max simultaneous connections
+        "-I", "4m",            # Max item size (4MB)
+        "-t", "4"              # Number of threads
     ]
+    ports:
+      - "11212:11211"  # Different port to avoid conflict with dev
     networks:
       - school_dashboard_net
 
@@ -50,36 +64,31 @@ services:
       context: .
       dockerfile: Dockerfile.prod
     container_name: school_dashboard_prod
-    restart: always
+    env_file:
+      - .env
+    command: gunicorn leaf_school.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 4
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
-    env_file:
-      - .env
+    ports:
+      - "5001:8000"  # Different port to avoid conflict with dev
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_healthy
       memcached:
         condition: service_started
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-school_db}
+      MEMCACHED_HOST: memcached
+      MEMCACHED_PORT: 11211
+      DJANGO_SETTINGS_MODULE: leaf_school.settings
+      DJANGO_DEBUG: 0
     networks:
+      - newleaf_analysis_db_net
+      - newleaf_bookroll_db_net
+      - newleaf_moodle_db_net
       - school_dashboard_net
-
-  nginx:
-    image: nginx:alpine
-    container_name: school_dashboard_nginx_prod
-    volumes:
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
-      - ./nginx:/etc/nginx/conf.d
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      - dashboard
-    networks:
-      - school_dashboard_net
+      - moodle_db_net
 
 volumes:
   postgres_data:
@@ -90,3 +99,11 @@ volumes:
 networks:
   school_dashboard_net:
     driver: bridge
+  newleaf_analysis_db_net:
+    external: true
+  newleaf_bookroll_db_net:
+    external: true
+  newleaf_moodle_db_net:
+    external: true
+  moodle_db_net:
+    external: true
