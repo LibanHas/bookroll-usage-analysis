@@ -489,10 +489,17 @@ class StudentDetails(models.Model):
         Retrieve student  from ClickHouse via raw SQL query.
         """
         clickhouse_query = """
-            SELECT DISTINCT ON (id) actor_account_name, object_id, object_definition_name_en, operation_name, contents_id
+            SELECT DISTINCT
+                actor_account_name,
+                object_id,
+                object_definition_name_en,
+                operation_name,
+                contents_id
             FROM statements_mv
             WHERE actor_account_name = %s
-            AND operation_name = 'ANSWER_QUIZ';
+                AND operation_name = 'ANSWER_QUIZ'
+                AND actor_account_name != ''
+                AND contents_id != '';
         """
         with connections['clickhouse_db'].cursor() as ch_cursor:
             ch_cursor.execute(clickhouse_query, [str(user_id)])
@@ -536,7 +543,7 @@ class StudentDetails(models.Model):
             SELECT
                 toDate(timestamp) AS day,
                 operation_name,
-                uniqExact(id) AS daily_distinct_count
+                uniqExact(_id) AS daily_distinct_count
             FROM statements_mv
             WHERE actor_account_name = %s
                 AND timestamp >= today() - INTERVAL 1 YEAR

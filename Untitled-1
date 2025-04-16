@@ -1,0 +1,19 @@
+<Location /dashboard/>
+    ProxyPass http://10.236.173.223:8000/
+    ProxyPassReverse http://10.236.173.223:8000/
+    ProxyPreserveHost Off
+    RequestHeader unset Host
+    RequestHeader unset X-Forwarded-Host
+    RequestHeader set X-Forwarded-Host "sk.let.media.kyoto-u.ac.jp"
+    RequestHeader set X-Forwarded-Proto "https"
+    RequestHeader set X-Script-Name "/dashboard"
+    ProxyPassReverseCookiePath / /dashboard
+    ProxyPassReverseCookieDomain 10.236.173.223 sk.let.media.kyoto-u.ac.jp
+</Location>
+
+# Let Django/WhiteNoise handle all /dashboard/static requests
+<Location /dashboard/static/>
+    ProxyPass http://10.236.173.223:8000/dashboard/static/
+    ProxyPassReverse http://10.236.173.223:8000/dashboard/static/
+    RequestHeader unset Accept-Encoding
+</Location>

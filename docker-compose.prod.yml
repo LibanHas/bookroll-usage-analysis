@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:latest
@@ -13,14 +11,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - newleaf_analysis_db_net
-      - newleaf_bookroll_db_net
-      - newleaf_moodle_db_net
-      - school_dashboard_net
-      - moodle_db_net
-    ports:
-      - "5433:5432"  # Different port to avoid conflict with dev
+    network_mode: "host"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-school_db}"]
       interval: 10s
@@ -35,8 +26,7 @@ services:
       - .env
     volumes:
       - redis_data:/data
-    networks:
-      - school_dashboard_net
+    network_mode: "host"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -54,10 +44,7 @@ services:
         "-I", "4m",            # Max item size (4MB)
         "-t", "4"              # Number of threads
     ]
-    ports:
-      - "11212:11211"  # Different port to avoid conflict with dev
-    networks:
-      - school_dashboard_net
+    network_mode: "host"
 
   dashboard:
     build:
@@ -66,44 +53,30 @@ services:
     container_name: school_dashboard_prod
     env_file:
       - .env
-    command: gunicorn leaf_school.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 4
+    command: bash -c "/app/entrypoint.sh"
     volumes:
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
-    ports:
-      - "5001:8000"  # Different port to avoid conflict with dev
+      - ./logs:/app/logs
+      - ./static:/app/static
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
+    network_mode: "host"
     depends_on:
       db:
         condition: service_healthy
       memcached:
         condition: service_started
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-school_db}
-      MEMCACHED_HOST: memcached
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@localhost:5432/${POSTGRES_DB:-school_db}
+      MEMCACHED_HOST: localhost
       MEMCACHED_PORT: 11211
       DJANGO_SETTINGS_MODULE: leaf_school.settings
       DJANGO_DEBUG: 0
-    networks:
-      - newleaf_analysis_db_net
-      - newleaf_bookroll_db_net
-      - newleaf_moodle_db_net
-      - school_dashboard_net
-      - moodle_db_net
+      DJANGO_ENVIRONMENT: production
+      SCRIPT_NAME: /dashboard
 
 volumes:
   postgres_data:
   redis_data:
   static_volume:
   media_volume:
-
-networks:
-  school_dashboard_net:
-    driver: bridge
-  newleaf_analysis_db_net:
-    external: true
-  newleaf_bookroll_db_net:
-    external: true
-  newleaf_moodle_db_net:
-    external: true
-  moodle_db_net:
-    external: true
+  log_volume:

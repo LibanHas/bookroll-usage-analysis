@@ -32,7 +32,7 @@ class StudentListView(ListView):
         context = super().get_context_data(**kwargs)
         context['additional_info'] = "This is additional context data"
         return context
-    
+
 class StudentDetailsView(DetailView):
     model = StudentDetails
     template_name = 'student_detail.html'
@@ -51,7 +51,7 @@ class StudentDetailsView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user_id = self.kwargs.get('user_id')
-        context["activity_by_day"] = json.dumps(StudentDetails.get_student_activity_by_day(user_id), default=str)   
+        context["activity_by_day"] = json.dumps(StudentDetails.get_student_activity_by_day(user_id), default=str)
         return context
 
 
@@ -73,8 +73,8 @@ class StudentActivityLiveView(TemplateView):
         Retrieve the initial set of student activities for the dashboard.
         """
         clickhouse_query = """
-            SELECT  DISTINCT ON (id)
-                id,
+            SELECT DISTINCT
+                _id,
                 operation_name as type,
                 timestamp,
                 platform,
@@ -83,26 +83,28 @@ class StudentActivityLiveView(TemplateView):
                 marker_color,
                 marker_position,
                 marker_text,
-                memo_title,
+                title,
                 memo_text,
                 contents_id,
                 contents_name,
                 page_no,
-                context_label 
+                context_label
             FROM statements_mv
             WHERE actor_account_name = %(user_id)s
-              AND timestamp >= now() - INTERVAL 1 HOUR
+                AND timestamp >= now() - INTERVAL 1 HOUR
+                AND actor_account_name != ''
+                AND contents_id != ''
             ORDER BY timestamp DESC
             LIMIT 100
         """
-        
+
         with connections['clickhouse_db'].cursor() as ch_cursor:
             ch_cursor.execute(clickhouse_query, {'user_id': user_id})
             rows = ch_cursor.fetchall()
-        
+
         activities = []
-        for row in rows: 
-            id = row[0]           
+        for row in rows:
+            id = row[0]
             type_ = row[1]
             timestamp = row[2]
             platform = row[3]
@@ -111,23 +113,23 @@ class StudentActivityLiveView(TemplateView):
             marker_color = row[6]
             marker_position = row[7]
             marker_text = row[8]
-            memo_title = row[9]
+            title = row[9]
             memo_text = row[10]
             contents_id = row[11]
             contents_name = row[12]
             page_no = row[13]
             context_label = row[14]
-            
+
             # Ensure timestamp is timezone-aware
             if timestamp is not None and timestamp.tzinfo is None:
                 timestamp = timezone.make_aware(
                     timestamp,
                     timezone.get_default_timezone()
                 )
-            
+
             # Generate a human-readable label
             label = StudentActivityLiveView.get_activity_label(type_, contents_name, page_no)
-            
+
             activity = {
                 "id": id,
                 "type": type_,
@@ -138,7 +140,7 @@ class StudentActivityLiveView(TemplateView):
                 "marker_color": marker_color,
                 "marker_position": marker_position,
                 "marker_text": marker_text,
-                "memo_title": memo_title,
+                "title": title,
                 "memo_text": memo_text,
                 "contents_id": contents_id,
                 "contents_name": contents_name,
@@ -148,7 +150,7 @@ class StudentActivityLiveView(TemplateView):
             }
             # print(activity)
             activities.append(activity)
-        
+
         return json.dumps(activities)
 
     @staticmethod

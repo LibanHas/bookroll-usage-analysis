@@ -1,0 +1,32 @@
+[Unit]
+Description=SSH Tunnels for Multiple Ports
+After=network-online.target
+Wants=network-online.target
+Requires=ssh.service
+
+[Service]
+User=ubuntu
+ExecStart=/usr/bin/ssh -N \
+  -o ServerAliveInterval=60 \
+  -o ServerAliveCountMax=3 \
+  -o ExitOnForwardFailure=yes \
+  -o StrictHostKeyChecking=yes \
+  -o IdentitiesOnly=yes \
+  -o IdentityFile=/home/ubuntu/.ssh/id_rsa \
+  -L 30100:172.16.2.30:30100 \
+  -L 30101:172.16.2.30:30101 \
+  -L 30102:172.16.2.30:30102 \
+  ubuntu@10.236.173.225
+Restart=always
+RestartSec=10
+TimeoutStartSec=30
+LimitNOFILE=1024
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=full
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ssh-tunnel
+
+[Install]
+WantedBy=multi-user.target
