@@ -12941,12 +12941,12 @@ video {
   display: none;
 }
 
-* {
+/* * {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -moz-user-select: -moz-none;
   user-select: none;
-}
+} */
 
 html {
   font-family: "Public Sans", sans-serif;

@@ -179,8 +179,8 @@ class ActivityConsumer(AsyncWebsocketConsumer):
     def get_recent_activity(self):
         """Retrieve the initial set of student activities for the dashboard."""
         clickhouse_query = """
-            SELECT DISTINCT ON (id)
-                id,
+            SELECT DISTINCT
+                _id,
                 operation_name as type,
                 timestamp,
                 platform,
@@ -189,7 +189,7 @@ class ActivityConsumer(AsyncWebsocketConsumer):
                 marker_color,
                 marker_position,
                 marker_text,
-                memo_title,
+                title,
                 memo_text,
                 contents_id,
                 contents_name,
@@ -197,8 +197,10 @@ class ActivityConsumer(AsyncWebsocketConsumer):
                 context_label
             FROM statements_mv
             WHERE actor_account_name = %(user_id)s
-            AND timestamp >= now() - INTERVAL 0.5 HOUR
-            ORDER BY id, timestamp ASC
+                AND timestamp >= now() - INTERVAL 0.5 HOUR
+                AND actor_account_name != ''
+                AND contents_id != ''
+            ORDER BY timestamp ASC
             LIMIT 100
         """
 
@@ -212,8 +214,8 @@ class ActivityConsumer(AsyncWebsocketConsumer):
     def get_live_activity(self, last_timestamp):
         """Retrieve new activities that have occurred since the last_timestamp."""
         clickhouse_query = """
-            SELECT DISTINCT ON (id)
-                id,
+            SELECT DISTINCT
+                _id,
                 operation_name as type,
                 timestamp,
                 platform,
@@ -222,7 +224,7 @@ class ActivityConsumer(AsyncWebsocketConsumer):
                 marker_color,
                 marker_position,
                 marker_text,
-                memo_title,
+                title,
                 memo_text,
                 contents_id,
                 contents_name,
@@ -230,7 +232,9 @@ class ActivityConsumer(AsyncWebsocketConsumer):
                 context_label
             FROM statements_mv
             WHERE actor_account_name = %(user_id)s
-              AND timestamp > %(last_timestamp)s
+                AND timestamp > %(last_timestamp)s
+                AND actor_account_name != ''
+                AND contents_id != ''
             ORDER BY timestamp ASC
         """
 
@@ -246,7 +250,7 @@ class ActivityConsumer(AsyncWebsocketConsumer):
     def _process_activity_row(self, row):
         """Process a database row into an activity dict."""
         id, type_, timestamp, platform, object_id, description, marker_color, \
-        marker_position, marker_text, memo_title, memo_text, contents_id, \
+        marker_position, marker_text, title, memo_text, contents_id, \
         contents_name, page_no, context_label = row
 
 
@@ -266,7 +270,7 @@ class ActivityConsumer(AsyncWebsocketConsumer):
             "marker_color": marker_color,
             "marker_position": marker_position,
             "marker_text": marker_text,
-            "memo_title": memo_title,
+            "title": title,
             "memo_text": memo_text,
             "contents_id": contents_id,
             "contents_name": contents_name,

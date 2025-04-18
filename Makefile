@@ -5,7 +5,7 @@
 
 # Docker Compose Files
 COMPOSE_DEV = docker-compose.yml
-COMPOSE_PROD = docker-compose.yml docker-compose.prod.yml
+COMPOSE_PROD =  -f docker-compose.prod.yml
 
 # Colors for help message
 GREEN  := $(shell tput -Txterm setaf 2)
@@ -80,25 +80,25 @@ ps:
 
 # Production commands
 prod-build:
-	docker-compose -f $(COMPOSE_PROD) build --no-cache
+	docker-compose $(COMPOSE_PROD) build --no-cache
 
 prod-up:
-	docker-compose -f $(COMPOSE_PROD) up -d
+	docker-compose $(COMPOSE_PROD) up -d
 
 prod-down:
-	docker-compose -f $(COMPOSE_PROD) down
+	docker-compose $(COMPOSE_PROD) down
 
 prod-restart:
-	docker-compose -f $(COMPOSE_PROD) restart
+	docker-compose $(COMPOSE_PROD) restart
 
 prod-logs:
-	docker-compose -f $(COMPOSE_PROD) logs -f
+	docker-compose $(COMPOSE_PROD) logs -f
 
 prod-ps:
-	docker-compose -f $(COMPOSE_PROD) ps
+	docker-compose $(COMPOSE_PROD) ps
 
 prod-clean:
-	docker-compose -f $(COMPOSE_PROD) rm -f
+	docker-compose $(COMPOSE_PROD) rm -f
 
 # Maintenance commands
 clean:

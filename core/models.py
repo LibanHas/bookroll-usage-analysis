@@ -1,9 +1,10 @@
 import logging
+import json
 from django.db import models
 from django.db import connections
 from clickhouse_backend.models import ClickhouseModel
 from leaf_school.utils.db_helpers import clickhouse_connection
-
+from django.http import JsonResponse
 logger = logging.getLogger(__name__)
 
 
@@ -46,7 +47,23 @@ class StudentCount(models.Model):
             cursor.execute(query)
             result = cursor.fetchone()
             return result[0] if result else 0
-        
+
+    @staticmethod
+    def get_student_count_by_day():
+        query = """
+        SELECT FROM_UNIXTIME(timecreated) as day, COUNT(*) as total FROM mdl_user
+        WHERE timecreated >= UNIX_TIMESTAMP(CURDATE() - INTERVAL 6 DAY)
+        GROUP BY day ORDER BY day ASC;
+        """
+
+        with connections['moodle_db'].cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            data = [[row[0].isoformat(), row[1]] for row in rows]
+            return json.dumps(data)
+
+
+
 class ActiveUsers(models.Model):
     user_id = models.IntegerField(primary_key=True)
     last_login = models.DateTimeField()
@@ -74,7 +91,21 @@ class TotalCourses(models.Model):
             cursor.execute(query)
             rows = cursor.fetchall()
             return len(rows)
-        
+
+    @staticmethod
+    def get_course_count_by_day():
+        query = """
+        SELECT FROM_UNIXTIME(timecreated) as day, COUNT(*) as total FROM mdl_course
+        WHERE timecreated >= UNIX_TIMESTAMP(CURDATE() - INTERVAL 6 DAY)
+        GROUP BY day ORDER BY day ASC;
+        """
+        with connections['moodle_db'].cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            data = [[row[0].isoformat(sep=' '), row[1]] for row in rows]
+            return json.dumps(data)
+
+
 class TotalContents(models.Model):
     content_count = models.IntegerField()
 
@@ -92,7 +123,21 @@ class TotalContents(models.Model):
             cursor.execute(query)
             result = cursor.fetchone()
             return result[0] if result else 0
-        
+
+    @staticmethod
+    def get_content_count_by_day():
+        query = """
+        SELECT DATE(created) as day, COUNT(*) as total FROM br_contents
+        WHERE created >= CURDATE() - INTERVAL 6 DAY
+        GROUP BY day ORDER BY day ASC;
+        """
+        with connections['bookroll_db'].cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            data = [[row[0].isoformat(), row[1]] for row in rows]
+            return json.dumps(data)
+
+
 class ActiveStudents(models.Model):
     """Model to track active students from ClickHouse"""
     total_active_students = models.IntegerField()
@@ -102,7 +147,7 @@ class ActiveStudents(models.Model):
         query = """
         SELECT COUNT(DISTINCT actor_account_name) AS total_active_students
         FROM statements_mv
-        WHERE actor_role == 'student'        
+        WHERE actor_name_role == 'student'
         """
         print("Connecting to ClickHouse..")
         try:
@@ -116,6 +161,21 @@ class ActiveStudents(models.Model):
             logger.error(f"Error fetching active students: {str(e)}")
             print(f"Error details: {str(e)}")
             return 0
+
+    @staticmethod
+    def get_active_students_by_day():
+        query = """
+        SELECT toDate(`timestamp`) as date, COUNT(DISTINCT actor_account_name) AS total_active_students
+        FROM saikyo_new.statements_mv
+        WHERE actor_name_role == 'student'
+        AND `timestamp` >= today() - INTERVAL 6 DAY
+        GROUP BY date ORDER BY date ASC;
+        """
+        with connections['clickhouse_db'].cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            data = [[day.isoformat(), total] for day, total in rows]
+            return json.dumps(data, ensure_ascii=False)
 
     class Meta:
         managed = False
@@ -133,17 +193,18 @@ class MostActiveContents(models.Model):
     @classmethod
     def get_most_active_contents(cls):
         query = """
-            SELECT 
-                contents_id, 
-                contents_name, 
-                uniqExact(id) AS total_activities,
+            SELECT
+                contents_id,
+                contents_name,
+                uniqExact(_id) AS total_activities,
                 object_id
             FROM statements_mv
-            GROUP BY 
-                contents_id, 
-                contents_name, 
+            WHERE contents_id != ''
+            GROUP BY
+                contents_id,
+                contents_name,
                 object_id
-            ORDER BY 
+            ORDER BY
                 total_activities DESC
             LIMIT 10
         """
@@ -170,9 +231,12 @@ class DailyActiveUsers(models.Model):
     @classmethod
     def get_daily_active_users(cls):
         query = """
-        SELECT toDate(timestamp) AS date, COUNT(DISTINCT actor_account_name) AS total_active_users
+        SELECT
+            toDate(timestamp) AS date,
+            COUNT(DISTINCT actor_account_name) AS total_active_users
         FROM statements_mv
         WHERE timestamp >= today() - 30
+            AND actor_account_name != ''
         GROUP BY date
         ORDER BY date
         """
@@ -198,9 +262,9 @@ class DailyActivities(models.Model):
     @classmethod
     def get_daily_activities(cls):
         query = """
-            SELECT 
-                toDate(timestamp) AS date, 
-                uniqExact(id) AS total_activities
+            SELECT
+                toDate(timestamp) AS date,
+                uniqExact(_id) AS total_activities
             FROM statements_mv
             WHERE timestamp >= today() - 30
             GROUP BY date
@@ -229,11 +293,12 @@ class MostActiveStudents(models.Model):
     @classmethod
     def get_most_active_students(cls):
         query = """
-        SELECT 
+        SELECT
             actor_account_name,
-            uniqExact(id) AS total_activities
+            uniqExact(_id) AS total_activities
         FROM statements_mv
-        WHERE actor_role = 'student'
+        WHERE actor_name_role = 'student'
+            AND actor_account_name != ''
         GROUP BY actor_account_name
         ORDER BY total_activities DESC
         LIMIT 10
@@ -270,7 +335,7 @@ class MostActiveStudents(models.Model):
             print(f"Moodle user: {moodle_user}")
             if moodle_user:
                 results.append({
-            
+
                     "moodle_id": moodle_user.id,
                     "username": moodle_user.username,
                     "name": moodle_user.firstname + ' ' + moodle_user.lastname,
@@ -299,19 +364,20 @@ class MostMemoContents(models.Model):
     @classmethod
     def get_most_memo_contents(cls):
         query = """
-            SELECT 
-                contents_id, 
-                contents_name, 
-                uniqExact(id) AS total_memos,
+            SELECT
+                contents_id,
+                contents_name,
+                uniqExact(_id) AS total_memos,
                 object_id
             FROM statements_mv
             WHERE operation_name = 'ADD_HW_MEMO'
-                AND actor_role = 'student'
-            GROUP BY 
-                contents_id, 
-                contents_name, 
+                AND actor_name_role = 'student'
+                AND contents_id != ''
+            GROUP BY
+                contents_id,
+                contents_name,
                 object_id
-            ORDER BY 
+            ORDER BY
                 total_memos DESC
             LIMIT 10
         """
@@ -339,11 +405,19 @@ class MostMarkedContents(models.Model):
     @classmethod
     def get_most_marked_contents(cls):
         query = """
-        SELECT contents_id, contents_name, COUNT(*) AS total_marks, object_id
+        SELECT
+            contents_id,
+            contents_name,
+            uniqExact(_id) AS total_marks,
+            object_id
         FROM statements_mv
-        WHERE operation_name == 'ADD_MARKER'
-        AND actor_role == 'student'
-        GROUP BY contents_id, contents_name, object_id
+        WHERE operation_name = 'ADD_MARKER'
+            AND actor_name_role = 'student'
+            AND contents_id != ''
+        GROUP BY
+            contents_id,
+            contents_name,
+            object_id
         ORDER BY total_marks DESC
         LIMIT 10
         """

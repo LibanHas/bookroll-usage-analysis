@@ -17,30 +17,34 @@ logger = logging.getLogger(__name__)
 class IndexView(LoginRequiredMixin, TemplateView):
     """
     Display the main dashboard page for authenticated users.
-    
+
     Requires the user to be logged in. If not logged in, the user will be
     redirected to the login page (handled by LoginRequiredMixin).
     """
     template_name = 'index.html'
     login_url = settings.LOGIN_URL  # for clarity, though LoginRequiredMixin uses LOGIN_URL by default
-    
+
     def get_context_data(self, **kwargs):
         """
         Add Moodle users to the context for the template.
         """
         context = super().get_context_data(**kwargs)
-        context['users'] = MoodleUser.objects.using('moodle_db').all()  
+        context['users'] = MoodleUser.objects.using('moodle_db').all()
         context['students_count'] = StudentCount.get_student_count()
+        context['students_count_by_day'] = StudentCount.get_student_count_by_day()
         context['courses_count'] = TotalCourses.get_course_count()
+        context['courses_count_by_day'] = TotalCourses.get_course_count_by_day()
         context['contents_count'] = TotalContents.get_content_count()
+        context['contents_count_by_day'] = TotalContents.get_content_count_by_day()
         context['active_students'] = ActiveStudents.get_active_students()
+        context['active_students_by_day'] = ActiveStudents.get_active_students_by_day()
         context['most_active_contents'] = MostActiveContents.get_most_active_contents()
         context['daily_active_users'] = json.dumps(DailyActiveUsers.get_daily_active_users())
         context['daily_activities'] = json.dumps(DailyActivities.get_daily_activities())
         context['most_active_students'] = MostActiveStudents.get_most_active_students_with_details()
         context['most_memo_contents'] = MostMemoContents.get_most_memo_contents()
         context['most_marked_contents'] = MostMarkedContents.get_most_marked_contents()
-    
+
 
         return context
 
@@ -100,7 +104,7 @@ class CustomLoginView(LoginView):
             # User is already logged in, redirect them to the index view or 'next' if valid
             next_url = request.GET.get('next')
             if next_url and url_has_allowed_host_and_scheme(
-                    url=next_url, 
+                    url=next_url,
                     allowed_hosts={request.get_host()},
                     require_https=request.is_secure()):
                 return HttpResponseRedirect(next_url)
@@ -138,18 +142,18 @@ class CustomLogoutView(LogoutView):
         Overrides dispatch to log the event and add a success message after the logout.
         """
         username = request.user.get_username() if request.user.is_authenticated else 'Anonymous'
-        
+
         response = super().dispatch(request, *args, **kwargs)
-        
+
         # At this point, the user should be logged out.
         logger.info(f"User '{username}' logged out.")
         messages.success(request, "You have been successfully logged out. Thank you for visiting.")
-        
+
         return response
 
     def get_next_page(self):
         """
-        Determine the URL to redirect to after logout. 
+        Determine the URL to redirect to after logout.
         If 'next' parameter is provided and valid, use it; otherwise, use next_page or a fallback.
         """
         # Check the 'next' param in GET.

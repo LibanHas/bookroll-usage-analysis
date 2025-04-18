@@ -9,11 +9,7 @@ services:
       POSTGRES_PASSWORD: $m8.Z&81Tr$B
     volumes:
       - .volumes/postgresql/data:/var/lib/postgresql/data
-    networks:
-      - newleaf_analysis_db_net
-      - newleaf_bookroll_db_net
-      - newleaf_moodle_db_net
-      - school_dashboard_net
+    network_mode: "host"
     ports:
       - "5432:5432"
 
@@ -27,8 +23,7 @@ services:
         "-I", "4m",             # Max item size (4MB)
         "-t", "4"               # Number of threads
     ]
-    networks:
-      - school_dashboard_net
+    network_mode: "host"
 
   dashboard:
     build:
@@ -46,18 +41,7 @@ services:
       DATABASE_URL: postgres://db:$m8.Z&81Tr$B@db:5432/school_db
       MEMCACHED_HOST: memcached
       MEMCACHED_PORT: 11211
-    networks:
-      - newleaf_analysis_db_net
-      - newleaf_bookroll_db_net
-      - newleaf_moodle_db_net
-      - school_dashboard_net
-      - moodle_db_net
+    network_mode: "host"
 
 
-networks:
-  school_dashboard_net:
-  newleaf_analysis_db_net:
-  newleaf_bookroll_db_net:
-  newleaf_moodle_db_net:
-  moodle_db_net:
 

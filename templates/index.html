@@ -23,6 +23,9 @@
         <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
             <div class="flex-center-between">
                 <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Total Students" %}</h6>
+                <script id="studentsCountByDayData" type="application/json">
+                    {{ students_count_by_day|safe }}
+                </script>
                 <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "07 Days" %}</div>
             </div>
             <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
@@ -44,15 +47,18 @@
                         Below
                     </div> -->
                 </div>
-                <!-- <div class="grow self-center pb-3">
-                    <div id="admin-overall-revenue-chart"></div>
-                </div> -->
+                <div class="grow self-center pb-3">
+                    <div id="admin-overall-students-chart"></div>
+                </div>
             </div>
         </div>
         <!-- Total registrations Progress Card -->
         <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
             <div class="flex-center-between">
                 <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Total Courses" %}</h6>
+                <script id="coursesCountByDayData" type="application/json">
+                    {{ courses_count_by_day|safe }}
+                </script>
                 <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "07 Days" %}</div>
             </div>
             <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
@@ -81,6 +87,9 @@
         <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
             <div class="flex-center-between">
                 <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Total Contents" %}</h6>
+                <script id="contentsCountByDayData" type="application/json">
+                    {{ contents_count_by_day|safe }}
+                </script>
                 <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "07 Days" %}</div>
             </div>
             <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
@@ -108,6 +117,9 @@
         <!-- Average review Progress Card -->
         <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
             <div class="flex-center-between">
+                <script id="activeStudentsData" type="application/json">
+                    {{ active_students_by_day|safe }}
+                </script>
                 <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Active Students" %}</h6>
                 <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "07 Days" %}</div>
             </div>
@@ -129,7 +141,7 @@
                     </div> -->
                 </div>
                 <div class="grow self-center pb-3">
-                    <div id="admin-average-review-chart"></div>
+                    <div id="admin-active-students-chart"></div>
                 </div>
             </div>
         </div>
@@ -311,7 +323,7 @@
                         <td class="flex items-center gap-2 px-5 py-2">
                             <div>
                                 <h6 class="text-heading font-semibold mb-1.5 line-clamp-1">
-                                    <a href="{{content.object_id}}" target="_blank">{{student.name}}</a>
+                                    <a href="{% url 'student_detail' student.moodle_id %}">{{student.name}}</a>
                                 </h6>
                             </div>
                         </td>

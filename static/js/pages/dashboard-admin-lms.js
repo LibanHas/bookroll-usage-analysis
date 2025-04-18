@@ -1,10 +1,33 @@
-// Total Revenue
-/*
-const revenueOptions = {
+/**
+ * Dashboard Admin LMS Javascript
+ *
+ * This file contains code for the admin LMS dashboard charts and data visualization.
+ * It includes functions to handle data preparation for the charts, particularly to ensure
+ * that days with no data are represented with zeros instead of being skipped.
+ *
+ * Two data filling functions are used:
+ * 1. fillMissingDays - For array format data like [date, value]
+ * 2. fillMissingDaysForObjects - For object format data like {date: '2023-01-01', value: 5}
+ *
+ * These functions create a complete dataset for the specified time range (default is last 7 days
+ * for fillMissingDays and last 30 days for fillMissingDaysForObjects).
+ */
+
+// Total Students
+  const studentsCountByDayRaw = document.getElementById('studentsCountByDayData').textContent;
+
+  const studentsCountByDayOriginal = JSON.parse(studentsCountByDayRaw);
+  console.log("studentsCountByDayOriginal", studentsCountByDayOriginal);
+
+  // Apply the function to fill missing days
+  const studentsCountByDay = fillMissingDays(studentsCountByDayOriginal);
+  console.log("studentsCountByDay", studentsCountByDay);
+
+  const studentsCountOptions = {
   series: [
     {
-      name: "Revenue",
-      data: [0, 30, 10, 35, 11, 30, 15, 28, 33],
+      name: "Students",
+      data: studentsCountByDay.map((item) => item[1]),
     },
   ],
   chart: {
@@ -56,18 +79,54 @@ const revenueOptions = {
     },
   },
 };
-const revenueChart = new ApexCharts(
-  document.querySelector("#admin-overall-revenue-chart"),
-  revenueOptions
+const studentsCountChart = new ApexCharts(
+  document.querySelector("#admin-overall-students-chart"),
+  studentsCountOptions
 );
-revenueChart.render();
-*/
-// Total Enrollment
+studentsCountChart.render();
+
+
+
+// Total Courses
+const coursesCountByDayRaw = document.getElementById('coursesCountByDayData').textContent;
+console.log(coursesCountByDayRaw);
+const coursesCountByDayOriginal = JSON.parse(coursesCountByDayRaw);
+console.log(coursesCountByDayOriginal);
+
+// Function to fill missing days with zeros for the last 7 days
+function fillMissingDays(data) {
+  // Create a map of existing dates
+  const dateMap = new Map();
+  data.forEach(item => {
+    // Convert to date object and then format as YYYY-MM-DD
+    const dateStr = new Date(item[0]).toISOString().split('T')[0];
+    dateMap.set(dateStr, item[1]);
+  });
+
+  // Create an array for the last 7 days
+  const result = [];
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+
+    // Use existing count or 0 if no data for that day
+    const count = dateMap.has(dateStr) ? dateMap.get(dateStr) : 0;
+    result.push([dateStr, count]);
+  }
+
+  return result;
+}
+
+// Apply the function to fill missing days
+const coursesCountByDay = fillMissingDays(coursesCountByDayOriginal);
+
 var enrollOptions = {
   series: [
     {
-      name: "Enroll",
-      data: [33, 28, 15, 30, 11, 25, 10, 30, 5],
+      name: "Courses",
+      data: coursesCountByDay.map((item) => item[1]),
     },
   ],
   chart: {
@@ -126,11 +185,19 @@ var enrollChart = new ApexCharts(
 enrollChart.render();
 
 // Total Courses
+const contentsCountByDayRaw = document.getElementById('contentsCountByDayData').textContent;
+console.log(contentsCountByDayRaw);
+const contentsCountByDayOriginal = JSON.parse(contentsCountByDayRaw);
+console.log(contentsCountByDayOriginal);
+
+// Apply the function to fill missing days
+const contentsCountByDay = fillMissingDays(contentsCountByDayOriginal);
+
 var courseOptions = {
   series: [
     {
       name: "Course",
-      data: [0, 30, 10, 35, 11, 30, 15, 28, 33],
+      data: contentsCountByDay.map((item) => item[1]),
     },
   ],
   chart: {
@@ -189,12 +256,20 @@ var courseChart = new ApexCharts(
 courseChart.render();
 
 
-// Average Rating
-const ratingOptions = {
+// Active Students
+const activeStudentsByDayRaw = document.getElementById('activeStudentsData').textContent;
+console.log(activeStudentsByDayRaw);
+const activeStudentsByDayOriginal = JSON.parse(activeStudentsByDayRaw);
+console.log(activeStudentsByDayOriginal);
+
+// Apply the function to fill missing days
+const activeStudentsByDay = fillMissingDays(activeStudentsByDayOriginal);
+
+const activeStudentsOptions = {
   series: [
     {
-      name: "Rating",
-      data: [0, 30, 10, 35, 11, 30, 15, 28, 33],
+      name: "Active Students",
+      data: activeStudentsByDay.map((item) => item[1]),
     },
   ],
   chart: {
@@ -247,11 +322,11 @@ const ratingOptions = {
     },
   },
 };
-const ratingChart = new ApexCharts(
-  document.querySelector("#admin-average-review-chart"),
-  ratingOptions
+const activeStudentsChart = new ApexCharts(
+  document.querySelector("#admin-active-students-chart"),
+  activeStudentsOptions
 );
-ratingChart.render();
+activeStudentsChart.render();
 
 
 
@@ -264,8 +339,40 @@ ratingChart.render();
  const dailyActivitiesRaw = document.getElementById('dailyActivitiesData').textContent;
 
  //Parse into JavaScript objects/arrays
- const dailyActiveUsers = JSON.parse(dailyActiveUsersRaw);
- const dailyActivities = JSON.parse(dailyActivitiesRaw);
+ const dailyActiveUsersOriginal = JSON.parse(dailyActiveUsersRaw);
+ const dailyActivitiesOriginal = JSON.parse(dailyActivitiesRaw);
+
+ // Function to fill missing days for the object format (date and value property names)
+ function fillMissingDaysForObjects(data, dateProperty, valueProperty, days = 30) {
+   // Create a map of existing dates
+   const dateMap = new Map();
+   data.forEach(item => {
+     dateMap.set(item[dateProperty], item[valueProperty]);
+   });
+
+   // Create an array for the last N days
+   const result = [];
+   const today = new Date();
+   for (let i = days - 1; i >= 0; i--) {
+     const date = new Date(today);
+     date.setDate(today.getDate() - i);
+     const dateStr = date.toISOString().split('T')[0];
+
+     // Use existing count or 0 if no data for that day
+     const count = dateMap.has(dateStr) ? dateMap.get(dateStr) : 0;
+
+     const obj = {};
+     obj[dateProperty] = dateStr;
+     obj[valueProperty] = count;
+     result.push(obj);
+   }
+
+   return result;
+ }
+
+ // Apply the function to fill missing days
+ const dailyActiveUsers = fillMissingDaysForObjects(dailyActiveUsersOriginal, 'date', 'total_active_users');
+ const dailyActivities = fillMissingDaysForObjects(dailyActivitiesOriginal, 'date', 'total_activities');
 
  // Extract data from dailyActiveUsers
  const datesActive = dailyActiveUsers.map((item) => item.date);

@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from typing import Dict, Any
 from pathlib import Path
-
+from django.urls import reverse_lazy
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,23 +28,34 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-g$m4*j)xs_v8*e8u6^0
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = not IS_PRODUCTION
+DEBUG = True
 
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if IS_PRODUCTION else [
-    '10.236.173.129',
-    '0.0.0.0',
-    '127.0.0.1',
-    '10.236.173.129.nip.io'
+# Proxy settings
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+FORCE_SCRIPT_NAME = '/dashboard'
+
+# Accept comma in host headers (fix for proxy configuration)
+ALLOWED_HOST_PATTERNS = [
+    r'sk\.let\.media\.kyoto-u\.ac\.jp(,\s*sk\.let\.media\.kyoto-u\.ac\.jp)*',
+    r'10\.236\.173\.223',
+    r'localhost',
 ]
+
+ALLOWED_HOSTS = ['*'] if DEBUG else [
+    'sk.let.media.kyoto-u.ac.jp',
+    '10.236.173.223',
+    'localhost',
+] + ALLOWED_HOST_PATTERNS
+
+CSRF_TRUSTED_ORIGINS = ['https://sk.let.media.kyoto-u.ac.jp']
+
 INTERNAL_IPS = [
     '127.0.0.1',
     'localhost',
     '172.17.0.1',
     'school_dashboard',
 ] if not IS_PRODUCTION else []
-CSRF_TRUSTED_ORIGINS = os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if IS_PRODUCTION else [
-    'http://10.236.173.129',
-    'http://10.236.173.129.nip.io'
-]
 
 # Application definition
 
@@ -69,6 +80,7 @@ if not IS_PRODUCTION:
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -110,8 +122,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('POSTGRES_DB', 'school_db'),
         'USER': os.getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', '$m8.Z&81Tr$B'),
-        'HOST': os.getenv('POSTGRES_HOST', 'db'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
         'PORT': os.getenv('POSTGRES_PORT', '5432'),
     },
     'moodle_db': {
@@ -119,33 +131,39 @@ DATABASES = {
         'NAME': os.getenv('MOODLE_DB_NAME', 'moodle'),
         'USER': os.getenv('MOODLE_DB_USER', 'moodle'),
         'PASSWORD': os.getenv('MOODLE_DB_PASSWORD', 'moodle'),
-        'HOST': os.getenv('MOODLE_DB_HOST', '10.236.173.177'),
-        'PORT': os.getenv('MOODLE_DB_PORT', '33307'),
+        'HOST': '127.0.0.1',  # Use IP instead of localhost
+        'PORT': os.getenv('MOODLE_DB_PORT', '30102'),
         'OPTIONS': {
-            'init_command': "SET SESSION TRANSACTION READ ONLY"
+            'init_command': "SET SESSION TRANSACTION READ ONLY",
+            'charset': 'utf8mb4',
+            'use_unicode': True,
+            'connect_timeout': 10,
         },
     },
     'bookroll_db': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.getenv('BOOKROLL_DB_NAME', 'bookroll'),
         'USER': os.getenv('BOOKROLL_DB_USER', 'bookroll'),
-        'PASSWORD': os.getenv('BOOKROLL_DB_PASSWORD', 'sz8Ag9JMDnVp'),
-        'HOST': os.getenv('BOOKROLL_DB_HOST', '10.236.173.177'),
-        'PORT': os.getenv('BOOKROLL_DB_PORT', '33306'),
+        'PASSWORD': os.getenv('BOOKROLL_DB_PASSWORD'),
+        'HOST': '127.0.0.1',  # Use IP instead of localhost
+        'PORT': os.getenv('BOOKROLL_DB_PORT', '30100'),
         'OPTIONS': {
-            'init_command': "SET SESSION TRANSACTION READ ONLY"
+            'init_command': "SET SESSION TRANSACTION READ ONLY",
+            'charset': 'utf8mb4',
+            'use_unicode': True,
+            'connect_timeout': 10,
         },
     },
     'clickhouse_db': {
-        'ENGINE': 'clickhouse_backend.backend',  # Requires django-clickhouse-backend
-        'NAME': os.getenv('CLICKHOUSE_DB_NAME', 'leaf_newleaf'),
+        'ENGINE': 'clickhouse_backend.backend',
+        'NAME': os.getenv('CLICKHOUSE_DB_NAME'),
         'USER': os.getenv('CLICKHOUSE_DB_USER', 'default'),
-        'PASSWORD': os.getenv('CLICKHOUSE_DB_PASSWORD', 'd747434901294ec655d180dd52acd67579f702584fda8e293a50cf682227689f'),
-        'HOST': os.getenv('CLICKHOUSE_DB_HOST', '10.236.173.177'),
-        'PORT': os.getenv('CLICKHOUSE_DB_PORT', '9001'),  # Changed to HTTP port
+        'PASSWORD': os.getenv('CLICKHOUSE_DB_PASSWORD'),
+        'HOST': os.getenv('CLICKHOUSE_DB_HOST'),
+        'PORT': os.getenv('CLICKHOUSE_DB_PORT', '9001'),
         'OPTIONS': {
             'settings': {
-                'allow_experimental_window_functions': 1,  # Enable specific ClickHouse settings if needed
+                'allow_experimental_window_functions': 1,
             }
         }
     },
@@ -205,17 +223,20 @@ LANGUAGE_COOKIE_PATH = '/'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
-if IS_PRODUCTION:
-    STATIC_ROOT = BASE_DIR / 'staticfiles'
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
-else:
-    STATICFILES_DIRS = [
-        BASE_DIR / "static",
-    ]
+STATIC_URL = '/dashboard/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
+# WhiteNoise Configuration
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_MANIFEST_STRICT = False
+WHITENOISE_ALLOW_ALL_ORIGINS = True
 
 # Media files configuration
-MEDIA_URL = '/media/'
+MEDIA_URL = '/dashboard/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
