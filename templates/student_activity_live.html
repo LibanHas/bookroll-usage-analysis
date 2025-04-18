@@ -494,7 +494,7 @@ class ActivityTimeline {
 
         setupWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const ws = new WebSocket(`${protocol}//${window.location.host}/ws/activity/{{user_id}}`);
+            const ws = new WebSocket(`${protocol}//${window.location.host}/dashboard/ws/activity/{{user_id}}`);
 
             ws.onopen = () => {
                 console.log('WebSocket connection established');
@@ -721,13 +721,13 @@ class ActivityTimeline {
     }
 
     async loadImage(img, url, token) {
+        console.log("url", url);
+        console.log("token", token);
         try {
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'image/*'
-                },
-                mode: 'cors',
+            // Use our Django proxy endpoint instead of fetching directly
+            const proxyUrl = `/dashboard/user/image-proxy/?url=${encodeURIComponent(url)}&token=${encodeURIComponent(token)}`;
+
+            const response = await fetch(proxyUrl, {
                 credentials: 'include'
             });
 

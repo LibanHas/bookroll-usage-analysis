@@ -592,6 +592,46 @@ class StudentDetails(models.Model):
 
         return moodle_details
 
+    @staticmethod
+    def get_student_last_access_course_list(user_id):
+        """
+        Retrieve the last access course list for a student from ClickHouse.
+        """
+        my_sql_query = """
+        SELECT u.firstname, u.lastname, c.fullname AS course_name, ula.timeaccess, c.id AS course_id, cc.name AS category_name
+        FROM mdl_user_lastaccess ula
+        JOIN mdl_user u ON u.id = ula.userid
+        JOIN mdl_course c ON c.id = ula.courseid
+        LEFT JOIN mdl_course_categories cc ON c.category = cc.id
+        WHERE u.id = %s
+        AND ula.timeaccess >= UNIX_TIMESTAMP(NOW() - INTERVAL 30 DAY)
+        ORDER BY ula.timeaccess DESC;
+        """
+        with connections['moodle_db'].cursor() as cursor:
+            cursor.execute(my_sql_query, [user_id])
+            rows = cursor.fetchall()
+
+        # Convert rows of tuples to list of dictionaries with named keys
+        result = []
+        for row in rows:
+            # Format the Unix timestamp to a readable date
+            access_time = datetime.datetime.fromtimestamp(row[3])
+            formatted_time = access_time.strftime('%Y-%m-%d %H:%M:%S')
+
+            result.append({
+                'firstname': row[0],
+                'lastname': row[1],
+                'course_name': row[2],
+                'timeaccess': row[3],
+                'timeaccess_formatted': formatted_time,
+                'course_id': row[4],
+                'category_name': row[5] if row[5] else 'Uncategorized',
+                'category_path': row[5] if row[5] else 'Uncategorized'  # For backwards compatibility
+            })
+
+        return result
+
+
 class StudentActivityLive(models.Model):
     """
     Optional model if you need to store/cache any activity data locally

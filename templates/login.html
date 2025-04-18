@@ -32,7 +32,7 @@
                 </form>
                 <form action="{% url 'set_language' %}" method="post" id="language-form-ja">
                     {% csrf_token %}
-                    <input type="hidden" name="next" value="{% if LANGUAGE_CODE == 'ja' %}/{% else %}/ja/{% endif %}">
+                    <input type="hidden" name="next" value="{% if LANGUAGE_CODE == 'ja' %}/dashboard/{% else %}/dashboard/ja/{% endif %}">
                     <input type="hidden" name="language" value="ja">
                     <a href="#" class="flex items-center gap-3 hover:bg-gray-200 px-4 py-2 dark:hover:bg-dark-icon relative after:absolute after:inset-0 after:size-full"
                        onclick="document.getElementById('language-form-ja').submit(); return false;"

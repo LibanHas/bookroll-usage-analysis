@@ -216,30 +216,25 @@
                     <tr>
                         <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">{% trans "Course title" %}</th>
                         <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">{% trans "Category" %}</th>
-                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square w-10">{% trans "Action" %}</th>
+                        <th class="px-3.5 py-4 bg-[#E6F6FD] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">{% trans "Last Access" %}</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-dark-border">
-                    {% for course in student.enrollments %}
+                    {% for course in last_access_course_list %}
                         <tr>
                             <td class="flex items-center gap-2 px-3.5 py-4">
                                 <div>
                                     <h6 class="text-lg leading-none text-heading dark:!text-dark-text font-semibold mb-1.5 line-clamp-1">
-                                        {{course.course_name}}
+                                        <a href="{{ LMS_URL }}/course/view.php?id={{course.course_id}}" target="_blank" class="hover:text-primary-500">
+                                            {{course.course_name}}
+                                        </a>
                                     </h6>
-                                    <div class="flex items-center gap-2">
-                                        <p class="font-normal text-xs text-gray-900">{{course.category_path}}</p>
-                                    </div>
                                 </div>
                             </td>
-                            <td class="px-3.5 py-4">{{course.category_path}}</td>
-
-                            <td class="px-3.5 py-4">
-                                <a href="#" class="btn b-solid btn-primary-solid btn-sm">{% trans "View course" %}</a>
-                            </td>
+                            <td class="px-3.5 py-4">{{course.category_name}}</td>
+                            <td class="px-3.5 py-4">{{course.timeaccess_formatted}}</td>
                         </tr>
                     {% endfor %}
-
                 </tbody>
             </table>
         </div>

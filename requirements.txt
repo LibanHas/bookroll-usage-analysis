@@ -80,3 +80,4 @@ typing_extensions==4.12.2
 tzlocal==5.2
 zope.interface==7.2
 whitenoise
+requests

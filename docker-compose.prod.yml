@@ -55,6 +55,7 @@ services:
       - .env
     command: bash -c "/app/entrypoint.sh"
     volumes:
+      - ./:/app
       - ./logs:/app/logs
       - ./static:/app/static
       - ./staticfiles:/app/staticfiles

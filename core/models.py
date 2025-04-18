@@ -1,9 +1,10 @@
 import logging
+import json
 from django.db import models
 from django.db import connections
 from clickhouse_backend.models import ClickhouseModel
 from leaf_school.utils.db_helpers import clickhouse_connection
-
+from django.http import JsonResponse
 logger = logging.getLogger(__name__)
 
 
@@ -47,6 +48,22 @@ class StudentCount(models.Model):
             result = cursor.fetchone()
             return result[0] if result else 0
 
+    @staticmethod
+    def get_student_count_by_day():
+        query = """
+        SELECT FROM_UNIXTIME(timecreated) as day, COUNT(*) as total FROM mdl_user
+        WHERE timecreated >= UNIX_TIMESTAMP(CURDATE() - INTERVAL 6 DAY)
+        GROUP BY day ORDER BY day ASC;
+        """
+
+        with connections['moodle_db'].cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            data = [[row[0].isoformat(), row[1]] for row in rows]
+            return json.dumps(data)
+
+
+
 class ActiveUsers(models.Model):
     user_id = models.IntegerField(primary_key=True)
     last_login = models.DateTimeField()
@@ -75,6 +92,20 @@ class TotalCourses(models.Model):
             rows = cursor.fetchall()
             return len(rows)
 
+    @staticmethod
+    def get_course_count_by_day():
+        query = """
+        SELECT FROM_UNIXTIME(timecreated) as day, COUNT(*) as total FROM mdl_course
+        WHERE timecreated >= UNIX_TIMESTAMP(CURDATE() - INTERVAL 6 DAY)
+        GROUP BY day ORDER BY day ASC;
+        """
+        with connections['moodle_db'].cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            data = [[row[0].isoformat(sep=' '), row[1]] for row in rows]
+            return json.dumps(data)
+
+
 class TotalContents(models.Model):
     content_count = models.IntegerField()
 
@@ -93,6 +124,20 @@ class TotalContents(models.Model):
             result = cursor.fetchone()
             return result[0] if result else 0
 
+    @staticmethod
+    def get_content_count_by_day():
+        query = """
+        SELECT DATE(created) as day, COUNT(*) as total FROM br_contents
+        WHERE created >= CURDATE() - INTERVAL 6 DAY
+        GROUP BY day ORDER BY day ASC;
+        """
+        with connections['bookroll_db'].cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            data = [[row[0].isoformat(), row[1]] for row in rows]
+            return json.dumps(data)
+
+
 class ActiveStudents(models.Model):
     """Model to track active students from ClickHouse"""
     total_active_students = models.IntegerField()
@@ -102,7 +147,7 @@ class ActiveStudents(models.Model):
         query = """
         SELECT COUNT(DISTINCT actor_account_name) AS total_active_students
         FROM statements_mv
-        WHERE actor_role == 'student'
+        WHERE actor_name_role == 'student'
         """
         print("Connecting to ClickHouse..")
         try:
@@ -116,6 +161,21 @@ class ActiveStudents(models.Model):
             logger.error(f"Error fetching active students: {str(e)}")
             print(f"Error details: {str(e)}")
             return 0
+
+    @staticmethod
+    def get_active_students_by_day():
+        query = """
+        SELECT toDate(`timestamp`) as date, COUNT(DISTINCT actor_account_name) AS total_active_students
+        FROM saikyo_new.statements_mv
+        WHERE actor_name_role == 'student'
+        AND `timestamp` >= today() - INTERVAL 6 DAY
+        GROUP BY date ORDER BY date ASC;
+        """
+        with connections['clickhouse_db'].cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            data = [[day.isoformat(), total] for day, total in rows]
+            return json.dumps(data, ensure_ascii=False)
 
     class Meta:
         managed = False
@@ -146,7 +206,7 @@ class MostActiveContents(models.Model):
                 object_id
             ORDER BY
                 total_activities DESC
-            LIMIT 100
+            LIMIT 10
         """
         with clickhouse_connection() as connection:
             with connection.cursor() as cursor:

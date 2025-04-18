@@ -92,34 +92,125 @@
                     </tbody>
                 </table>
 
-                <!-- Pagination Controls -->
-                <div class="flex justify-between items-center p-4">
-                    <div>
-                        {% if current_page > 1 %}
-                            <a
-                              href="?page={{ current_page|add:'-1' }}&search={{ search_term }}"
-                              class="btn b-solid btn-primary-solid"
-                            >
-                                {% trans "Previous" %}
-                            </a>
-                        {% endif %}
-                    </div>
-                    <div>
-                        {% if results.total_pages > 1 %}
-                        {% blocktrans %}Page {{ current_page }} of {{ total_pages }}{% endblocktrans %}
-                        {% endif %}
-                    </div>
-                    <div>
-                        {% if current_page < total_pages %}
-                            <a
-                              href="?page={{ current_page|add:'1' }}&search={{ search_term }}"
-                              class="btn b-solid btn-primary-solid"
-                            >
-                                {% trans "Next" %}
-                            </a>
-                        {% endif %}
-                    </div>
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <div class="flex justify-center items-center mt-6">
+                    <nav class="pagination-nav">
+                        <ul class="flex items-center space-x-2">
+                            {% if page_obj.has_previous %}
+                                <li>
+                                    <a href="?page={{ page_obj.previous_page_number }}{% if search_term %}&search={{ search_term }}{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">
+                                        <span class="sr-only">{% trans "Previous" %}</span>
+                                        <i class="fas fa-angle-left">&lt;</i>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li>
+                                    <span class="flex items-center justify-center w-10 h-10 text-gray-400 bg-white rounded-md cursor-not-allowed dark:bg-dark-card-two dark:text-gray-600">
+                                        <i class="fas fa-angle-left">&lt;</i>
+                                    </span>
+                                </li>
+                            {% endif %}
+
+                            {% if page_obj.paginator.num_pages < 10 %}
+                                <!-- Show all pages if total pages < 10 -->
+                                {% for num in page_obj.paginator.page_range %}
+                                    <li>
+                                        {% if num == page_obj.number %}
+                                            <span class="flex items-center justify-center w-10 h-10 text-white bg-primary-500 rounded-md">{{ num }}</span>
+                                        {% else %}
+                                            <a href="?page={{ num }}{% if search_term %}&search={{ search_term }}{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">{{ num }}</a>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            {% else %}
+                                <!-- Show first 2 pages, ellipsis, and last 2 pages -->
+
+                                <!-- First 2 pages -->
+                                {% for num in "12"|make_list %}
+                                    {% with num=num|add:"0" %}
+                                    <li>
+                                        {% if num|add:0 == page_obj.number %}
+                                            <span class="flex items-center justify-center w-10 h-10 text-white bg-primary-500 rounded-md">{{ num }}</span>
+                                        {% else %}
+                                            <a href="?page={{ num }}{% if search_term %}&search={{ search_term }}{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">{{ num }}</a>
+                                        {% endif %}
+                                    </li>
+                                    {% endwith %}
+                                {% endfor %}
+
+                                <!-- Current page if not in first 2 or last 2 -->
+                                {% if page_obj.number > 2 and page_obj.number < page_obj.paginator.num_pages|add:"-1" %}
+                                    <!-- Ellipsis before current if not right after first 2 -->
+                                    {% if page_obj.number > 3 %}
+                                        <li>
+                                            <span class="flex items-center justify-center w-10 h-10 text-gray-600">...</span>
+                                        </li>
+                                    {% endif %}
+
+                                    <!-- Current page -->
+                                    <li>
+                                        <span class="flex items-center justify-center w-10 h-10 text-white bg-primary-500 rounded-md">{{ page_obj.number }}</span>
+                                    </li>
+
+                                    <!-- Ellipsis after current if not right before last 2 -->
+                                    {% if page_obj.number < page_obj.paginator.num_pages|add:"-2" %}
+                                        <li>
+                                            <span class="flex items-center justify-center w-10 h-10 text-gray-600">...</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <!-- Just show ellipsis between first 2 and last 2 -->
+                                    <li>
+                                        <span class="flex items-center justify-center w-10 h-10 text-gray-600">...</span>
+                                    </li>
+                                {% endif %}
+
+                                <!-- Last 2 pages -->
+                                {% with second_last=page_obj.paginator.num_pages|add:"-1" %}
+                                    {% for num in "12"|make_list %}
+                                        {% if forloop.first %}
+                                            <!-- Second to last page -->
+                                            <li>
+                                                {% if second_last == page_obj.number %}
+                                                    <span class="flex items-center justify-center w-10 h-10 text-white bg-primary-500 rounded-md">{{ second_last }}</span>
+                                                {% else %}
+                                                    <a href="?page={{ second_last }}{% if search_term %}&search={{ search_term }}{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">{{ second_last }}</a>
+                                                {% endif %}
+                                            </li>
+                                        {% else %}
+                                            <!-- Last page -->
+                                            <li>
+                                                {% if page_obj.paginator.num_pages == page_obj.number %}
+                                                    <span class="flex items-center justify-center w-10 h-10 text-white bg-primary-500 rounded-md">{{ page_obj.paginator.num_pages }}</span>
+                                                {% else %}
+                                                    <a href="?page={{ page_obj.paginator.num_pages }}{% if search_term %}&search={{ search_term }}{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">{{ page_obj.paginator.num_pages }}</a>
+                                                {% endif %}
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endwith %}
+                            {% endif %}
+
+                            {% if page_obj.has_next %}
+                                <li>
+                                    <a href="?page={{ page_obj.next_page_number }}{% if search_term %}&search={{ search_term }}{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">
+                                        <span class="sr-only">{% trans "Next" %}</span>
+                                        <i class="fas fa-angle-right">&gt;</i>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li>
+                                    <span class="flex items-center justify-center w-10 h-10 text-gray-400 bg-white rounded-md cursor-not-allowed dark:bg-dark-card-two dark:text-gray-600">
+                                        <i class="fas fa-angle-right">&gt;</i>
+                                    </span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
                 </div>
+                {% endif %}
+                <!-- End Pagination -->
 
             {% else %}
                 <p class="text-center py-4">{% trans "No students found" %}</p>
