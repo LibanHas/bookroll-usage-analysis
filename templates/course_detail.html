@@ -1,0 +1,270 @@
+{% extends 'main.html' %}
+{% load static %}
+{% load i18n %}
+{% block main_content %}
+
+<style>
+    .teacher-item.hidden {
+        display: none;
+    }
+</style>
+
+<!-- Include ApexCharts library -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<!-- Include dashboard JS -->
+<script src="{% static 'js/pages/dashboard-admin-lms.js' %}"></script>
+
+<div class="grid grid-cols-12 gap-x-4">
+    <!-- Start Bread Crumb Section -->
+    <div class="col-span-full card flex-center-btween">
+        <h5 class="card-title">
+            {% if course_exists %}
+                {% trans "Course Details:" %} {{ course.fullname }}
+            {% else %}
+                {% trans "Course Not Found" %}
+            {% endif %}
+        </h5>
+        <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
+            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two">
+                <a href="{% url 'index' %}">{% trans "Home" %}</a>
+            </li>
+            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two">
+                <a href="{% url 'course_categories' %}">{% trans "Course Categories" %}</a>
+            </li>
+            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two current-page">
+                <a href="#">
+                    {% if course_exists %}
+                        {{ course.shortname }}
+                    {% else %}
+                        {% trans "Not Found" %}
+                    {% endif %}
+                </a>
+            </li>
+        </ul>
+    </div>
+    <!-- End Bread Crumb Section -->
+
+    {% if not course_exists %}
+    <div class="col-span-full card">
+        <div class="p-6 text-center">
+            <div class="text-3xl text-gray-500 mb-4">
+                <i class="ri-error-warning-line"></i>
+            </div>
+            <p class="text-lg text-gray-700 dark:text-gray-300 mb-4">{% trans "The requested course could not be found." %}</p>
+            <a href="{% url 'course_categories' %}" class="btn b-solid btn-primary-solid">
+                {% trans "Return to Course Categories" %}
+            </a>
+        </div>
+    </div>
+    {% else %}
+
+    <!-- Course Basic Information -->
+    <div class="col-span-full lg:col-span-4 card">
+        <div class="flex flex-col gap-2 sm:flex-center-between sm:flex-row px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
+            <div>
+                <h6 class="card-title">{% trans "Course Information" %}</h6>
+                <p class="card-description">{% trans "Basic details about the course" %}</p>
+            </div>
+            {% if LMS_URL %}
+            <a href="{{ LMS_URL }}/course/view.php?id={{ course.id }}" target="_blank" class="btn b-solid btn-primary-solid">
+                <i class="ri-external-link-line mr-1"></i> {% trans "Open in Moodle" %}
+            </a>
+            {% endif %}
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">{{ course.fullname }}</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mb-4">{{ course.shortname }}</p>
+
+                    <div class="flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="ri-folder-line mr-4"></i>
+                        <span>{% trans "Category:" %} {{ course.category_name }}</span>
+                    </div>
+                    {% if course.startdate %}
+                    <div class="flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="ri-calendar-line mr-4"></i>
+                        <span>{% trans "Start Date:" %} {{ course.startdate|date:"F j, Y" }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if course.enddate %}
+                    <div class="flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="ri-calendar-check-line mr-4"></i>
+                        <span>{% trans "End Date:" %} {{ course.enddate|date:"F j, Y" }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="ri-user-3-line mr-4"></i>
+                        <span>{% trans "Enrolled Students:" %} {{ enrolled_students }}</span>
+                    </div>
+
+                    <div class="flex items-center text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="ri-time-line mr-4"></i>
+                        <span>{% trans "Created:" %} {{ course.created|date:"F j, Y" }}</span>
+                    </div>
+                </div>
+
+                {% if course.summary %}
+                <div class="course-summary bg-gray-100 dark:bg-dark-card-shade p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">{% trans "Course Description" %}</h3>
+                    <div class="text-gray-700 dark:text-gray-300">
+                        {{ course.summary|safe }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Statistics Card -->
+    <div class="col-span-full lg:col-span-8 card">
+        <div class="flex flex-col gap-2 px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
+            <h6 class="card-title">{% trans "Course Statistics" %}</h6>
+            <p class="card-description">{% trans "Activity metrics for this course" %}</p>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                <!-- Hidden data for chart -->
+                <script id="dailyActivityData" type="application/json">
+                    {{ daily_activity_data|safe }}
+                </script>
+                <div id="daily-activity-chart"></div>
+            </div>
+
+            {% if clickhouse_error %}
+            <div class="mt-4 text-sm text-amber-600 dark:text-amber-400">
+                <i class="ri-information-line mr-1"></i> {% trans "Some statistics may be unavailable at the moment." %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Course Teachers -->
+    <div class="col-span-full lg:col-span-4 card">
+        <div class="flex flex-col gap-2 px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
+            <h6 class="card-title">{% trans "Course Teachers" %}</h6>
+            <p class="card-description">{% trans "Instructors for this course" %}</p>
+        </div>
+        <div class="p-6">
+            {% if teachers %}
+            <ul id="teachersList" class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for teacher in teachers %}
+                <li class="py-3 teacher-item {% if forloop.counter > 10 %}hidden{% endif %}">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <span class="size-10 rounded-full bg-primary-100 dark:bg-primary-900 flex-center text-primary-700 dark:text-primary-300">
+                                {{ teacher.name|slice:":1" }}
+                            </span>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-base font-medium text-gray-900 dark:text-white">
+                                {{ teacher.name }}
+                            </p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                {{ teacher.email }}
+                            </p>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% if teachers|length > 10 %}
+            <div class="mt-4 text-center">
+                <button id="showMoreTeachers" class="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 font-medium">
+                    {% trans "Show All Teachers" %} ({{ teachers|length }})
+                </button>
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-4">
+                <p class="text-gray-500 dark:text-gray-400">{% trans "No teachers assigned to this course" %}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Course Modules/Activities -->
+    <div class="col-span-full lg:col-span-8 card">
+        <div class="flex flex-col gap-2 px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
+            <h6 class="card-title">{% trans "Course Content" %}</h6>
+            <p class="card-description">{% trans "Modules and activities in this course" %}</p>
+        </div>
+        <div class="p-6">
+            {% if modules %}
+            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for module in modules %}
+                <li class="py-3">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 mr-3">
+                            {% if module.type == 'resource' %}
+                            <i class="ri-file-text-line text-xl text-blue-500"></i>
+                            {% elif module.type == 'url' %}
+                            <i class="ri-link text-xl text-green-500"></i>
+                            {% elif module.type == 'page' %}
+                            <i class="ri-article-line text-xl text-indigo-500"></i>
+                            {% elif module.type == 'book' %}
+                            <i class="ri-book-read-line text-xl text-amber-500"></i>
+                            {% elif module.type == 'forum' %}
+                            <i class="ri-discuss-line text-xl text-orange-500"></i>
+                            {% elif module.type == 'quiz' %}
+                            <i class="ri-question-answer-line text-xl text-red-500"></i>
+                            {% elif module.type == 'assign' %}
+                            <i class="ri-task-line text-xl text-purple-500"></i>
+                            {% else %}
+                            <i class="ri-checkbox-circle-line text-xl text-gray-500"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-base font-medium text-gray-900 dark:text-white">
+                                {{ module.name|default:module.type|title }}
+                            </p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                {% trans "Type:" %} {{ module.type|title }} | {% trans "Added:" %} {{ module.added|date:"F j, Y" }}
+                            </p>
+                        </div>
+                        {% if LMS_URL %}
+                        <div>
+                            <a href="{{ LMS_URL }}/mod/{{ module.type }}/view.php?id={{ module.id }}"
+                               target="_blank"
+                               class="text-primary-500 hover:text-primary-700 dark:hover:text-primary-300">
+                                <i class="ri-external-link-line"></i>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="text-center py-4">
+                <p class="text-gray-500 dark:text-gray-400">{% trans "No content has been added to this course yet" %}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+
+
+    {% endif %} <!-- End of course_exists check -->
+</div>
+
+<!-- JavaScript for teachers list -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const showMoreBtn = document.getElementById('showMoreTeachers');
+        if (showMoreBtn) {
+            showMoreBtn.addEventListener('click', function() {
+                // Show all hidden teacher items
+                document.querySelectorAll('.teacher-item.hidden').forEach(item => {
+                    item.classList.remove('hidden');
+                });
+                // Hide the button after clicking
+                this.style.display = 'none';
+            });
+        }
+    });
+</script>
+
+{% endblock %}

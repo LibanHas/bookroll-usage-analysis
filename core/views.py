@@ -8,8 +8,11 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.conf import settings
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.db import connections
+import datetime
 
-from .models import MoodleUser, StudentCount, TotalCourses, TotalContents, ActiveStudents, MostActiveContents, DailyActiveUsers, DailyActivities, MostActiveStudents, MostMemoContents, MostMarkedContents
+from .models import MoodleUser, StudentCount, TotalCourses, TotalContents, ActiveStudents, MostActiveContents, DailyActiveUsers, DailyActivities, MostActiveStudents, MostMemoContents, MostMarkedContents, CourseCategory, CourseDetail
 
 logger = logging.getLogger(__name__)
 
@@ -175,5 +178,312 @@ class CustomLogoutView(LogoutView):
 
         # Fallback to the default logic of LogoutView if nothing else applies.
         return super().get_next_page()
+
+class MostHighlightedContentView(LoginRequiredMixin, TemplateView):
+    """
+    Display a detail page showing all marked/highlighted content with pagination.
+    """
+    template_name = 'most_highlighted_content.html'
+    login_url = settings.LOGIN_URL
+
+    def get_context_data(self, **kwargs):
+        """
+        Add marked content data to the context with database-level pagination.
+        """
+        context = super().get_context_data(**kwargs)
+
+        # Get search term
+        search_term = self.request.GET.get('search', '')
+        context['search_term'] = search_term
+
+        # Get page number from request
+        page = self.request.GET.get('page', 1)
+        try:
+            page = int(page)
+        except ValueError:
+            page = 1
+
+        # Calculate offset and get paginated data directly from database
+        page_size = 50
+        offset = (page - 1) * page_size
+
+        # Get total count for pagination
+        total_count = MostMarkedContents.get_most_marked_contents_count(search=search_term or None)
+
+        # Create a custom Page object
+        paginator = Paginator(range(total_count), page_size)
+        try:
+            page_obj = paginator.page(page)
+        except (PageNotAnInteger, EmptyPage):
+            page_obj = paginator.page(1)
+
+        # Get only the necessary records for this page
+        contents = MostMarkedContents.get_most_marked_contents(
+            limit=page_size,
+            offset=offset,
+            search=search_term or None
+        )
+
+        context['most_marked_contents'] = contents
+        context['is_paginated'] = (total_count > page_size)
+        context['page_obj'] = page_obj
+        return context
+
+
+class MostMemoedContentView(LoginRequiredMixin, TemplateView):
+    """
+    Display a detail page showing all content with memos with pagination.
+    """
+    template_name = 'most_memoed_content.html'
+    login_url = settings.LOGIN_URL
+
+    def get_context_data(self, **kwargs):
+        """
+        Add memoed content data to the context with database-level pagination.
+        """
+        context = super().get_context_data(**kwargs)
+
+        # Get search term
+        search_term = self.request.GET.get('search', '')
+        context['search_term'] = search_term
+
+        # Get page number from request
+        page = self.request.GET.get('page', 1)
+        try:
+            page = int(page)
+        except ValueError:
+            page = 1
+
+        # Calculate offset and get paginated data directly from database
+        page_size = 50
+        offset = (page - 1) * page_size
+
+        # Get total count for pagination
+        total_count = MostMemoContents.get_most_memo_contents_count(search=search_term or None)
+
+        # Create a custom Page object
+        paginator = Paginator(range(total_count), page_size)
+        try:
+            page_obj = paginator.page(page)
+        except (PageNotAnInteger, EmptyPage):
+            page_obj = paginator.page(1)
+
+        # Get only the necessary records for this page
+        contents = MostMemoContents.get_most_memo_contents(
+            limit=page_size,
+            offset=offset,
+            search=search_term or None
+        )
+
+        context['most_memo_contents'] = contents
+        context['is_paginated'] = (total_count > page_size)
+        context['page_obj'] = page_obj
+        return context
+
+
+class MostActiveStudentsView(LoginRequiredMixin, TemplateView):
+    """
+    Display a detail page showing all active students with pagination.
+    """
+    template_name = 'most_active_students.html'
+    login_url = settings.LOGIN_URL
+
+    def get_context_data(self, **kwargs):
+        """
+        Add active students data to the context with database-level pagination.
+        """
+        context = super().get_context_data(**kwargs)
+
+        # Get search term
+        search_term = self.request.GET.get('search', '')
+        context['search_term'] = search_term
+
+        # Get page number from request
+        page = self.request.GET.get('page', 1)
+        try:
+            page = int(page)
+        except ValueError:
+            page = 1
+
+        # Calculate offset and get paginated data directly from database
+        page_size = 50
+        offset = (page - 1) * page_size
+
+        # For students, we need a different approach to get total count with search
+        # because search is applied after fetching from ClickHouse
+        if not search_term:
+            total_count = MostActiveStudents.get_most_active_students_count()
+        else:
+            # We need to get all students and filter them after getting Moodle data
+            # This is less efficient but necessary for searching by student name
+            all_students = MostActiveStudents.get_most_active_students_with_details(
+                limit=None,
+                offset=0,
+                search=search_term
+            )
+            total_count = len(all_students)
+
+            # If we have a small number of results, we can paginate in memory
+            if total_count <= page_size * 2:
+                # Calculate slice indices for the current page
+                start_idx = (page - 1) * page_size
+                end_idx = min(start_idx + page_size, total_count)
+
+                # Get the slice for the current page
+                students = all_students[start_idx:end_idx] if total_count > 0 else []
+
+                # Create paginator and page object
+                paginator = Paginator(range(total_count), page_size)
+                try:
+                    page_obj = paginator.page(page)
+                except (PageNotAnInteger, EmptyPage):
+                    page_obj = paginator.page(1)
+
+                context['most_active_students'] = students
+                context['is_paginated'] = (total_count > page_size)
+                context['page_obj'] = page_obj
+                return context
+
+        # Create a custom Page object
+        paginator = Paginator(range(total_count), page_size)
+        try:
+            page_obj = paginator.page(page)
+        except (PageNotAnInteger, EmptyPage):
+            page_obj = paginator.page(1)
+
+        # Get only the necessary records for this page
+        students = MostActiveStudents.get_most_active_students_with_details(
+            limit=page_size if not search_term else None,  # When searching, we need all records
+            offset=offset if not search_term else 0,
+            search=search_term or None
+        )
+
+        # If searching, we need to manually paginate the results
+        if search_term and len(students) > page_size:
+            start_idx = (page - 1) * page_size
+            end_idx = min(start_idx + page_size, len(students))
+            students = students[start_idx:end_idx]
+
+        context['most_active_students'] = students
+        context['is_paginated'] = (total_count > page_size)
+        context['page_obj'] = page_obj
+        return context
+
+
+class MostActiveContentsView(LoginRequiredMixin, TemplateView):
+    """
+    Display a detail page showing all active contents with pagination.
+    """
+    template_name = 'most_active_contents.html'
+    login_url = settings.LOGIN_URL
+
+    def get_context_data(self, **kwargs):
+        """
+        Add active contents data to the context with database-level pagination.
+        """
+        context = super().get_context_data(**kwargs)
+
+        # Get search term
+        search_term = self.request.GET.get('search', '')
+        context['search_term'] = search_term
+
+        # Get page number from request
+        page = self.request.GET.get('page', 1)
+        try:
+            page = int(page)
+        except ValueError:
+            page = 1
+
+        # Calculate offset and get paginated data directly from database
+        page_size = 50
+        offset = (page - 1) * page_size
+
+        # Get total count for pagination
+        total_count = MostActiveContents.get_most_active_contents_count(search=search_term or None)
+
+        # Create a custom Page object
+        paginator = Paginator(range(total_count), page_size)
+        try:
+            page_obj = paginator.page(page)
+        except (PageNotAnInteger, EmptyPage):
+            page_obj = paginator.page(1)
+
+        # Get only the necessary records for this page
+        contents = MostActiveContents.get_most_active_contents(
+            limit=page_size,
+            offset=offset,
+            search=search_term or None
+        )
+
+        context['most_active_contents'] = contents
+        context['is_paginated'] = (total_count > page_size)
+        context['page_obj'] = page_obj
+        return context
+
+class CourseCategoriesView(LoginRequiredMixin, TemplateView):
+    """
+    Display a page showing all courses organized by their parent and child categories.
+    """
+    template_name = 'course_categories.html'
+    login_url = settings.LOGIN_URL
+
+    def get_context_data(self, **kwargs):
+        """
+        Add course categories hierarchy data to the context.
+        """
+        context = super().get_context_data(**kwargs)
+        context['categories'] = CourseCategory.get_categories_with_courses()
+
+        # Add Moodle LMS URL for course links
+        context['LMS_URL'] = settings.LMS_URL if hasattr(settings, 'LMS_URL') else ''
+
+        return context
+
+class CourseDetailView(LoginRequiredMixin, TemplateView):
+    """
+    Display detailed information about a specific course.
+    """
+    template_name = 'course_detail.html'
+    login_url = settings.LOGIN_URL
+
+    def get_context_data(self, **kwargs):
+        """
+        Add course details and related data to the context.
+        """
+        context = super().get_context_data(**kwargs)
+        course_id = self.kwargs.get('course_id')
+
+        # Get course details using the model
+        course = CourseDetail.get_course_details(course_id)
+        if not course:
+            context['course_exists'] = False
+            return context
+
+        context['course'] = course
+        context['modules'] = CourseDetail.get_course_modules(course_id)
+        context['enrolled_students'] = CourseDetail.get_enrolled_students_count(course_id)
+        context['teachers'] = CourseDetail.get_course_teachers(course_id)
+
+        # Get activity statistics
+        stats, error = CourseDetail.get_course_activity_stats(course_id)
+        print(stats)
+        if error:
+            context['clickhouse_error'] = True
+
+        # Add stats to context
+        if 'total_views' in stats:
+            context['total_views'] = stats['total_views']
+        if 'engagement' in stats:
+            context['engagement'] = stats['engagement']
+        if 'activity_timeline' in stats:
+            context['activity_timeline'] = json.dumps(stats['activity_timeline'])
+        if 'daily_activity_data' in stats:
+            context['daily_activity_data'] = stats['daily_activity_data']
+
+        # Add Moodle LMS URL for course link
+        context['LMS_URL'] = settings.LMS_URL if hasattr(settings, 'LMS_URL') else ''
+        context['course_exists'] = True
+
+        return context
 
 
