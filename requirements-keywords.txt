@@ -1,0 +1,11 @@
+spacy>=3.5.0
+ginza>=5.1.2
+keybert>=0.7.0
+pandas>=1.5.0
+tqdm>=4.65.0
+# E5 model support
+sentence-transformers>=2.2.2
+torch>=1.13.0,<2.0.0  # CPU-only version for efficiency
+# Japanese specific
+sudachipy>=0.6.7
+sudachidict_core>=20221021

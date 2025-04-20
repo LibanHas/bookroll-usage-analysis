@@ -188,67 +188,267 @@
     <!-- Course Modules/Activities -->
     <div class="col-span-full lg:col-span-8 card">
         <div class="flex flex-col gap-2 px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
-            <h6 class="card-title">{% trans "Course Content" %}</h6>
-            <p class="card-description">{% trans "Modules and activities in this course" %}</p>
+            <h6 class="card-title">{% trans "Keywords" %}</h6>
+            <p class="card-description">{% trans "Top keywords from student highlights in this course" %}</p>
         </div>
         <div class="p-6">
-            {% if modules %}
-            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-                {% for module in modules %}
-                <li class="py-3">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 mr-3">
-                            {% if module.type == 'resource' %}
-                            <i class="ri-file-text-line text-xl text-blue-500"></i>
-                            {% elif module.type == 'url' %}
-                            <i class="ri-link text-xl text-green-500"></i>
-                            {% elif module.type == 'page' %}
-                            <i class="ri-article-line text-xl text-indigo-500"></i>
-                            {% elif module.type == 'book' %}
-                            <i class="ri-book-read-line text-xl text-amber-500"></i>
-                            {% elif module.type == 'forum' %}
-                            <i class="ri-discuss-line text-xl text-orange-500"></i>
-                            {% elif module.type == 'quiz' %}
-                            <i class="ri-question-answer-line text-xl text-red-500"></i>
-                            {% elif module.type == 'assign' %}
-                            <i class="ri-task-line text-xl text-purple-500"></i>
-                            {% else %}
-                            <i class="ri-checkbox-circle-line text-xl text-gray-500"></i>
-                            {% endif %}
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-base font-medium text-gray-900 dark:text-white">
-                                {{ module.name|default:module.type|title }}
-                            </p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                {% trans "Type:" %} {{ module.type|title }} | {% trans "Added:" %} {{ module.added|date:"F j, Y" }}
-                            </p>
-                        </div>
-                        {% if LMS_URL %}
-                        <div>
-                            <a href="{{ LMS_URL }}/mod/{{ module.type }}/view.php?id={{ module.id }}"
-                               target="_blank"
-                               class="text-primary-500 hover:text-primary-700 dark:hover:text-primary-300">
-                                <i class="ri-external-link-line"></i>
-                            </a>
-                        </div>
-                        {% endif %}
-                    </div>
-                </li>
-                {% endfor %}
-            </ul>
+            {% if top_keywords %}
+            <div class="mb-6">
+                <div class="flex flex-wrap gap-2">
+                    {% for keyword in top_keywords %}
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium
+                               {% if forloop.counter <= 5 %}
+                               bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200
+                               {% elif forloop.counter <= 10 %}
+                               bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                               {% elif forloop.counter <= 15 %}
+                               bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                               {% else %}
+                               bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200
+                               {% endif %}
+                               ">
+                        {{ keyword.keyword }}
+                        <span class="ml-1.5 text-xs font-normal text-gray-600 dark:text-gray-400">({{ keyword.frequency }})</span>
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Keyword Word Cloud -->
+            <div class="mb-6">
+                <div id="keyword-cloud-chart" style="height: 300px;"></div>
+            </div>
+
+            <!-- Keyword Chart -->
+            <div class="mb-6">
+                <div id="keyword-chart" style="height: 300px;"></div>
+            </div>
+
+            <!-- Pass keyword data to JavaScript -->
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const keywordData = [
+                        {% for keyword in top_keywords|slice:":10" %}
+                            {
+                                keyword: "{{ keyword.keyword }}",
+                                frequency: {{ keyword.frequency }},
+                                score: {{ keyword.score|floatformat:3 }}
+                            }{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                    ];
+
+                    // Word Cloud (using treemap)
+                    if (keywordData.length > 0) {
+                        const wordCloudOptions = {
+                            series: [
+                                {
+                                    data: keywordData.map(item => ({
+                                        x: item.keyword,
+                                        y: item.frequency
+                                    }))
+                                }
+                            ],
+                            chart: {
+                                height: 300,
+                                type: 'treemap',
+                                toolbar: {
+                                    show: false
+                                }
+                            },
+                            title: {
+                                text: '{% trans "Keyword Cloud" %}',
+                                align: 'center',
+                                style: {
+                                    fontSize: '16px',
+                                    fontWeight: 'normal'
+                                }
+                            },
+                            colors: [
+                                '#5F71FA', '#76D466', '#FF4626', '#FFC107', '#9C27B0',
+                                '#4CAF50', '#26e9ff', '#f44336', '#E91E63', '#2196F3'
+                            ],
+                            plotOptions: {
+                                treemap: {
+                                    distributed: true,
+                                    enableShades: false
+                                }
+                            },
+                            tooltip: {
+                                y: {
+                                    formatter: function(value) {
+                                        return value;
+                                    }
+                                }
+                            }
+                        };
+
+                        const wordCloudChart = new ApexCharts(document.querySelector("#keyword-cloud-chart"), wordCloudOptions);
+                        wordCloudChart.render();
+                    }
+
+                    // Create the bar chart
+                    if (keywordData.length > 0) {
+                        const options = {
+                            series: [{
+                                name: '{% trans "Frequency" %}',
+                                data: keywordData.map(item => item.frequency).reverse()
+                            }],
+                            chart: {
+                                type: 'bar',
+                                height: 300,
+                                toolbar: {
+                                    show: false
+                                }
+                            },
+                            plotOptions: {
+                                bar: {
+                                    horizontal: true,
+                                    borderRadius: 4
+                                }
+                            },
+                            dataLabels: {
+                                enabled: false
+                            },
+                            xaxis: {
+                                categories: keywordData.map(item => item.keyword).reverse(),
+                                title: {
+                                    text: '{% trans "Frequency" %}'
+                                }
+                            },
+                            colors: ['#4f46e5'],
+                            tooltip: {
+                                y: {
+                                    formatter: function(val) {
+                                        return val
+                                    }
+                                }
+                            }
+                        };
+
+                        const chart = new ApexCharts(document.querySelector("#keyword-chart"), options);
+                        chart.render();
+                    }
+                });
+            </script>
+
+            <!-- Keyword details table -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                {% trans "Keyword" %}
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                {% trans "Frequency" %}
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                {% trans "Relevance Score" %}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for keyword in top_keywords %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                {{ keyword.keyword }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {{ keyword.frequency }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {{ keyword.score|floatformat:3 }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Information about keyword extraction -->
+            <div class="mt-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                    <i class="ri-information-line mr-1"></i> {% trans "About Keyword Extraction" %}
+                </h4>
+                <p class="text-sm text-blue-700 dark:text-blue-400">
+                    {% trans "These keywords are extracted from student highlights using natural language processing. The system analyzes what students highlight to identify important concepts and terms." %}
+                </p>
+                <ul class="mt-2 text-sm text-blue-700 dark:text-blue-400 list-disc list-inside space-y-1">
+                    <li>{% trans "Frequency: Number of times this keyword appears in student highlights" %}</li>
+                    <li>{% trans "Relevance Score: How relevant the keyword is to the course content (higher is better)" %}</li>
+                </ul>
+            </div>
             {% else %}
             <div class="text-center py-4">
-                <p class="text-gray-500 dark:text-gray-400">{% trans "No content has been added to this course yet" %}</p>
+                <p class="text-gray-500 dark:text-gray-400">{% trans "No keywords found for this course. Students may not have highlighted content yet." %}</p>
             </div>
             {% endif %}
         </div>
     </div>
 
-
-
     {% endif %} <!-- End of course_exists check -->
 </div>
+
+<!-- Add course modules as a collapsible section -->
+{% if course_exists and modules %}
+<div class="mt-4 col-span-full card">
+    <div class="flex flex-col gap-2 px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade cursor-pointer" id="toggle-modules-section">
+        <div class="flex-center-between">
+            <div>
+                <h6 class="card-title">{% trans "Course Content" %}</h6>
+                <p class="card-description">{% trans "Modules and activities in this course" %}</p>
+            </div>
+            <i class="ri-arrow-down-s-line text-xl transition-transform" id="modules-toggle-icon"></i>
+        </div>
+    </div>
+    <div class="p-6 hidden" id="modules-content">
+        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+            {% for module in modules %}
+            <li class="py-3">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 mr-3">
+                        {% if module.type == 'resource' %}
+                        <i class="ri-file-text-line text-xl text-blue-500"></i>
+                        {% elif module.type == 'url' %}
+                        <i class="ri-link text-xl text-green-500"></i>
+                        {% elif module.type == 'page' %}
+                        <i class="ri-article-line text-xl text-indigo-500"></i>
+                        {% elif module.type == 'book' %}
+                        <i class="ri-book-read-line text-xl text-amber-500"></i>
+                        {% elif module.type == 'forum' %}
+                        <i class="ri-discuss-line text-xl text-orange-500"></i>
+                        {% elif module.type == 'quiz' %}
+                        <i class="ri-question-answer-line text-xl text-red-500"></i>
+                        {% elif module.type == 'assign' %}
+                        <i class="ri-task-line text-xl text-purple-500"></i>
+                        {% else %}
+                        <i class="ri-checkbox-circle-line text-xl text-gray-500"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-base font-medium text-gray-900 dark:text-white">
+                            {{ module.name|default:module.type|title }}
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            {% trans "Type:" %} {{ module.type|title }} | {% trans "Added:" %} {{ module.added|date:"F j, Y" }}
+                        </p>
+                    </div>
+                    {% if LMS_URL %}
+                    <div>
+                        <a href="{{ LMS_URL }}/mod/{{ module.type }}/view.php?id={{ module.id }}"
+                            target="_blank"
+                            class="text-primary-500 hover:text-primary-700 dark:hover:text-primary-300">
+                            <i class="ri-external-link-line"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
 
 <!-- JavaScript for teachers list -->
 <script>
@@ -262,6 +462,18 @@
                 });
                 // Hide the button after clicking
                 this.style.display = 'none';
+            });
+        }
+
+        // Toggle modules section
+        const toggleModulesSection = document.getElementById('toggle-modules-section');
+        const modulesContent = document.getElementById('modules-content');
+        const modulesToggleIcon = document.getElementById('modules-toggle-icon');
+
+        if (toggleModulesSection && modulesContent && modulesToggleIcon) {
+            toggleModulesSection.addEventListener('click', function() {
+                modulesContent.classList.toggle('hidden');
+                modulesToggleIcon.classList.toggle('rotate-180');
             });
         }
     });

@@ -904,3 +904,47 @@ class CourseDetail(models.Model):
         except Exception as e:
             logger.error(f"Error fetching ClickHouse data for course {course_id}: {str(e)}")
             return {}, str(e)
+
+class TopKeywords(models.Model):
+    """Model to track top keywords extracted from student highlights"""
+    keyword = models.CharField(max_length=255, primary_key=True)
+    frequency = models.IntegerField()
+    score = models.FloatField()
+
+    @classmethod
+    def get_top_keywords(cls, context_id=None, limit=None, max_keywords_per_text=5, top_n=100):
+        """
+        Get top keywords from student highlights
+
+        Args:
+            context_id (str, optional): Filter by specific context (course) ID
+            limit (int, optional): Limit number of highlight records to process
+            max_keywords_per_text (int): Maximum keywords to extract per highlight
+            top_n (int): Number of top keywords to return in final ranking
+
+        Returns:
+            list: List of dictionaries with keyword data
+        """
+        from leaf_school.utils.keyword_ranking import get_keyword_ranking
+
+        try:
+            # Get keyword ranking DataFrame
+            keyword_df = get_keyword_ranking(
+                context_id=context_id,
+                limit=limit,
+                max_keywords_per_text=max_keywords_per_text,
+                top_n=top_n
+            )
+
+            # Convert DataFrame to list of dictionaries
+            if not keyword_df.empty:
+                return keyword_df.to_dict('records')
+            return []
+
+        except Exception as e:
+            logger.error(f"Error getting top keywords: {str(e)}")
+            return []
+
+    class Meta:
+        managed = False
+        app_label = 'clickhouse_app'

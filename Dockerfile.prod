@@ -43,6 +43,33 @@ RUN pip install --no-cache /wheels/*
 
 COPY . .
 
+# Clean install of keyword extraction dependencies with specific compatible versions
+# Order matters for dependency resolution
+RUN pip uninstall -y numpy torch transformers sentence-transformers keybert huggingface_hub
+
+# Install specific versions in the right order
+RUN pip install numpy==1.24.4 && \
+    pip install torch==1.13.1 --no-cache-dir && \
+    pip install huggingface_hub==0.12.1 && \
+    pip install transformers==4.26.1 && \
+    pip install sentence-transformers==2.2.2 && \
+    pip install keybert==0.7.0
+
+# Verify installation of each package
+RUN python -c "import numpy; print(f'NumPy {numpy.__version__} installed')" && \
+    python -c "import torch; print(f'PyTorch {torch.__version__} installed')" && \
+    python -c "import huggingface_hub; print(f'huggingface_hub {huggingface_hub.__version__} installed')" && \
+    python -c "import sentence_transformers; print(f'sentence_transformers {sentence_transformers.__version__} installed')" && \
+    python -c "import keybert; print(f'keybert {keybert.__version__} installed')"
+
+# Test KeyBERT initialization
+RUN python -c "from keybert import KeyBERT; model = KeyBERT('distilbert-base-nli-mean-tokens'); print('KeyBERT model loaded successfully')"
+
+# Install language models for spaCy
+RUN python -m spacy download en_core_web_sm && \
+    python -m spacy download ja_core_news_sm && \
+    python -m spacy link ja_core_news_sm ja
+
 # Copy entrypoint script
 COPY entrypoint.sh /app/
 RUN chmod +x /app/entrypoint.sh

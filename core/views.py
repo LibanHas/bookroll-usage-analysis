@@ -12,7 +12,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db import connections
 import datetime
 
-from .models import MoodleUser, StudentCount, TotalCourses, TotalContents, ActiveStudents, MostActiveContents, DailyActiveUsers, DailyActivities, MostActiveStudents, MostMemoContents, MostMarkedContents, CourseCategory, CourseDetail
+from .models import MoodleUser, StudentCount, TotalCourses, TotalContents, ActiveStudents, MostActiveContents, DailyActiveUsers, DailyActivities, MostActiveStudents, MostMemoContents, MostMarkedContents, CourseCategory, CourseDetail, TopKeywords
 
 logger = logging.getLogger(__name__)
 
@@ -479,6 +479,13 @@ class CourseDetailView(LoginRequiredMixin, TemplateView):
             context['activity_timeline'] = json.dumps(stats['activity_timeline'])
         if 'daily_activity_data' in stats:
             context['daily_activity_data'] = stats['daily_activity_data']
+
+        # Get top keywords for this course
+        keywords = TopKeywords.get_top_keywords(
+            context_id=str(course_id),  # Convert to string for comparison with context_id
+            top_n=20  # Limit to top 20 keywords
+        )
+        context['top_keywords'] = keywords
 
         # Add Moodle LMS URL for course link
         context['LMS_URL'] = settings.LMS_URL if hasattr(settings, 'LMS_URL') else ''

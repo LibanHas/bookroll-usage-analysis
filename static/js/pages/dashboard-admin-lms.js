@@ -1249,3 +1249,74 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('Daily activity data element not found or empty.');
     }
 });
+
+// Keyword Cloud Chart
+document.addEventListener('DOMContentLoaded', function() {
+    const keywordDataElement = document.getElementById('keywordRankingData');
+
+    if (keywordDataElement && keywordDataElement.textContent) {
+        try {
+            // Parse the JSON data - expects format: [{keyword: "word1", weight: 10}, {keyword: "word2", weight: 5}, ...]
+            const keywordData = JSON.parse(keywordDataElement.textContent);
+
+            // Format data for word cloud (TreeMap)
+            const formattedData = keywordData.map(item => ({
+                x: item.keyword,
+                y: item.weight
+            }));
+
+            // Word cloud chart options
+            const keywordCloudOptions = {
+                series: [
+                    {
+                        data: formattedData
+                    }
+                ],
+                chart: {
+                    height: 350,
+                    type: 'treemap',
+                    toolbar: {
+                        show: true
+                    }
+                },
+                title: {
+                    text: 'Keyword Cloud',
+                    align: 'center'
+                },
+                colors: [
+                    '#5F71FA', '#76D466', '#FF4626', '#FFC107', '#9C27B0',
+                    '#4CAF50', '#26e9ff', '#f44336', '#E91E63', '#2196F3'
+                ],
+                plotOptions: {
+                    treemap: {
+                        distributed: true,
+                        enableShades: false
+                    }
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(value) {
+                            return value;
+                        }
+                    }
+                }
+            };
+
+            // Render the chart
+            const keywordCloudChartContainer = document.querySelector("#keyword-cloud-chart");
+            if (keywordCloudChartContainer) {
+                const keywordCloudChart = new ApexCharts(
+                    keywordCloudChartContainer,
+                    keywordCloudOptions
+                );
+                keywordCloudChart.render();
+            } else {
+                console.warn('Chart container "#keyword-cloud-chart" not found.');
+            }
+        } catch (error) {
+            console.error('Error parsing keyword data:', error);
+        }
+    } else {
+        console.warn('Keyword data element not found or empty.');
+    }
+});
