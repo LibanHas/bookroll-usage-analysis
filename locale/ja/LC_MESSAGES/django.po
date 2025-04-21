@@ -235,8 +235,8 @@ msgstr "教師"
 msgid "Students"
 msgstr "生徒"
 
-msgid "Course Categories"
-msgstr "コースカテゴリー"
+msgid "Courses"
+msgstr "コース"
 
 msgid "Help"
 msgstr "ヘルプ"

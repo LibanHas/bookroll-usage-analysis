@@ -239,13 +239,35 @@
 
                     // Word Cloud (using treemap)
                     if (keywordData.length > 0) {
+                        // Find min and max frequency for scaling
+                        const minFrequency = Math.min(...keywordData.map(item => item.frequency));
+                        const maxFrequency = Math.max(...keywordData.map(item => item.frequency));
+
+                        // Base font size for the page (for min frequency)
+                        const baseFontSize = 14;
+                        // Max font size (for max frequency)
+                        const maxFontSize = 28;
+
+                        // Prepare data with font size calculation
+                        const wordCloudData = keywordData.map(item => {
+                            // Calculate scaled font size based on frequency
+                            let fontSize = baseFontSize;
+                            if (maxFrequency > minFrequency) {
+                                const scale = (item.frequency - minFrequency) / (maxFrequency - minFrequency);
+                                fontSize = Math.round(baseFontSize + scale * (maxFontSize - baseFontSize));
+                            }
+
+                            return {
+                                x: item.keyword,
+                                y: item.frequency,
+                                fontSize: fontSize
+                            };
+                        });
+
                         const wordCloudOptions = {
                             series: [
                                 {
-                                    data: keywordData.map(item => ({
-                                        x: item.keyword,
-                                        y: item.frequency
-                                    }))
+                                    data: wordCloudData
                                 }
                             ],
                             chart: {
@@ -273,17 +295,51 @@
                                     enableShades: false
                                 }
                             },
+                            dataLabels: {
+                                style: {
+                                    fontFamily: 'inherit',
+                                    fontWeight: 'normal'
+                                },
+                                formatter: function(text, op) {
+                                    return text;
+                                }
+                            },
                             tooltip: {
                                 y: {
                                     formatter: function(value) {
                                         return value;
                                     }
                                 }
+                            },
+                            // Add custom rendering
+                            states: {
+                                hover: {
+                                    filter: {
+                                        type: 'none'
+                                    }
+                                }
+                            },
+                            // Add this to enable custom rendering
+                            forecastDataPoints: {
+                                count: 0
                             }
                         };
 
                         const wordCloudChart = new ApexCharts(document.querySelector("#keyword-cloud-chart"), wordCloudOptions);
                         wordCloudChart.render();
+
+                        // Add custom rendering for font sizes after the chart is rendered
+                        wordCloudChart.addEventListener('rendered', function() {
+                            // Find all text elements in the chart
+                            const textElements = document.querySelectorAll('#keyword-cloud-chart .apexcharts-data-labels text');
+
+                            // Apply font sizes to each text element
+                            textElements.forEach((textElement, index) => {
+                                if (index < wordCloudData.length) {
+                                    textElement.style.fontSize = wordCloudData[index].fontSize + 'px';
+                                }
+                            });
+                        });
                     }
 
                     // Create the bar chart
