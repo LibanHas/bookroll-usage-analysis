@@ -1320,3 +1320,185 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('Keyword data element not found or empty.');
     }
 });
+
+// Student Highlights Chart - Most active to least active students
+document.addEventListener('DOMContentLoaded', function() {
+    const studentHighlightsDataElement = document.getElementById('student-highlights-data');
+
+    if (studentHighlightsDataElement && studentHighlightsDataElement.textContent) {
+        try {
+            // Parse the JSON data
+            const studentHighlightsData = JSON.parse(studentHighlightsDataElement.textContent);
+
+            // Data is already sorted by activity count in the backend
+
+            // Prepare the chart data - use all students (no limit)
+            const studentNames = studentHighlightsData.map(item => item.name);
+            const activityCounts = studentHighlightsData.map(item => item.unique_count);
+            const studentStatuses = studentHighlightsData.map(item => item.status);
+
+            // Custom colors based on status
+            const pointColors = studentStatuses.map(status => {
+                switch(status) {
+                    case 'active': return '#5F71FA';  // Active students - blue
+                    case 'absent': return '#FF4626';  // Absent students - red
+                    case 'active_not_enrolled': return '#FFC107';  // Active but not enrolled - yellow
+                    default: return '#9E9E9E';  // Unknown - gray
+                }
+            });
+
+            // Create chart options
+            const studentHighlightsChartOptions = {
+                series: [{
+                    name: 'Activity Count',
+                    data: activityCounts
+                }],
+                chart: {
+                    type: 'bar',
+                    height: 450, // Increase height for more students
+                    toolbar: {
+                        show: true
+                    }
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '60%',
+                        endingShape: 'rounded',
+                        borderRadius: 4,
+                        distributed: true
+                    }
+                },
+                colors: pointColors,
+                dataLabels: {
+                    enabled: true,
+                    offsetY: -20,
+                    style: {
+                        fontSize: '12px',
+                        colors: ['#000']
+                    },
+                    formatter: function(val) {
+                        return val
+                    }
+                },
+                stroke: {
+                    width: 1,
+                    colors: ['#fff']
+                },
+                xaxis: {
+                    categories: studentNames,
+                    labels: {
+                        rotate: -45,
+                        style: {
+                            fontSize: '11px'
+                        },
+                        maxHeight: 140
+                    }
+                },
+                yaxis: {
+                    title: {
+                        text: 'Activity Count'
+                    }
+                },
+                title: {
+                    text: 'Student Activity Levels',
+                    align: 'center',
+                    floating: false
+                },
+                subtitle: {
+                    text: 'Based on number of highlights and interactions',
+                    align: 'center',
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(val) {
+                            return val + ' interactions'
+                        }
+                    },
+                    custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                        const student = studentHighlightsData[dataPointIndex];
+                        let statusText = '';
+
+                        switch(student.status) {
+                            case 'active':
+                                statusText = '<span style="color:#5F71FA">Active</span>';
+                                break;
+                            case 'absent':
+                                statusText = '<span style="color:#FF4626">Absent (No Activity)</span>';
+                                break;
+                            case 'active_not_enrolled':
+                                statusText = '<span style="color:#FFC107">Not Currently Enrolled</span>';
+                                break;
+                            default:
+                                statusText = '<span style="color:#9E9E9E">Unknown</span>';
+                        }
+
+                        return `
+                        <div class="apexcharts-tooltip-title" style="font-weight:bold; margin-bottom:5px">
+                            ${student.name}
+                        </div>
+                        <div>
+                            <span style="font-weight:bold">Status:</span> ${statusText}<br>
+                            <span style="font-weight:bold">Interactions:</span> ${student.unique_count}<br>
+                            <span style="font-weight:bold">Username:</span> ${student.username}
+                        </div>
+                        `;
+                    }
+                },
+                legend: {
+                    show: true,
+                    position: 'bottom',
+                    horizontalAlign: 'center',
+                    floating: false,
+                    customLegendItems: ['Active', 'Absent (No Activity)', 'Not Currently Enrolled', 'Unknown'],
+                    markers: {
+                        fillColors: ['#5F71FA', '#FF4626', '#FFC107', '#9E9E9E']
+                    }
+                }
+            };
+
+            // Create the chart
+            const studentHighlightsChartContainer = document.querySelector("#student-highlights-chart");
+            if (studentHighlightsChartContainer) {
+                const studentHighlightsChart = new ApexCharts(
+                    studentHighlightsChartContainer,
+                    studentHighlightsChartOptions
+                );
+                studentHighlightsChart.render();
+            } else {
+                console.warn('Chart container "#student-highlights-chart" not found.');
+            }
+
+            // Add a summary of student participation
+            const studentSummaryContainer = document.querySelector("#student-participation-summary");
+            if (studentSummaryContainer) {
+                const totalStudents = studentHighlightsData.length;
+                const activeStudents = studentHighlightsData.filter(s => s.unique_count > 0).length;
+                const absentStudents = studentHighlightsData.filter(s => s.unique_count === 0).length;
+
+                let summaryHTML = `
+                <div class="flex flex-row justify-between gap-4 mt-4">
+                    <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg text-center flex-1">
+                        <h3 class="text-lg font-bold text-gray-800 dark:text-white">${totalStudents}</h3>
+                        <p class="text-gray-600 dark:text-gray-300">Total Enrolled Students</p>
+                    </div>
+                    <div class="bg-blue-100 dark:bg-blue-900 p-4 rounded-lg text-center flex-1">
+                        <h3 class="text-lg font-bold text-blue-800 dark:text-blue-200">${activeStudents}</h3>
+                        <p class="text-blue-600 dark:text-blue-300">Active Students</p>
+                    </div>
+                    <div class="bg-red-100 dark:bg-red-900 p-4 rounded-lg text-center flex-1">
+                        <h3 class="text-lg font-bold text-red-800 dark:text-red-200">${absentStudents}</h3>
+                        <p class="text-red-600 dark:text-red-300">Absent Students</p>
+                    </div>
+                </div>
+                `;
+
+                studentSummaryContainer.innerHTML = summaryHTML;
+            }
+        } catch (error) {
+            console.error('Error parsing student highlights data:', error);
+        }
+    } else {
+        console.warn('Student highlights data element not found or empty.');
+    }
+});
