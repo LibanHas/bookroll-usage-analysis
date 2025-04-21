@@ -363,3 +363,6 @@ LEAF_API_CONFIG: Dict[str, Any] = {
 
 # TIME_ZONE = 'Asia/Tokyo'
 USE_TZ = True
+
+
+LMS_URL = os.getenv('LMS_URL', '')

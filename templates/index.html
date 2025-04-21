@@ -181,7 +181,7 @@
     <div class="col-span-full lg:col-span-6 3xl:col-span-4 card">
         <div class="flex-center-between">
             <h6 class="card-title">{% trans "Most Active Contents" %}</h6>
-            <a href="#" class="btn b-solid btn-primary-solid btn-sm">{% trans "See all" %}</a>
+            <a href="{% url 'most_active_contents' %}" class="btn b-solid btn-primary-solid btn-sm">{% trans "See all" %}</a>
         </div>
 
         <!-- Content Table -->
@@ -222,7 +222,7 @@
     <div class="col-span-full lg:col-span-6 3xl:col-span-4 card">
         <div class="flex-center-between">
             <h6 class="card-title">{% trans "Most Highlighted Content" %}</h6>
-            <a href="#" class="btn b-solid btn-primary-solid btn-sm">{% trans "See all" %}</a>
+            <a href="{% url 'most_highlighted_content' %}" class="btn b-solid btn-primary-solid btn-sm">{% trans "See all" %}</a>
         </div>
 
         <!-- Content Table -->
@@ -263,7 +263,7 @@
     <div class="col-span-full lg:col-span-6 3xl:col-span-4 card">
         <div class="flex-center-between">
             <h6 class="card-title">{% trans "Most Memoed Content" %}</h6>
-            <a href="#" class="btn b-solid btn-primary-solid btn-sm">{% trans "See all" %}</a>
+            <a href="{% url 'most_memoed_content' %}" class="btn b-solid btn-primary-solid btn-sm">{% trans "See all" %}</a>
         </div>
 
         <!-- Content Table -->
@@ -306,7 +306,7 @@
     <div class="col-span-full lg:col-span-6 3xl:col-span-4 card">
         <div class="flex-center-between">
             <h6 class="card-title">{% trans "Most Active Students" %}</h6>
-            <a href="#" class="btn b-solid btn-primary-solid btn-sm">{% trans "See all" %}</a>
+            <a href="{% url 'most_active_students' %}" class="btn b-solid btn-primary-solid btn-sm">{% trans "See all" %}</a>
         </div>
         <div class="overflow-x-auto scrollbar-table">
             <table class="table-auto w-full whitespace-nowrap text-left text-xs text-gray-500 dark:text-dark-text font-semibold leading-none">

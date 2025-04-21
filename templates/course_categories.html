@@ -1,0 +1,279 @@
+{% extends 'main.html' %}
+{% load static %}
+{% load i18n %}
+{% block main_content %}
+
+<div class="grid grid-cols-12 gap-x-4">
+    <!-- Start Bread Crumb Section -->
+    <div class="col-span-full card flex-center-btween">
+        <h5 class="card-title">{% trans "Course Categories" %}</h5>
+        <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
+            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two">
+                <a href="{% url 'index' %}">{% trans "Home" %}</a>
+            </li>
+            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&amp;.current-page]:text-gray-500 dark:[&amp;.current-page]:text-dark-text-two current-page">
+                <a href="#">{% trans "Course Categories" %}</a>
+            </li>
+        </ul>
+    </div>
+    <!-- End Bread Crumb Section -->
+
+    <!-- Start Course Categories Section -->
+    <div class="col-span-full card">
+        <div class="flex flex-col gap-2 sm:flex-center-between sm:flex-row px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
+            <div>
+                <h6 class="card-title">{% trans "Courses" %}</h6>
+                <p class="card-description">{% trans "Browse courses organized by categories" %}</p>
+            </div>
+            <!-- Search Box (similar to student_list.html) -->
+            <div class="flex items-center gap-2">
+                <input
+                    type="text"
+                    id="live-search"
+                    placeholder="{% trans 'Search courses...' %}"
+                    class="form-input"
+                />
+                <button type="button" class="btn b-solid btn-primary-solid" onclick="clearSearch()">
+                    {% trans "Clear" %}
+                </button>
+            </div>
+        </div>
+
+        <!-- Categories and Courses Display -->
+        <div class="p-6" id="categories-container">
+            {% if categories %}
+                {% for parent_id, parent in categories.items %}
+                    <div class="mb-8 category-section">
+                        <h2 class="text-xl font-bold mb-4 text-primary-600 dark:text-primary-400 border-b pb-2 parent-category">{{ parent.name }}</h2>
+
+                        {% for child_id, child in parent.children.items %}
+                            <div class="ml-6 mb-6 child-category-section">
+                                <div class="flex items-center cursor-pointer category-header" onclick="toggleCategory(this)">
+                                    <i class="ri-add-line text-xl text-primary-500 expand-icon mr-2"></i>
+                                    <i class="ri-subtract-line text-xl text-primary-500 collapse-icon mr-2 hidden"></i>
+                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 child-category">{{ child.name }}</h3>
+                                </div>
+
+                                {% if child.courses %}
+                                    <div class="ml-6 mt-3 category-content hidden">
+                                        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                                            {% for course in child.courses %}
+                                                <li class="py-3 course-item">
+                                                    <div class="flex justify-between">
+                                                        <span class="text-gray-700 dark:text-gray-300 course-name">{{ course.name }}</span>
+                                                        <div class="flex gap-2">
+                                                            <a href="{% url 'course_detail' course_id=course.id %}"
+                                                               class="text-primary-500 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
+                                                                <i class="ri-information-line mr-1"></i> {% trans "Details" %}
+                                                            </a>
+                                                            <a href="{{ LMS_URL }}/course/view.php?id={{ course.id }}"
+                                                               target="_blank"
+                                                               class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center">
+                                                                <i class="ri-external-link-line mr-1"></i> {% trans "Moodle" %}
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% else %}
+                                    <p class="ml-6 mt-3 text-gray-500 dark:text-gray-400 no-courses category-content hidden">{% trans "No courses in this category" %}</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-8">
+                    <p class="text-gray-500 dark:text-gray-400">{% trans "No course categories found" %}</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- No Results Message (initially hidden) -->
+        <div id="no-results-message" class="text-center py-8 hidden">
+            <p class="text-gray-500 dark:text-gray-400">{% trans "No courses match your search" %}</p>
+        </div>
+    </div>
+    <!-- End Course Categories Section -->
+</div>
+
+<!-- JavaScript for Live Search and Category Toggle -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the search input element
+        const searchInput = document.getElementById('live-search');
+
+        // Add event listener for input changes
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            filterCourses(searchTerm);
+        });
+    });
+
+    // Function to toggle category visibility
+    function toggleCategory(element) {
+        // Find the parent category section
+        const categorySection = element.closest('.child-category-section');
+        // Find the content section
+        const content = categorySection.querySelector('.category-content');
+        // Find the expand/collapse icons
+        const expandIcon = element.querySelector('.expand-icon');
+        const collapseIcon = element.querySelector('.collapse-icon');
+
+        // Toggle visibility
+        if (content.classList.contains('hidden')) {
+            // Show content
+            content.classList.remove('hidden');
+            // Toggle icons
+            expandIcon.classList.add('hidden');
+            collapseIcon.classList.remove('hidden');
+        } else {
+            // Hide content
+            content.classList.add('hidden');
+            // Toggle icons
+            expandIcon.classList.remove('hidden');
+            collapseIcon.classList.add('hidden');
+        }
+    }
+
+    // Function to expand all categories with matching courses
+    function expandMatchingCategories(visibleChildCategories) {
+        visibleChildCategories.forEach(category => {
+            const header = category.querySelector('.category-header');
+            const content = category.querySelector('.category-content');
+            const expandIcon = header.querySelector('.expand-icon');
+            const collapseIcon = header.querySelector('.collapse-icon');
+
+            // Show content
+            content.classList.remove('hidden');
+            // Show collapse icon, hide expand icon
+            expandIcon.classList.add('hidden');
+            collapseIcon.classList.remove('hidden');
+        });
+    }
+
+    // Function to collapse all categories
+    function collapseAllCategories() {
+        const categoryHeaders = document.querySelectorAll('.category-header');
+        categoryHeaders.forEach(header => {
+            const categorySection = header.closest('.child-category-section');
+            const content = categorySection.querySelector('.category-content');
+            const expandIcon = header.querySelector('.expand-icon');
+            const collapseIcon = header.querySelector('.collapse-icon');
+
+            // Hide content
+            content.classList.add('hidden');
+            // Show expand icon, hide collapse icon
+            expandIcon.classList.remove('hidden');
+            collapseIcon.classList.add('hidden');
+        });
+    }
+
+    // Function to filter courses based on search term
+    function filterCourses(searchTerm) {
+        // Get all course items
+        const courseItems = document.querySelectorAll('.course-item');
+        const categorySections = document.querySelectorAll('.category-section');
+        const childCategorySections = document.querySelectorAll('.child-category-section');
+        const noResultsMessage = document.getElementById('no-results-message');
+
+        let hasVisibleCourses = false;
+
+        // If search term is empty, show all categories but collapse them
+        if (searchTerm === '') {
+            courseItems.forEach(item => {
+                item.classList.remove('hidden');
+            });
+
+            childCategorySections.forEach(section => {
+                section.classList.remove('hidden');
+            });
+
+            categorySections.forEach(section => {
+                section.classList.remove('hidden');
+            });
+
+            noResultsMessage.classList.add('hidden');
+
+            // Collapse all categories when search is cleared
+            collapseAllCategories();
+            return;
+        }
+
+        // Track which child categories and parent categories have visible courses
+        const visibleChildCategories = new Set();
+        const visibleParentCategories = new Set();
+
+        // First, filter the course items
+        courseItems.forEach(item => {
+            const courseName = item.querySelector('.course-name').textContent.toLowerCase();
+
+            if (courseName.includes(searchTerm)) {
+                item.classList.remove('hidden');
+
+                // Get parent child category and mark it as visible
+                const childCategory = item.closest('.child-category-section');
+                if (childCategory) {
+                    visibleChildCategories.add(childCategory);
+
+                    // Get parent category and mark it as visible
+                    const parentCategory = childCategory.closest('.category-section');
+                    if (parentCategory) {
+                        visibleParentCategories.add(parentCategory);
+                    }
+                }
+
+                hasVisibleCourses = true;
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+
+        // Hide/show child category sections based on whether they have visible courses
+        childCategorySections.forEach(section => {
+            if (visibleChildCategories.has(section)) {
+                section.classList.remove('hidden');
+            } else {
+                section.classList.add('hidden');
+            }
+        });
+
+        // Hide/show parent category sections based on whether they have visible child categories
+        categorySections.forEach(section => {
+            if (visibleParentCategories.has(section)) {
+                section.classList.remove('hidden');
+            } else {
+                section.classList.add('hidden');
+            }
+        });
+
+        // Show/hide the no results message
+        if (hasVisibleCourses) {
+            noResultsMessage.classList.add('hidden');
+            // Auto-expand categories with matching results
+            expandMatchingCategories(visibleChildCategories);
+        } else {
+            noResultsMessage.classList.remove('hidden');
+        }
+    }
+
+    // Function to clear the search
+    function clearSearch() {
+        const searchInput = document.getElementById('live-search');
+        searchInput.value = '';
+
+        // Trigger the input event to update the filter
+        const event = new Event('input', {
+            bubbles: true,
+            cancelable: true,
+        });
+        searchInput.dispatchEvent(event);
+
+        // Focus back on the search input
+        searchInput.focus();
+    }
+</script>
+
+{% endblock %}

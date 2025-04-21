@@ -14,10 +14,17 @@
  */
 
 // Total Students
-  const studentsCountByDayRaw = document.getElementById('studentsCountByDayData').textContent;
+  const studentsCountByDayElement = document.getElementById('studentsCountByDayData');
+  let studentsCountByDayOriginal = [];
 
-  const studentsCountByDayOriginal = JSON.parse(studentsCountByDayRaw);
-  console.log("studentsCountByDayOriginal", studentsCountByDayOriginal);
+  if (studentsCountByDayElement && studentsCountByDayElement.textContent) {
+    const studentsCountByDayRaw = studentsCountByDayElement.textContent;
+    studentsCountByDayOriginal = JSON.parse(studentsCountByDayRaw);
+    console.log("studentsCountByDayOriginal", studentsCountByDayOriginal);
+  } else {
+    console.warn('Element with ID "studentsCountByDayData" not found or empty.');
+    studentsCountByDayOriginal = [];
+  }
 
   // Apply the function to fill missing days
   const studentsCountByDay = fillMissingDays(studentsCountByDayOriginal);
@@ -79,19 +86,32 @@
     },
   },
 };
-const studentsCountChart = new ApexCharts(
-  document.querySelector("#admin-overall-students-chart"),
-  studentsCountOptions
-);
-studentsCountChart.render();
+const studentsCountChartContainer = document.querySelector("#admin-overall-students-chart");
+if (studentsCountChartContainer) {
+  const studentsCountChart = new ApexCharts(
+    studentsCountChartContainer,
+    studentsCountOptions
+  );
+  studentsCountChart.render();
+} else {
+  console.warn('Chart container "#admin-overall-students-chart" not found.');
+}
 
 
 
 // Total Courses
-const coursesCountByDayRaw = document.getElementById('coursesCountByDayData').textContent;
-console.log(coursesCountByDayRaw);
-const coursesCountByDayOriginal = JSON.parse(coursesCountByDayRaw);
-console.log(coursesCountByDayOriginal);
+const coursesCountByDayElement = document.getElementById('coursesCountByDayData');
+let coursesCountByDayOriginal = [];
+
+if (coursesCountByDayElement && coursesCountByDayElement.textContent) {
+  const coursesCountByDayRaw = coursesCountByDayElement.textContent;
+  console.log(coursesCountByDayRaw);
+  coursesCountByDayOriginal = JSON.parse(coursesCountByDayRaw);
+  console.log(coursesCountByDayOriginal);
+} else {
+  console.warn('Element with ID "coursesCountByDayData" not found or empty.');
+  coursesCountByDayOriginal = [];
+}
 
 // Function to fill missing days with zeros for the last 7 days
 function fillMissingDays(data) {
@@ -178,17 +198,30 @@ var enrollOptions = {
   },
 };
 
-var enrollChart = new ApexCharts(
-  document.querySelector("#admin-total-registration-chart"),
-  enrollOptions
-);
-enrollChart.render();
+const enrollChartContainer = document.querySelector("#admin-total-registration-chart");
+if (enrollChartContainer) {
+  var enrollChart = new ApexCharts(
+    enrollChartContainer,
+    enrollOptions
+  );
+  enrollChart.render();
+} else {
+  console.warn('Chart container "#admin-total-registration-chart" not found.');
+}
 
 // Total Courses
-const contentsCountByDayRaw = document.getElementById('contentsCountByDayData').textContent;
-console.log(contentsCountByDayRaw);
-const contentsCountByDayOriginal = JSON.parse(contentsCountByDayRaw);
-console.log(contentsCountByDayOriginal);
+const contentsCountByDayElement = document.getElementById('contentsCountByDayData');
+let contentsCountByDayOriginal = [];
+
+if (contentsCountByDayElement && contentsCountByDayElement.textContent) {
+  const contentsCountByDayRaw = contentsCountByDayElement.textContent;
+  console.log(contentsCountByDayRaw);
+  contentsCountByDayOriginal = JSON.parse(contentsCountByDayRaw);
+  console.log(contentsCountByDayOriginal);
+} else {
+  console.warn('Element with ID "contentsCountByDayData" not found or empty.');
+  contentsCountByDayOriginal = [];
+}
 
 // Apply the function to fill missing days
 const contentsCountByDay = fillMissingDays(contentsCountByDayOriginal);
@@ -249,18 +282,31 @@ var courseOptions = {
     },
   },
 };
-var courseChart = new ApexCharts(
-  document.querySelector("#admin-total-course-chart"),
-  courseOptions
-);
-courseChart.render();
+const courseChartContainer = document.querySelector("#admin-total-course-chart");
+if (courseChartContainer) {
+  var courseChart = new ApexCharts(
+    courseChartContainer,
+    courseOptions
+  );
+  courseChart.render();
+} else {
+  console.warn('Chart container "#admin-total-course-chart" not found.');
+}
 
 
 // Active Students
-const activeStudentsByDayRaw = document.getElementById('activeStudentsData').textContent;
-console.log(activeStudentsByDayRaw);
-const activeStudentsByDayOriginal = JSON.parse(activeStudentsByDayRaw);
-console.log(activeStudentsByDayOriginal);
+const activeStudentsByDayElement = document.getElementById('activeStudentsData');
+let activeStudentsByDayOriginal = [];
+
+if (activeStudentsByDayElement && activeStudentsByDayElement.textContent) {
+  const activeStudentsByDayRaw = activeStudentsByDayElement.textContent;
+  console.log(activeStudentsByDayRaw);
+  activeStudentsByDayOriginal = JSON.parse(activeStudentsByDayRaw);
+  console.log(activeStudentsByDayOriginal);
+} else {
+  console.warn('Element with ID "activeStudentsData" not found or empty.');
+  activeStudentsByDayOriginal = [];
+}
 
 // Apply the function to fill missing days
 const activeStudentsByDay = fillMissingDays(activeStudentsByDayOriginal);
@@ -322,11 +368,16 @@ const activeStudentsOptions = {
     },
   },
 };
-const activeStudentsChart = new ApexCharts(
-  document.querySelector("#admin-active-students-chart"),
-  activeStudentsOptions
-);
-activeStudentsChart.render();
+const activeStudentsChartContainer = document.querySelector("#admin-active-students-chart");
+if (activeStudentsChartContainer) {
+  const activeStudentsChart = new ApexCharts(
+    activeStudentsChartContainer,
+    activeStudentsOptions
+  );
+  activeStudentsChart.render();
+} else {
+  console.warn('Chart container "#admin-active-students-chart" not found.');
+}
 
 
 
@@ -335,52 +386,86 @@ activeStudentsChart.render();
 
 // Daily Active Users and Daily activities Chart
  // Read the raw JSON from the hidden script blocks
- const dailyActiveUsersRaw = document.getElementById('dailyActiveUsersData').textContent;
- const dailyActivitiesRaw = document.getElementById('dailyActivitiesData').textContent;
+ const dailyActiveUsersElement = document.getElementById('dailyActiveUsersData');
+ const dailyActivitiesElement = document.getElementById('dailyActivitiesData');
+
+ let dailyActiveUsersOriginal = [];
+ let dailyActivitiesOriginal = [];
 
  //Parse into JavaScript objects/arrays
- const dailyActiveUsersOriginal = JSON.parse(dailyActiveUsersRaw);
- const dailyActivitiesOriginal = JSON.parse(dailyActivitiesRaw);
-
- // Function to fill missing days for the object format (date and value property names)
- function fillMissingDaysForObjects(data, dateProperty, valueProperty, days = 30) {
-   // Create a map of existing dates
-   const dateMap = new Map();
-   data.forEach(item => {
-     dateMap.set(item[dateProperty], item[valueProperty]);
-   });
-
-   // Create an array for the last N days
-   const result = [];
-   const today = new Date();
-   for (let i = days - 1; i >= 0; i--) {
-     const date = new Date(today);
-     date.setDate(today.getDate() - i);
-     const dateStr = date.toISOString().split('T')[0];
-
-     // Use existing count or 0 if no data for that day
-     const count = dateMap.has(dateStr) ? dateMap.get(dateStr) : 0;
-
-     const obj = {};
-     obj[dateProperty] = dateStr;
-     obj[valueProperty] = count;
-     result.push(obj);
-   }
-
-   return result;
+ if (dailyActiveUsersElement && dailyActiveUsersElement.textContent) {
+   const dailyActiveUsersRaw = dailyActiveUsersElement.textContent;
+   dailyActiveUsersOriginal = JSON.parse(dailyActiveUsersRaw);
+ } else {
+   console.warn('Element with ID "dailyActiveUsersData" not found or empty.');
+   dailyActiveUsersOriginal = [];
  }
 
- // Apply the function to fill missing days
- const dailyActiveUsers = fillMissingDaysForObjects(dailyActiveUsersOriginal, 'date', 'total_active_users');
- const dailyActivities = fillMissingDaysForObjects(dailyActivitiesOriginal, 'date', 'total_activities');
+ if (dailyActivitiesElement && dailyActivitiesElement.textContent) {
+   const dailyActivitiesRaw = dailyActivitiesElement.textContent;
+   dailyActivitiesOriginal = JSON.parse(dailyActivitiesRaw);
+ } else {
+   console.warn('Element with ID "dailyActivitiesData" not found or empty.');
+   dailyActivitiesOriginal = [];
+ }
 
- // Extract data from dailyActiveUsers
- const datesActive = dailyActiveUsers.map((item) => item.date);
- const activeUsersData = dailyActiveUsers.map((item) => item.total_active_users);
+// Function to fill missing days for the object format (date and value property names)
+function fillMissingDaysForObjects(data, dateProperty, valueProperty, days = 30) {
+    // Create a map of existing dates
+    const dateMap = new Map();
+    data.forEach(item => {
+        dateMap.set(item[dateProperty], item);
+    });
 
- // Extract data from dailyActivities
- const datesActivities = dailyActivities.map((item) => item.date);
- const activitiesData = dailyActivities.map((item) => item.total_activities);
+    // Create an array for the last N days
+    const result = [];
+    const today = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+
+        // Use existing item or create a new one with zeros
+        let newItem;
+        if (dateMap.has(dateStr)) {
+            newItem = {...dateMap.get(dateStr)};
+        } else {
+            newItem = {
+                [dateProperty]: dateStr
+            };
+
+            // If we're tracking a specific value property, set it to 0
+            if (valueProperty) {
+                newItem[valueProperty] = 0;
+            } else {
+                // For multi-value objects, set all expected properties to 0
+                newItem.content_open = 0;
+                newItem.marker = 0;
+                newItem.memo = 0;
+                newItem.hand_writing_memo = 0;
+                newItem.bookmark = 0;
+                newItem.quiz_attempts = 0;
+                newItem.active_students = 0;
+            }
+        }
+
+        result.push(newItem);
+    }
+
+    return result;
+}
+
+// Apply the function to fill missing days
+const dailyActiveUsers = fillMissingDaysForObjects(dailyActiveUsersOriginal, 'date', 'total_active_users');
+const dailyActivities = fillMissingDaysForObjects(dailyActivitiesOriginal, 'date', 'total_activities');
+
+// Extract data from dailyActiveUsers
+const datesActive = dailyActiveUsers.map((item) => item.date);
+const activeUsersData = dailyActiveUsers.map((item) => item.total_active_users);
+
+// Extract data from dailyActivities
+const datesActivities = dailyActivities.map((item) => item.date);
+const activitiesData = dailyActivities.map((item) => item.total_activities);
 
 
  const dailyActiveUsersChartOptions = {
@@ -448,11 +533,16 @@ activeStudentsChart.render();
   },
 };
 
-const dailyActiveUsersChart = new ApexCharts(
-  document.querySelector("#daily-active-users-chart"),
-  dailyActiveUsersChartOptions
-);
-dailyActiveUsersChart.render();
+const dailyActiveUsersChartContainer = document.querySelector("#daily-active-users-chart");
+if (dailyActiveUsersChartContainer) {
+  const dailyActiveUsersChart = new ApexCharts(
+    dailyActiveUsersChartContainer,
+    dailyActiveUsersChartOptions
+  );
+  dailyActiveUsersChart.render();
+} else {
+  console.warn('Chart container "#daily-active-users-chart" not found.');
+}
 
 
 
@@ -521,11 +611,16 @@ const dailyActivitiesChartOptions = {
   },
 };
 
-const dailyActivitiesChart = new ApexCharts(
-  document.querySelector("#daily-activities-chart"),
-  dailyActivitiesChartOptions
-);
-dailyActivitiesChart.render();
+const dailyActivitiesChartContainer = document.querySelector("#daily-activities-chart");
+if (dailyActivitiesChartContainer) {
+  const dailyActivitiesChart = new ApexCharts(
+    dailyActivitiesChartContainer,
+    dailyActivitiesChartOptions
+  );
+  dailyActivitiesChart.render();
+} else {
+  console.warn('Chart container "#daily-activities-chart" not found.');
+}
 
 
 
@@ -580,11 +675,16 @@ const catrgoryOneOptions = {
     },
   },
 };
-const categoryOneChart = new ApexCharts(
-  document.querySelector("#category-one"),
-  catrgoryOneOptions
-);
-categoryOneChart.render();
+const categoryOneChartContainer = document.querySelector("#category-one");
+if (categoryOneChartContainer) {
+  const categoryOneChart = new ApexCharts(
+    categoryOneChartContainer,
+    catrgoryOneOptions
+  );
+  categoryOneChart.render();
+} else {
+  console.warn('Chart container "#category-one" not found.');
+}
 
 // Chart Two (UI/UX Design)
 const catrgoryTwoOptions = {
@@ -635,11 +735,16 @@ const catrgoryTwoOptions = {
     },
   },
 };
-const categoryTwoChart = new ApexCharts(
-  document.querySelector("#category-two"),
-  catrgoryTwoOptions
-);
-categoryTwoChart.render();
+const categoryTwoChartContainer = document.querySelector("#category-two");
+if (categoryTwoChartContainer) {
+  const categoryTwoChart = new ApexCharts(
+    categoryTwoChartContainer,
+    catrgoryTwoOptions
+  );
+  categoryTwoChart.render();
+} else {
+  console.warn('Chart container "#category-two" not found.');
+}
 
 // Chart Three (Web Development)
 const catrgoryThreeOptions = {
@@ -690,11 +795,16 @@ const catrgoryThreeOptions = {
     },
   },
 };
-const categoryThreeChart = new ApexCharts(
-  document.querySelector("#category-three"),
-  catrgoryThreeOptions
-);
-categoryThreeChart.render();
+const categoryThreeChartContainer = document.querySelector("#category-three");
+if (categoryThreeChartContainer) {
+  const categoryThreeChart = new ApexCharts(
+    categoryThreeChartContainer,
+    catrgoryThreeOptions
+  );
+  categoryThreeChart.render();
+} else {
+  console.warn('Chart container "#category-three" not found.');
+}
 
 // Chart Four (Digital Marketing)
 const catrgoryFourOptions = {
@@ -745,11 +855,16 @@ const catrgoryFourOptions = {
     },
   },
 };
-const categoryFourChart = new ApexCharts(
-  document.querySelector("#category-four"),
-  catrgoryFourOptions
-);
-categoryFourChart.render();
+const categoryFourChartContainer = document.querySelector("#category-four");
+if (categoryFourChartContainer) {
+  const categoryFourChart = new ApexCharts(
+    categoryFourChartContainer,
+    catrgoryFourOptions
+  );
+  categoryFourChart.render();
+} else {
+  console.warn('Chart container "#category-four" not found.');
+}
 
 // Chart Five (Business Development)
 const catrgoryFiveOptions = {
@@ -800,11 +915,55 @@ const catrgoryFiveOptions = {
     },
   },
 };
-const categoryFiveChart = new ApexCharts(
-  document.querySelector("#category-five"),
-  catrgoryFiveOptions
-);
-categoryFiveChart.render();
+const categoryFiveChartContainer = document.querySelector("#category-five");
+if (categoryFiveChartContainer) {
+  const categoryFiveChart = new ApexCharts(
+    categoryFiveChartContainer,
+    catrgoryFiveOptions
+  );
+  categoryFiveChart.render();
+} else {
+  console.warn('Chart container "#category-five" not found.');
+}
+
+
+
+// Daily Active Students Chart
+const dailyActiveStudentsElement = document.getElementById('dailyActiveStudentsData');
+let dailyActiveStudentsOriginal = [];
+
+if (dailyActiveStudentsElement && dailyActiveStudentsElement.textContent) {
+  const dailyActiveStudentsRaw = dailyActiveStudentsElement.textContent;
+  dailyActiveStudentsOriginal = JSON.parse(dailyActiveStudentsRaw);
+} else {
+  console.warn('Element with ID "dailyActiveStudentsData" not found or empty.');
+  dailyActiveStudentsOriginal = [];
+}
+
+const dailyActiveStudentsOptions = {
+  series: [
+    {
+      name: "Daily Active Students",
+      data: dailyActiveStudentsOriginal.map((item) => item.count || 0),
+    },
+  ],
+};
+
+const dailyActiveStudentsChartContainer = document.querySelector("#daily-active-students-chart");
+if (dailyActiveStudentsChartContainer) {
+  const dailyActiveStudentsChart = new ApexCharts(
+    dailyActiveStudentsChartContainer,
+    dailyActiveStudentsOptions
+  );
+  dailyActiveStudentsChart.render();
+} else {
+  console.warn('Chart container "#daily-active-students-chart" not found.');
+}
+
+
+
+
+
 /*
 // Learn Activity Chart
 const learnActivityOptions = {
@@ -895,3 +1054,269 @@ const learnActivity = new ApexCharts(
 );
 learnActivity.render();
 */
+
+// Initialize Daily Activity Chart on Course Detail page
+document.addEventListener('DOMContentLoaded', function() {
+    const dailyActivityDataElement = document.getElementById('dailyActivityData');
+
+    if (dailyActivityDataElement && dailyActivityDataElement.textContent) {
+        try {
+            // Parse the JSON data
+            const dailyActivityData = JSON.parse(dailyActivityDataElement.textContent);
+
+            // Fill missing days for the data
+            const filledData = fillMissingDaysForObjects(dailyActivityData, 'date', null, 30);
+
+            // Extract dates for x-axis
+            const dates = filledData.map(item => item.date);
+
+            // Create the stacked bar chart options
+            const dailyActivityChartOptions = {
+                chart: {
+                    type: "bar",
+                    height: 350,
+                    stacked: true,
+                    toolbar: {
+                        show: true,
+                        tools: {
+                            download: true,
+                            selection: true,
+                            zoom: true,
+                            zoomin: true,
+                            zoomout: true,
+                            pan: true
+                        }
+                    },
+                    zoom: {
+                        enabled: true
+                    }
+                },
+                responsive: [{
+                    breakpoint: 480,
+                    options: {
+                        legend: {
+                            position: 'bottom',
+                            offsetX: -10,
+                            offsetY: 0
+                        }
+                    }
+                }],
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '60%',
+                        endingShape: 'rounded'
+                    },
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                series: [
+                    {
+                        name: "Active Students",
+                        data: filledData.map(item => item.active_students || 0)
+                    },
+                    {
+                        name: "Content Views",
+                        data: filledData.map(item => item.content_open || 0)
+                    },
+                    {
+                        name: "Markers",
+                        data: filledData.map(item => item.marker || 0)
+                    },
+                    {
+                        name: "Memos",
+                        data: filledData.map(item => item.memo || 0)
+                    },
+                    {
+                        name: "Handwriting Memos",
+                        data: filledData.map(item => item.hand_writing_memo || 0)
+                    },
+                    {
+                        name: "Bookmarks",
+                        data: filledData.map(item => item.bookmark || 0)
+                    },
+                    {
+                        name: "Quiz Attempts",
+                        data: filledData.map(item => item.quiz_attempts || 0)
+                    }
+                ],
+                xaxis: {
+                    categories: dates,
+                    type: 'datetime',
+                    labels: {
+                        rotate: -45,
+                        rotateAlways: false
+                    }
+                },
+                yaxis: {
+                    title: {
+                        text: "Activities"
+                    },
+                    labels: {
+                        formatter: (val) => Math.round(val)
+                    }
+                },
+                legend: {
+                    position: 'top',
+                    horizontalAlign: 'left',
+                    offsetX: 40,
+                    onItemClick: {
+                        toggleDataSeries: true
+                    }
+                },
+                fill: {
+                    opacity: 1
+                },
+                colors: ['#5F71FA', '#76D466', '#FF4626', '#FFC107', '#9C27B0', '#4CAF50', '#26e9ff'],
+                tooltip: {
+                    y: {
+                        formatter: (val) => val.toLocaleString()
+                    }
+                }
+            };
+
+            // Render the chart
+            const chartContainer = document.querySelector("#daily-activity-chart");
+            if (chartContainer) {
+                const dailyActivityChart = new ApexCharts(
+                    chartContainer,
+                    dailyActivityChartOptions
+                );
+                dailyActivityChart.render();
+
+                // Add a second line chart for active students if needed
+                const activeStudentsOptions = {
+                    chart: {
+                        type: "line",
+                        height: 350,
+                        toolbar: {
+                            show: false
+                        }
+                    },
+                    series: [
+                        {
+                            name: "Active Students",
+                            data: filledData.map(item => item.active_students || 0)
+                        }
+                    ],
+                    stroke: {
+                        curve: 'smooth',
+                        width: 3
+                    },
+                    markers: {
+                        size: 4
+                    },
+                    xaxis: {
+                        categories: dates,
+                        type: 'datetime',
+                        labels: {
+                            show: false
+                        }
+                    },
+                    yaxis: {
+                        opposite: true,
+                        title: {
+                            text: "Active Students"
+                        }
+                    },
+                    colors: ['#4CAF50'],
+                    tooltip: {
+                        y: {
+                            formatter: (val) => val.toLocaleString()
+                        }
+                    }
+                };
+
+                // If you want to show active students as a separate chart, uncomment this
+                /*
+                const activeStudentsChartContainer = document.querySelector("#active-students-chart");
+                if (activeStudentsChartContainer) {
+                    const activeStudentsChart = new ApexCharts(
+                        activeStudentsChartContainer,
+                        activeStudentsOptions
+                    );
+                    activeStudentsChart.render();
+                }
+                */
+            } else {
+                console.warn('Chart container "#daily-activity-chart" not found.');
+            }
+        } catch (error) {
+            console.error('Error parsing daily activity data:', error);
+        }
+    } else {
+        console.warn('Daily activity data element not found or empty.');
+    }
+});
+
+// Keyword Cloud Chart
+document.addEventListener('DOMContentLoaded', function() {
+    const keywordDataElement = document.getElementById('keywordRankingData');
+
+    if (keywordDataElement && keywordDataElement.textContent) {
+        try {
+            // Parse the JSON data - expects format: [{keyword: "word1", weight: 10}, {keyword: "word2", weight: 5}, ...]
+            const keywordData = JSON.parse(keywordDataElement.textContent);
+
+            // Format data for word cloud (TreeMap)
+            const formattedData = keywordData.map(item => ({
+                x: item.keyword,
+                y: item.weight
+            }));
+
+            // Word cloud chart options
+            const keywordCloudOptions = {
+                series: [
+                    {
+                        data: formattedData
+                    }
+                ],
+                chart: {
+                    height: 350,
+                    type: 'treemap',
+                    toolbar: {
+                        show: true
+                    }
+                },
+                title: {
+                    text: 'Keyword Cloud',
+                    align: 'center'
+                },
+                colors: [
+                    '#5F71FA', '#76D466', '#FF4626', '#FFC107', '#9C27B0',
+                    '#4CAF50', '#26e9ff', '#f44336', '#E91E63', '#2196F3'
+                ],
+                plotOptions: {
+                    treemap: {
+                        distributed: true,
+                        enableShades: false
+                    }
+                },
+                tooltip: {
+                    y: {
+                        formatter: function(value) {
+                            return value;
+                        }
+                    }
+                }
+            };
+
+            // Render the chart
+            const keywordCloudChartContainer = document.querySelector("#keyword-cloud-chart");
+            if (keywordCloudChartContainer) {
+                const keywordCloudChart = new ApexCharts(
+                    keywordCloudChartContainer,
+                    keywordCloudOptions
+                );
+                keywordCloudChart.render();
+            } else {
+                console.warn('Chart container "#keyword-cloud-chart" not found.');
+            }
+        } catch (error) {
+            console.error('Error parsing keyword data:', error);
+        }
+    } else {
+        console.warn('Keyword data element not found or empty.');
+    }
+});
