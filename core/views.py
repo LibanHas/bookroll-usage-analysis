@@ -491,6 +491,10 @@ class CourseDetailView(LoginRequiredMixin, TemplateView):
         context['LMS_URL'] = settings.LMS_URL if hasattr(settings, 'LMS_URL') else ''
         context['course_exists'] = True
 
+        # Get student highlights data and convert to JSON for the chart
+        student_highlights = CourseDetail.get_student_highlights(course_id)
+        context['student_highlights_data'] = json.dumps(student_highlights)
+
         return context
 
 

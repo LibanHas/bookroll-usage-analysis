@@ -185,8 +185,9 @@
         </div>
     </div>
 
-    <!-- Course Modules/Activities -->
-    <div class="col-span-full lg:col-span-8 card">
+
+    <!-- Keywords -->
+    <div class="col-span-full lg:col-span-8 card mt-4">
         <div class="flex flex-col gap-2 px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
             <h6 class="card-title">{% trans "Keywords" %}</h6>
             <p class="card-description">{% trans "Top keywords from student highlights in this course" %}</p>
@@ -445,66 +446,40 @@
     {% endif %} <!-- End of course_exists check -->
 </div>
 
-<!-- Add course modules as a collapsible section -->
-{% if course_exists and modules %}
-<div class="mt-4 col-span-full card">
-    <div class="flex flex-col gap-2 px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade cursor-pointer" id="toggle-modules-section">
-        <div class="flex-center-between">
-            <div>
-                <h6 class="card-title">{% trans "Course Content" %}</h6>
-                <p class="card-description">{% trans "Modules and activities in this course" %}</p>
-            </div>
-            <i class="ri-arrow-down-s-line text-xl transition-transform" id="modules-toggle-icon"></i>
+ <!-- Student Activity -->
+ <div class="mt-4 col-span-full card">
+    <div class="flex flex-col gap-2 px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
+        <h6 class="card-title">{% trans "Student Highlights" %}</h6>
+        <p class="card-description">{% trans "Most active to least active students based on highlights and interactions" %}</p>
+    </div>
+    <div class="p-6">
+        <!-- Student Highlights Data -->
+        <script type="application/json" id="student-highlights-data">
+            {{ student_highlights_data|safe }}
+        </script>
+
+        <!-- Student Activity Chart -->
+        <div id="student-highlights-chart" style="height: 500px;"></div>
+
+        <!-- Student Participation Summary -->
+        <div id="student-participation-summary" class="mb-6"></div>
+
+        <!-- Information about student activity -->
+        <div class="mt-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+            <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                <i class="ri-information-line mr-1"></i> {% trans "About Student Activity Metrics" %}
+            </h4>
+            <p class="text-sm text-blue-700 dark:text-blue-400">
+                {% trans "This chart shows student engagement levels based on their interactions with course content. Students are classified as active (with interactions) or absent (enrolled but no interactions)." %}
+            </p>
+            <ul class="mt-2 text-sm text-blue-700 dark:text-blue-400 list-disc list-inside space-y-1">
+                <li>{% trans "Activity Count: Total number of tracked interactions per student" %}</li>
+                <li>{% trans "A count of zero indicates a student who is enrolled but has not accessed course content" %}</li>
+            </ul>
         </div>
     </div>
-    <div class="p-6 hidden" id="modules-content">
-        <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-            {% for module in modules %}
-            <li class="py-3">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 mr-3">
-                        {% if module.type == 'resource' %}
-                        <i class="ri-file-text-line text-xl text-blue-500"></i>
-                        {% elif module.type == 'url' %}
-                        <i class="ri-link text-xl text-green-500"></i>
-                        {% elif module.type == 'page' %}
-                        <i class="ri-article-line text-xl text-indigo-500"></i>
-                        {% elif module.type == 'book' %}
-                        <i class="ri-book-read-line text-xl text-amber-500"></i>
-                        {% elif module.type == 'forum' %}
-                        <i class="ri-discuss-line text-xl text-orange-500"></i>
-                        {% elif module.type == 'quiz' %}
-                        <i class="ri-question-answer-line text-xl text-red-500"></i>
-                        {% elif module.type == 'assign' %}
-                        <i class="ri-task-line text-xl text-purple-500"></i>
-                        {% else %}
-                        <i class="ri-checkbox-circle-line text-xl text-gray-500"></i>
-                        {% endif %}
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-base font-medium text-gray-900 dark:text-white">
-                            {{ module.name|default:module.type|title }}
-                        </p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            {% trans "Type:" %} {{ module.type|title }} | {% trans "Added:" %} {{ module.added|date:"F j, Y" }}
-                        </p>
-                    </div>
-                    {% if LMS_URL %}
-                    <div>
-                        <a href="{{ LMS_URL }}/mod/{{ module.type }}/view.php?id={{ module.id }}"
-                            target="_blank"
-                            class="text-primary-500 hover:text-primary-700 dark:hover:text-primary-300">
-                            <i class="ri-external-link-line"></i>
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
 </div>
-{% endif %}
+
 
 <!-- JavaScript for teachers list -->
 <script>

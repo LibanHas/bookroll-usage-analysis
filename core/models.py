@@ -905,6 +905,83 @@ class CourseDetail(models.Model):
             logger.error(f"Error fetching ClickHouse data for course {course_id}: {str(e)}")
             return {}, str(e)
 
+    @classmethod
+    def get_student_highlights(cls, course_id):
+        """Get student highlights from ClickHouse and compare with enrolled students in Moodle"""
+        try:
+            # Step 1: Get all enrolled students from Moodle
+            enrolled_students = {}
+            with connections['moodle_db'].cursor() as cursor:
+                cursor.execute("""
+                    SELECT u.id, u.firstname, u.lastname, u.username, u.email
+                    FROM mdl_role_assignments ra
+                    JOIN mdl_role r ON ra.roleid = r.id
+                    JOIN mdl_context ctx ON ra.contextid = ctx.id
+                    JOIN mdl_user u ON ra.userid = u.id
+                    WHERE r.shortname = 'student'
+                    AND ctx.contextlevel = 50
+                    AND ctx.instanceid = %s
+                    AND u.deleted = 0
+                    AND u.suspended = 0
+                    ORDER BY u.lastname, u.firstname
+                """, [course_id])
+
+                for row in cursor.fetchall():
+                    user_id = str(row[0])  # Convert to string to match ClickHouse data
+                    enrolled_students[user_id] = {
+                        'user_id': user_id,
+                        'name': f"{row[1]} {row[2]}",  # firstname lastname
+                        'username': row[3],
+                        'email': row[4],
+                        'unique_count': 0,  # Default to 0 interactions
+                        'status': 'absent'  # Default to absent
+                    }
+
+            # Step 2: Get activity data from ClickHouse
+            with connections['clickhouse_db'].cursor() as cursor:
+                cursor.execute("""
+                        SELECT
+                            COUNT(DISTINCT _id) AS unique_count,
+                            actor_name_id
+                        FROM
+                            saikyo_new.statements_mv sm
+                        WHERE
+                            context_id = %s
+                        AND actor_name_id !=''
+                        GROUP BY
+                            actor_name_id
+                        ORDER BY
+                            unique_count DESC
+                        """, [str(course_id)])
+
+                student_highlights = cursor.fetchall()
+
+                # Update enrolled students with activity data
+                for highlight in student_highlights:
+                    activity_count = highlight[0]
+                    user_id = highlight[1]
+
+                    # Only include activity for officially enrolled students
+                    if user_id in enrolled_students:
+                        enrolled_students[user_id]['unique_count'] = activity_count
+                        enrolled_students[user_id]['status'] = 'active'
+
+            # Convert dictionary to list
+            result = list(enrolled_students.values())
+
+            # Sort by activity count (descending)
+            result.sort(key=lambda x: x['unique_count'], reverse=True)
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Error fetching student highlights: {str(e)}")
+            return []
+
+
+
+
+
 class TopKeywords(models.Model):
     """Model to track top keywords extracted from student highlights"""
     keyword = models.CharField(max_length=255, primary_key=True)
