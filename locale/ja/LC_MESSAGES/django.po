@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-04-21 02:29+0000\n"
-"PO-Revision-Date: 2024-02-13 05:00+0000\n"
+"PO-Revision-Date: 2024-04-21 02:30+0000\n"
 "Last-Translator: LEAF School Team <team@leafschool.org>\n"
 "Language-Team: Japanese <ja@li.org>\n"
 "Language: ja\n"
@@ -21,7 +21,7 @@ msgstr "LEAF スクール & ダッシュボード"
 #, fuzzy
 #| msgid "Course title"
 msgid "Course Categories"
-msgstr "コースタイトル"
+msgstr "コースカテゴリー"
 
 msgid "Home"
 msgstr "ホーム"
@@ -30,179 +30,183 @@ msgid "Courses"
 msgstr "コース"
 
 msgid "Browse courses organized by categories"
-msgstr ""
+msgstr "カテゴリー別にコースを閲覧する"
 
 #, fuzzy
 #| msgid "Search..."
 msgid "Search courses..."
-msgstr "検索..."
+msgstr "コースを検索..."
 
 msgid "Clear"
-msgstr ""
+msgstr "クリア"
 
 msgid "Details"
-msgstr ""
+msgstr "詳細"
 
 msgid "Moodle"
-msgstr ""
+msgstr "Moodle"
 
 msgid "No courses in this category"
-msgstr ""
+msgstr "このカテゴリーにコースがありません"
 
 #, fuzzy
 #| msgid "No teachers found"
 msgid "No course categories found"
-msgstr "教師が見つかりません"
+msgstr "コースカテゴリーが見つかりません"
 
 msgid "No courses match your search"
-msgstr ""
+msgstr "検索に一致するコースがありません"
 
 #, fuzzy
 #| msgid "Course title"
 msgid "Course Details:"
-msgstr "コースタイトル"
+msgstr "コース詳細："
 
 msgid "Course Not Found"
-msgstr ""
+msgstr "コースが見つかりません"
 
 #, fuzzy
 #| msgid "No students found"
 msgid "Not Found"
-msgstr "生徒が見つかりません"
+msgstr "見つかりません"
 
 msgid "The requested course could not be found."
-msgstr ""
+msgstr "リクエストされたコースが見つかりませんでした。"
 
 msgid "Return to Course Categories"
-msgstr ""
+msgstr "コースカテゴリーに戻る"
 
 #, fuzzy
 #| msgid "Course title"
 msgid "Course Information"
-msgstr "コースタイトル"
+msgstr "コース情報"
 
 msgid "Basic details about the course"
-msgstr ""
+msgstr "コースの基本情報"
 
 msgid "Open in Moodle"
-msgstr ""
+msgstr "Moodleで開く"
 
 #, fuzzy
 #| msgid "Category"
 msgid "Category:"
-msgstr "カテゴリー"
+msgstr "カテゴリー："
 
 msgid "Start Date:"
-msgstr ""
+msgstr "開始日："
 
 msgid "End Date:"
-msgstr ""
+msgstr "終了日："
 
 #, fuzzy
 #| msgid "Enrolled Courses"
 msgid "Enrolled Students:"
-msgstr "登録済みコース"
+msgstr "登録済み生徒："
 
 msgid "Created:"
-msgstr ""
+msgstr "作成日："
 
 #, fuzzy
 #| msgid "Course title"
 msgid "Course Description"
-msgstr "コースタイトル"
+msgstr "コース説明"
 
 #, fuzzy
 #| msgid "Course title"
 msgid "Course Statistics"
-msgstr "コースタイトル"
+msgstr "コース統計"
 
 msgid "Activity metrics for this course"
-msgstr ""
+msgstr "このコースのアクティビティ指標"
 
 msgid "Some statistics may be unavailable at the moment."
-msgstr ""
+msgstr "一部の統計情報は現在利用できない場合があります。"
 
 #, fuzzy
 #| msgid "Teachers"
 msgid "Course Teachers"
-msgstr "教師"
+msgstr "コース教師"
 
 msgid "Instructors for this course"
-msgstr ""
+msgstr "このコースの講師"
 
 #, fuzzy
 #| msgid "All Teacher Here"
 msgid "Show All Teachers"
-msgstr "全教師一覧"
+msgstr "すべての教師を表示"
 
 msgid "No teachers assigned to this course"
-msgstr ""
+msgstr "このコースに割り当てられた教師はいません"
 
 msgid "Keywords"
-msgstr ""
+msgstr "キーワード"
 
 msgid "Top keywords from student highlights in this course"
-msgstr ""
+msgstr "このコースの学生のハイライトからのトップキーワード"
 
 msgid "Keyword Cloud"
-msgstr ""
+msgstr "キーワードクラウド"
 
 msgid "Frequency"
-msgstr ""
+msgstr "頻度"
 
 msgid "Keyword"
-msgstr ""
+msgstr "キーワード"
 
 msgid "Relevance Score"
-msgstr ""
+msgstr "関連性スコア"
 
 msgid "About Keyword Extraction"
-msgstr ""
+msgstr "キーワード抽出について"
 
 msgid ""
 "These keywords are extracted from student highlights using natural language "
 "processing. The system analyzes what students highlight to identify "
 "important concepts and terms."
 msgstr ""
+"これらのキーワードは、自然言語処理を使用して学生のハイライトから抽出されます。"
+"システムは学生がハイライトした内容を分析して、重要な概念や用語を特定します。"
 
 msgid "Frequency: Number of times this keyword appears in student highlights"
-msgstr ""
+msgstr "頻度：学生のハイライトでこのキーワードが出現する回数"
 
 msgid ""
 "Relevance Score: How relevant the keyword is to the course content (higher "
 "is better)"
-msgstr ""
+msgstr "関連性スコア：キーワードがコースの内容にどれだけ関連しているか（高いほど良い）"
 
 msgid ""
 "No keywords found for this course. Students may not have highlighted content "
 "yet."
-msgstr ""
+msgstr "このコースのキーワードが見つかりません。学生がまだコンテンツをハイライトしていない可能性があります。"
 
 #, fuzzy
 #| msgid "Students list"
 msgid "Student Highlights"
-msgstr "生徒一覧"
+msgstr "学生のハイライト"
 
 msgid ""
 "Most active to least active students based on highlights and interactions"
-msgstr ""
+msgstr "ハイライトと相互作用に基づく最もアクティブな学生から最も非アクティブな学生まで"
 
 msgid "About Student Activity Metrics"
-msgstr ""
+msgstr "学生活動指標について"
 
 msgid ""
 "This chart shows student engagement levels based on their interactions with "
 "course content. Students are classified as active (with interactions) or "
 "absent (enrolled but no interactions)."
 msgstr ""
+"このチャートは、コースのコンテンツとの相互作用に基づいて学生の関与レベルを示しています。"
+"学生はアクティブ（相互作用あり）または欠席（登録済みだが相互作用なし）に分類されます。"
 
 msgid "Activity Count: Total number of tracked interactions per student"
-msgstr ""
+msgstr "アクティビティ数：学生ごとの追跡された相互作用の総数"
 
 msgid ""
 "A count of zero indicates a student who is enrolled but has not accessed "
 "course content"
-msgstr ""
+msgstr "ゼロのカウントは、登録済みだがコースのコンテンツにアクセスしていない学生を示します"
 
 msgid "Saikyo Junior high school"
 msgstr "最強中学校"
@@ -274,7 +278,7 @@ msgid "Welcome back!"
 msgstr "おかえりなさい！"
 
 msgid "All students activity dashboard."
-msgstr ""
+msgstr "すべての生徒のアクティビティダッシュボード。"
 
 msgid "Sign In"
 msgstr "サインイン"
@@ -361,10 +365,10 @@ msgid "Reset"
 msgstr "リセット"
 
 msgid "Search and view contents by activity"
-msgstr ""
+msgstr "アクティビティによるコンテンツの検索と表示"
 
 msgid "Search by content name..."
-msgstr ""
+msgstr "コンテンツ名で検索..."
 
 msgid "Search"
 msgstr "検索"
@@ -372,7 +376,7 @@ msgstr "検索"
 #, fuzzy
 #| msgid "No students found"
 msgid "No active contents found"
-msgstr "生徒が見つかりません"
+msgstr "アクティブなコンテンツが見つかりません"
 
 msgid "Previous"
 msgstr "前へ"
@@ -381,31 +385,31 @@ msgid "Next"
 msgstr "次へ"
 
 msgid "Search and view students by activity frequency"
-msgstr ""
+msgstr "アクティビティ頻度による生徒の検索と表示"
 
 msgid "Search by student name..."
-msgstr ""
+msgstr "生徒名で検索..."
 
 #, fuzzy
 #| msgid "No students found"
 msgid "No active students found"
-msgstr "生徒が見つかりません"
+msgstr "アクティブな生徒が見つかりません"
 
 msgid "Search and view contents by highlighting frequency"
-msgstr ""
+msgstr "ハイライト頻度によるコンテンツの検索と表示"
 
 #, fuzzy
 #| msgid "Most Highlighted Content"
 msgid "No highlighted content found"
-msgstr "最もハイライトされたコンテンツ"
+msgstr "ハイライトされたコンテンツが見つかりません"
 
 msgid "Search and view contents by memo frequency"
-msgstr ""
+msgstr "メモ頻度によるコンテンツの検索と表示"
 
 #, fuzzy
 #| msgid "Most Memoed Content"
 msgid "No memoed content found"
-msgstr "最もメモされたコンテンツ"
+msgstr "メモされたコンテンツが見つかりません"
 
 msgid "Live Activity Timeline"
 msgstr "アクティビティタイムライン"
@@ -428,7 +432,7 @@ msgstr "生徒"
 #, fuzzy
 #| msgid "Dashboard"
 msgid "Student Dashboard"
-msgstr "ダッシュボード"
+msgstr "生徒ダッシュボード"
 
 msgid "View Live Activities"
 msgstr "アクティビティをライブで表示"
