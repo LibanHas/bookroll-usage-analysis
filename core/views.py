@@ -453,6 +453,20 @@ class CourseDetailView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         course_id = self.kwargs.get('course_id')
 
+        # Get date range parameters from request or use defaults
+        start_date = self.request.GET.get('start_date', None)
+        end_date = self.request.GET.get('end_date', None)
+
+        # Default to last 30 days if no dates provided
+        if not start_date:
+            start_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
+        if not end_date:
+            end_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
+        # Store the current date range in context
+        context['start_date'] = start_date
+        context['end_date'] = end_date
+
         # Get course details using the model
         course = CourseDetail.get_course_details(course_id)
         if not course:
@@ -464,9 +478,9 @@ class CourseDetailView(LoginRequiredMixin, TemplateView):
         context['enrolled_students'] = CourseDetail.get_enrolled_students_count(course_id)
         context['teachers'] = CourseDetail.get_course_teachers(course_id)
 
-        # Get activity statistics
-        stats, error = CourseDetail.get_course_activity_stats(course_id)
-        print(stats)
+        # Get activity statistics with date filtering
+        stats, error = CourseDetail.get_course_activity_stats(course_id, start_date, end_date)
+
         if error:
             context['clickhouse_error'] = True
 
@@ -491,8 +505,8 @@ class CourseDetailView(LoginRequiredMixin, TemplateView):
         context['LMS_URL'] = settings.LMS_URL if hasattr(settings, 'LMS_URL') else ''
         context['course_exists'] = True
 
-        # Get student highlights data and convert to JSON for the chart
-        student_highlights = CourseDetail.get_student_highlights(course_id)
+        # Get student highlights data with date filtering and convert to JSON for the chart
+        student_highlights = CourseDetail.get_student_highlights(course_id, start_date, end_date)
         context['student_highlights_data'] = json.dumps(student_highlights)
 
         return context

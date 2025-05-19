@@ -856,10 +856,17 @@ class CourseDetail(models.Model):
             ]
 
     @classmethod
-    def get_course_activity_stats(cls, course_id):
+    def get_course_activity_stats(cls, course_id, start_date=None, end_date=None):
         """Get activity statistics from ClickHouse"""
         try:
             stats = {}
+
+            # If no dates provided, default to last 30 days
+            if not start_date:
+                start_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
+
+            if not end_date:
+                end_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
             with connections['clickhouse_db'].cursor() as cursor:
 
@@ -876,10 +883,11 @@ class CourseDetail(models.Model):
                         uniqExact(actor_account_name) as active_students
                     FROM statements_mv
                     WHERE context_id = %s
-                    AND timestamp >= today() - INTERVAL 30 DAY
+                    AND timestamp >= toDate(%s)
+                    AND timestamp <= toDate(%s)
                     GROUP BY date
                     ORDER BY date
-                """, [str(course_id)])  # Convert course_id to string to match context_id type
+                """, [str(course_id), start_date, end_date])  # Convert course_id to string to match context_id type
 
                 daily_data = cursor.fetchall()
                 daily_activity = [
@@ -906,9 +914,16 @@ class CourseDetail(models.Model):
             return {}, str(e)
 
     @classmethod
-    def get_student_highlights(cls, course_id):
+    def get_student_highlights(cls, course_id, start_date=None, end_date=None):
         """Get student highlights from ClickHouse and compare with enrolled students in Moodle"""
         try:
+            # If no dates provided, default to last 30 days
+            if not start_date:
+                start_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
+
+            if not end_date:
+                end_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
             # Step 1: Get all enrolled students from Moodle
             enrolled_students = {}
             with connections['moodle_db'].cursor() as cursor:
@@ -937,7 +952,7 @@ class CourseDetail(models.Model):
                         'status': 'absent'  # Default to absent
                     }
 
-            # Step 2: Get activity data from ClickHouse
+            # Step 2: Get activity data from ClickHouse with date filtering
             with connections['clickhouse_db'].cursor() as cursor:
                 cursor.execute("""
                         SELECT
@@ -948,11 +963,13 @@ class CourseDetail(models.Model):
                         WHERE
                             context_id = %s
                         AND actor_name_id !=''
+                        AND timestamp >= toDate(%s)
+                        AND timestamp <= toDate(%s)
                         GROUP BY
                             actor_name_id
                         ORDER BY
                             unique_count DESC
-                        """, [str(course_id)])
+                        """, [str(course_id), start_date, end_date])
 
                 student_highlights = cursor.fetchall()
 
