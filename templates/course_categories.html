@@ -60,12 +60,11 @@
                                             {% for course in child.courses %}
                                                 <li class="py-3 course-item">
                                                     <div class="flex justify-between">
-                                                        <span class="text-gray-700 dark:text-gray-300 course-name">{{ course.name }}</span>
+                                                        <a href="{% url 'course_detail' course_id=course.id %}"
+                                                           class="text-gray-700 dark:text-gray-300 hover:text-primary-500 border-b border-transparent hover:border-primary-500 cursor-pointer course-name transition-all duration-200 inline-block pb-0.5">
+                                                            {{ course.name }}
+                                                        </a>
                                                         <div class="flex gap-2">
-                                                            <a href="{% url 'course_detail' course_id=course.id %}"
-                                                               class="text-primary-500 hover:text-primary-700 dark:hover:text-primary-300 flex items-center">
-                                                                <i class="ri-information-line mr-1"></i> {% trans "Details" %}
-                                                            </a>
                                                             <a href="{{ LMS_URL }}/course/view.php?id={{ course.id }}"
                                                                target="_blank"
                                                                class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 flex items-center">

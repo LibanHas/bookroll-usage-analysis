@@ -83,6 +83,257 @@ class Teacher(models.Model):
         return teachers
 
 
+class TeacherDetails(models.Model):
+    user_id = models.IntegerField(primary_key=True)
+    username = models.CharField(max_length=100)
+    email = models.EmailField()
+    firstname = models.CharField(max_length=100)
+    lastname = models.CharField(max_length=100)
+    total_courses = models.IntegerField()
+    archived_courses = models.IntegerField()
+    active_courses = models.IntegerField()
+
+    class Meta:
+        managed = False
+        app_label = 'moodle_app'
+
+    @staticmethod
+    def get_teacher_details(user_id):
+        """
+        Retrieve teacher details from Moodle via raw SQL query.
+        """
+        query = """
+            SELECT
+                u.id AS user_id,
+                u.username,
+                u.email,
+                u.firstname,
+                u.lastname,
+                u.city,
+                u.country,
+                u.lastlogin,
+                u.timecreated,
+                COUNT(*) AS total_courses,
+                SUM(CASE
+                    WHEN c.visible = 0 THEN 1
+                    WHEN c.enddate > 0 AND c.enddate < UNIX_TIMESTAMP() THEN 1
+                    ELSE 0
+                END) AS archived_courses,
+                SUM(CASE
+                    WHEN c.visible = 1 AND (c.enddate = 0 OR c.enddate >= UNIX_TIMESTAMP()) THEN 1
+                    ELSE 0
+                END) AS active_courses
+            FROM
+                mdl_user u
+            JOIN
+                mdl_role_assignments ra ON u.id = ra.userid
+            JOIN
+                mdl_role r ON ra.roleid = r.id
+            JOIN
+                mdl_context ctx ON ra.contextid = ctx.id
+            JOIN
+                mdl_course c ON ctx.instanceid = c.id
+            WHERE
+                r.shortname IN ('editingteacher', 'teacher')
+                AND ctx.contextlevel = 50
+                AND u.deleted = 0
+                AND u.id = %s
+            GROUP BY
+                u.id, u.username, u.email, u.firstname, u.lastname, u.city, u.country, u.lastlogin, u.timecreated
+            ORDER BY
+                u.firstname, u.lastname
+        """
+        with connections['moodle_db'].cursor() as cursor:
+            cursor.execute(query, [user_id])
+            row = cursor.fetchone()
+        if row:
+            return {
+                "user_id": row[0],
+                "username": row[1],
+                "email": row[2],
+                "firstname": row[3],
+                "lastname": row[4],
+                "city": row[5],
+                "country": row[6],
+                "lastlogin": row[7],
+                "timecreated": row[8],
+                "total_courses": row[9],
+                "archived_courses": row[10],
+                "active_courses": row[11],
+            }
+        return None
+
+    @staticmethod
+    def get_teacher_course_enrollments(user_id: int) -> List[Dict[str, Any]]:
+        """
+        Retrieve teacher course enrollments with category details from Moodle with caching.
+
+        Args:
+            user_id (int): The ID of the teacher whose enrollments to fetch
+
+        Returns:
+            List[Dict[str, Any]]: List of dictionaries containing course enrollment details
+        """
+        # Try to get cached result first
+        cache_key = f'teacher_enrollments_{user_id}'
+        cached_result = cache.get(cache_key)
+
+        if cached_result is not None:
+            return cached_result
+
+        # If no cached result, execute the query
+        query = """
+            WITH RECURSIVE category_hierarchy AS (
+                -- Base case: root categories
+                SELECT
+                    id AS category_id,
+                    name AS category_name,
+                    parent AS parent_id,
+                    name AS full_category_path
+                FROM
+                    mdl_course_categories
+                WHERE
+                    parent = 0
+
+                UNION ALL
+                SELECT
+                    child.id,
+                    child.name,
+                    child.parent,
+                    CONCAT(parent_hierarchy.full_category_path, ' / ', child.name)
+                FROM
+                    mdl_course_categories child
+                    INNER JOIN category_hierarchy parent_hierarchy
+                        ON child.parent = parent_hierarchy.category_id
+            )
+            SELECT DISTINCT
+                c.id,
+                c.fullname,
+                c.shortname,
+                c.visible,
+                c.startdate,
+                c.enddate,
+                ch.category_id,
+                ch.full_category_path,
+                r.shortname as role_name
+            FROM
+                mdl_role_assignments ra
+                INNER JOIN mdl_context ctx
+                    ON ra.contextid = ctx.id
+                INNER JOIN mdl_course c
+                    ON ctx.instanceid = c.id
+                LEFT JOIN category_hierarchy ch
+                    ON c.category = ch.category_id
+                INNER JOIN mdl_role r
+                    ON ra.roleid = r.id
+            WHERE
+                ra.userid = %s
+                AND ra.contextid IN (
+                    SELECT id
+                    FROM mdl_context
+                    WHERE contextlevel = 50  -- Course context level
+                )
+                AND ra.roleid IN (
+                    SELECT id
+                    FROM mdl_role
+                    WHERE shortname IN ('teacher', 'editingteacher')
+                )
+            ORDER BY
+                ch.full_category_path,
+                c.fullname
+        """
+
+        # Process results in batches to handle large datasets efficiently
+        BATCH_SIZE = 1000
+        results = []
+
+        try:
+            with connections['moodle_db'].cursor() as cursor:
+                cursor.execute(query, [user_id])
+
+                while True:
+                    rows = cursor.fetchmany(BATCH_SIZE)
+                    if not rows:
+                        break
+
+                    batch_results = [
+                        {
+                            "course_id": row[0],
+                            "course_name": row[1],
+                            "course_shortname": row[2],
+                            "visible": row[3],
+                            "startdate": row[4],
+                            "enddate": row[5],
+                            "category_id": row[6],
+                            "category_path": row[7],
+                            "role_name": row[8],
+                        }
+                        for row in rows
+                    ]
+                    results.extend(batch_results)
+
+            # Cache the results for 1 hour (3600 seconds)
+            cache.set(cache_key, results, timeout=3600)
+
+            return results
+
+        except Exception as e:
+            # Log the error if you have logging configured
+            logger.error(f"Error fetching teacher enrollments for user {user_id}: {str(e)}")
+            return []
+
+    @staticmethod
+    def get_teacher_last_access_course_list(user_id):
+        """
+        Retrieve the last access course list for a teacher from Moodle.
+        """
+        my_sql_query = """
+        SELECT u.firstname, u.lastname, c.fullname AS course_name, ula.timeaccess, c.id AS course_id, cc.name AS category_name
+        FROM mdl_user_lastaccess ula
+        JOIN mdl_user u ON u.id = ula.userid
+        JOIN mdl_course c ON c.id = ula.courseid
+        LEFT JOIN mdl_course_categories cc ON c.category = cc.id
+        WHERE u.id = %s
+        AND ula.timeaccess >= UNIX_TIMESTAMP(NOW() - INTERVAL 30 DAY)
+        ORDER BY ula.timeaccess DESC;
+        """
+        with connections['moodle_db'].cursor() as cursor:
+            cursor.execute(my_sql_query, [user_id])
+            rows = cursor.fetchall()
+
+        # Convert rows of tuples to list of dictionaries with named keys
+        result = []
+        for row in rows:
+            # Format the Unix timestamp to a readable date
+            access_time = datetime.datetime.fromtimestamp(row[3])
+            formatted_time = access_time.strftime('%Y-%m-%d %H:%M:%S')
+
+            result.append({
+                'firstname': row[0],
+                'lastname': row[1],
+                'course_name': row[2],
+                'timeaccess': row[3],
+                'timeaccess_formatted': formatted_time,
+                'course_id': row[4],
+                'category_name': row[5] if row[5] else 'Uncategorized',
+                'category_path': row[5] if row[5] else 'Uncategorized'  # For backwards compatibility
+            })
+
+        return result
+
+    @staticmethod
+    def get_full_teacher_details(user_id):
+        """
+        Combine Moodle data for a teacher.
+        """
+        teacher_details = TeacherDetails.get_teacher_details(user_id)
+        if not teacher_details:
+            return None
+
+        teacher_details["enrollments"] = TeacherDetails.get_teacher_course_enrollments(user_id)
+        teacher_details["last_access_courses"] = TeacherDetails.get_teacher_last_access_course_list(user_id)
+
+        return teacher_details
 
 
 class Student(models.Model):

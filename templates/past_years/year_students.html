@@ -1,0 +1,49 @@
+{% extends 'main.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block main_content %}
+<div class="grid grid-cols-12 gap-x-4">
+    <!-- Start Bread Crumb Section -->
+    <div class="col-span-full card flex-center-btween">
+        <h5 class="card-title">{{ page_title }}</h5>
+        <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
+            {% for breadcrumb in breadcrumbs %}
+            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden {% if not breadcrumb.url %}current-page text-gray-500 dark:text-dark-text-two{% endif %}">
+                {% if breadcrumb.url %}
+                <a href="{% url breadcrumb.url %}">{{ breadcrumb.name }}</a>
+                {% else %}
+                <span>{{ breadcrumb.name }}</span>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    <!-- End Bread Crumb Section -->
+
+    <!-- Start Year Students Section -->
+    <div class="col-span-full">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">{{ page_title }}</h5>
+                <p class="text-gray-500 dark:text-dark-text-two">{{ page_description }}</p>
+            </div>
+            <div class="card-body">
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-8 text-center">
+                    <div class="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="text-green-600 dark:text-green-400">
+                            <path fill="currentColor" d="M16 4c0-1.11.89-2 2-2s2 .89 2 2s-.89 2-2 2s-2-.89-2-2M4 18v-6h3v7H5.5c-.83 0-1.5-.67-1.5-1.5M12.5 11H11V7.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5M15 12.5c-1.25 0-2.45-.2-3.57-.57c-.35-.11-.68-.24-1-.4V15l-2.92-2.92c-.39-.39-.39-1.02 0-1.41L8.92 9.26c.39-.39 1.02-.39 1.41 0L12 10.93l1.67-1.67c.39-.39 1.02-.39 1.41 0l1.41 1.41c.39.39.39 1.02 0 1.41L15 12.5Z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ page_title }}</h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-6">{{ page_description }}</p>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                        {% trans "Student activity data and analytics for this year will be displayed here." %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Year Students Section -->
+</div>
+{% endblock %}

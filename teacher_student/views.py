@@ -1,7 +1,7 @@
 import datetime
 import json
 from django.views.generic import ListView, DetailView, TemplateView
-from .models import Teacher, Student, StudentDetails
+from .models import Teacher, Student, StudentDetails, TeacherDetails
 from django.http import Http404, JsonResponse, HttpResponse
 from django.db import connections
 from django.utils import timezone
@@ -132,6 +132,29 @@ class StudentDetailsView(DetailView):
         user_id = self.kwargs.get('user_id')
         context["activity_by_day"] = json.dumps(StudentDetails.get_student_activity_by_day(user_id), default=str)
         context["last_access_course_list"] = StudentDetails.get_student_last_access_course_list(user_id)
+        context["LMS_URL"] = os.getenv('LMS_URL')
+        return context
+
+
+class TeacherDetailView(DetailView):
+    model = TeacherDetails
+    template_name = 'teacher_detail.html'
+    context_object_name = 'teacher'
+
+    def get_object(self, queryset=None):
+        """
+        Fetch a single teacher's details using the user_id from the URL.
+        """
+        user_id = self.kwargs.get('user_id')
+        teacher_details = TeacherDetails.get_full_teacher_details(user_id)
+        if not teacher_details:
+            raise Http404("Teacher not found")
+        return teacher_details
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_id = self.kwargs.get('user_id')
+        context["last_access_course_list"] = TeacherDetails.get_teacher_last_access_course_list(user_id)
         context["LMS_URL"] = os.getenv('LMS_URL')
         return context
 

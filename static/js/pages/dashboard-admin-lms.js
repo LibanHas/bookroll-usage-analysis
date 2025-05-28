@@ -455,20 +455,46 @@ function fillMissingDaysForObjects(data, dateProperty, valueProperty, days = 30)
     return result;
 }
 
-// Apply the function to fill missing days
-const dailyActiveUsers = fillMissingDaysForObjects(dailyActiveUsersOriginal, 'date', 'total_active_users');
-const dailyActivities = fillMissingDaysForObjects(dailyActivitiesOriginal, 'date', 'total_activities');
+// Function to filter data based on period
+function filterDataByPeriod(data, period) {
+  const today = new Date();
+  let startDate;
+
+  if (period === 'this-month') {
+    // Get first day of current month
+    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+  } else if (period === 'this-year') {
+    // Get first day of current year
+    startDate = new Date(today.getFullYear(), 0, 1);
+  } else {
+    // Default to this year
+    startDate = new Date(today.getFullYear(), 0, 1);
+  }
+
+  return data.filter(item => {
+    const itemDate = new Date(item.date);
+    return itemDate >= startDate && itemDate <= today;
+  });
+}
+
+// Apply the function to fill missing days for initial load (this month)
+let dailyActiveUsers = fillMissingDaysForObjects(dailyActiveUsersOriginal, 'date', 'total_active_users', 31);
+let dailyActivities = fillMissingDaysForObjects(dailyActivitiesOriginal, 'date', 'total_activities', 31);
+
+// Filter for this month initially
+dailyActiveUsers = filterDataByPeriod(dailyActiveUsers, 'this-month');
+dailyActivities = filterDataByPeriod(dailyActivities, 'this-month');
 
 // Extract data from dailyActiveUsers
-const datesActive = dailyActiveUsers.map((item) => item.date);
-const activeUsersData = dailyActiveUsers.map((item) => item.total_active_users);
+let datesActive = dailyActiveUsers.map((item) => item.date);
+let activeUsersData = dailyActiveUsers.map((item) => item.total_active_users);
 
 // Extract data from dailyActivities
-const datesActivities = dailyActivities.map((item) => item.date);
-const activitiesData = dailyActivities.map((item) => item.total_activities);
+let datesActivities = dailyActivities.map((item) => item.date);
+let activitiesData = dailyActivities.map((item) => item.total_activities);
 
-
- const dailyActiveUsersChartOptions = {
+// Daily Active Users Chart
+const dailyActiveUsersChartOptions = {
   chart: {
     type: "bar",
     height: 320,
@@ -476,9 +502,9 @@ const activitiesData = dailyActivities.map((item) => item.total_activities);
     offsetX: -5,
     offsetY: 15,
     zoom: {
-      enabled: true, // Enables zooming
-      type: 'x',     // Zoom along x-axis only
-      autoScaleYaxis: true, // Auto scales Y-axis while zooming
+      enabled: true,
+      type: 'x',
+      autoScaleYaxis: true,
     },
     toolbar: { show: true },
     events: {
@@ -489,7 +515,7 @@ const activitiesData = dailyActivities.map((item) => item.total_activities);
   },
   colors: ['#76d466'],
   xaxis: {
-    categories: datesActive, // Use the dates from dailyActiveUsers
+    categories: datesActive,
     type: 'datetime',
   },
   yaxis: {
@@ -500,7 +526,7 @@ const activitiesData = dailyActivities.map((item) => item.total_activities);
   series: [
     {
       name: "Daily Active Users",
-      data: activeUsersData, // Only daily active users data
+      data: activeUsersData,
     },
   ],
   plotOptions: {
@@ -534,8 +560,10 @@ const activitiesData = dailyActivities.map((item) => item.total_activities);
 };
 
 const dailyActiveUsersChartContainer = document.querySelector("#daily-active-users-chart");
+let dailyActiveUsersChart;
+
 if (dailyActiveUsersChartContainer) {
-  const dailyActiveUsersChart = new ApexCharts(
+  dailyActiveUsersChart = new ApexCharts(
     dailyActiveUsersChartContainer,
     dailyActiveUsersChartOptions
   );
@@ -544,9 +572,7 @@ if (dailyActiveUsersChartContainer) {
   console.warn('Chart container "#daily-active-users-chart" not found.');
 }
 
-
-
-// Daily active users chart
+// Daily Activities Chart
 const dailyActivitiesChartOptions = {
   chart: {
     type: "bar",
@@ -555,9 +581,9 @@ const dailyActivitiesChartOptions = {
     offsetX: -5,
     offsetY: 15,
     zoom: {
-      enabled: true, // Enables zooming
-      type: 'x',     // Zoom along x-axis only
-      autoScaleYaxis: true, // Auto scales Y-axis while zooming
+      enabled: true,
+      type: 'x',
+      autoScaleYaxis: true,
     },
     toolbar: { show: true },
     events: {
@@ -567,7 +593,7 @@ const dailyActivitiesChartOptions = {
     },
   },
   xaxis: {
-    categories: datesActivities, // Use the dates from dailyActivities
+    categories: datesActivities,
     type: 'datetime',
   },
   yaxis: {
@@ -578,7 +604,7 @@ const dailyActivitiesChartOptions = {
   series: [
     {
       name: "Daily Activities",
-      data: activitiesData, // Only daily activities data
+      data: activitiesData,
     },
   ],
   plotOptions: {
@@ -612,8 +638,10 @@ const dailyActivitiesChartOptions = {
 };
 
 const dailyActivitiesChartContainer = document.querySelector("#daily-activities-chart");
+let dailyActivitiesChart;
+
 if (dailyActivitiesChartContainer) {
-  const dailyActivitiesChart = new ApexCharts(
+  dailyActivitiesChart = new ApexCharts(
     dailyActivitiesChartContainer,
     dailyActivitiesChartOptions
   );
@@ -621,6 +649,79 @@ if (dailyActivitiesChartContainer) {
 } else {
   console.warn('Chart container "#daily-activities-chart" not found.');
 }
+
+// Event listeners for period selection
+document.addEventListener('DOMContentLoaded', function() {
+  // Daily Active Users period selector
+  const dailyActiveUsersPeriodSelect = document.getElementById('daily-active-users-period-select');
+  if (dailyActiveUsersPeriodSelect) {
+    dailyActiveUsersPeriodSelect.addEventListener('change', function() {
+      const selectedPeriod = this.value;
+
+      // Determine the number of days to fill based on period
+      const daysToFill = selectedPeriod === 'this-month' ? 31 : 365;
+
+      // Fill missing days with appropriate range
+      let filteredData = fillMissingDaysForObjects(dailyActiveUsersOriginal, 'date', 'total_active_users', daysToFill);
+
+      // Filter data based on selected period
+      filteredData = filterDataByPeriod(filteredData, selectedPeriod);
+
+      // Extract new data
+      const newDates = filteredData.map((item) => item.date);
+      const newData = filteredData.map((item) => item.total_active_users);
+
+      // Update chart
+      if (dailyActiveUsersChart) {
+        dailyActiveUsersChart.updateOptions({
+          xaxis: {
+            categories: newDates,
+            type: 'datetime',
+          }
+        });
+        dailyActiveUsersChart.updateSeries([{
+          name: "Daily Active Users",
+          data: newData
+        }]);
+      }
+    });
+  }
+
+  // Daily Activities period selector
+  const dailyActivitiesPeriodSelect = document.getElementById('daily-activities-period-select');
+  if (dailyActivitiesPeriodSelect) {
+    dailyActivitiesPeriodSelect.addEventListener('change', function() {
+      const selectedPeriod = this.value;
+
+      // Determine the number of days to fill based on period
+      const daysToFill = selectedPeriod === 'this-month' ? 31 : 365;
+
+      // Fill missing days with appropriate range
+      let filteredData = fillMissingDaysForObjects(dailyActivitiesOriginal, 'date', 'total_activities', daysToFill);
+
+      // Filter data based on selected period
+      filteredData = filterDataByPeriod(filteredData, selectedPeriod);
+
+      // Extract new data
+      const newDates = filteredData.map((item) => item.date);
+      const newData = filteredData.map((item) => item.total_activities);
+
+      // Update chart
+      if (dailyActivitiesChart) {
+        dailyActivitiesChart.updateOptions({
+          xaxis: {
+            categories: newDates,
+            type: 'datetime',
+          }
+        });
+        dailyActivitiesChart.updateSeries([{
+          name: "Daily Activities",
+          data: newData
+        }]);
+      }
+    });
+  }
+});
 
 
 
@@ -1330,144 +1431,702 @@ document.addEventListener('DOMContentLoaded', function() {
             // Parse the JSON data
             const studentHighlightsData = JSON.parse(studentHighlightsDataElement.textContent);
 
-            // Data is already sorted by activity count in the backend
+            // Global variables for chart management
+            let currentChart = null;
+            let privacyMode = true; // Start with privacy mode enabled
+            let chartType = 'individual'; // Start with individual view
 
-            // Prepare the chart data - use all students (no limit)
-            const studentNames = studentHighlightsData.map(item => item.name);
-            const activityCounts = studentHighlightsData.map(item => item.unique_count);
-            const studentStatuses = studentHighlightsData.map(item => item.status);
+            // Get control elements
+            const chartTypeSelect = document.getElementById('chartTypeSelect');
+            const privacyToggle = document.getElementById('privacyToggle');
 
-            // Custom colors based on status
-            const pointColors = studentStatuses.map(status => {
-                switch(status) {
-                    case 'active': return '#5F71FA';  // Active students - blue
-                    case 'absent': return '#FF4626';  // Absent students - red
-                    case 'active_not_enrolled': return '#FFC107';  // Active but not enrolled - yellow
-                    default: return '#9E9E9E';  // Unknown - gray
-                }
-            });
-
-            // Create chart options
-            const studentHighlightsChartOptions = {
-                series: [{
-                    name: 'Activity Count',
-                    data: activityCounts
-                }],
-                chart: {
-                    type: 'bar',
-                    height: 450, // Increase height for more students
-                    toolbar: {
-                        show: true
-                    }
-                },
-                plotOptions: {
-                    bar: {
-                        horizontal: false,
-                        columnWidth: '60%',
-                        endingShape: 'rounded',
-                        borderRadius: 4,
-                        distributed: true
-                    }
-                },
-                colors: pointColors,
-                dataLabels: {
-                    enabled: true,
-                    offsetY: -20,
-                    style: {
-                        fontSize: '12px',
-                        colors: ['#000']
-                    },
-                    formatter: function(val) {
-                        return val
-                    }
-                },
-                stroke: {
-                    width: 1,
-                    colors: ['#fff']
-                },
-                xaxis: {
-                    categories: studentNames,
-                    labels: {
-                        rotate: -45,
-                        style: {
-                            fontSize: '11px'
-                        },
-                        maxHeight: 140
-                    }
-                },
-                yaxis: {
-                    title: {
-                        text: 'Activity Count'
-                    }
-                },
-                title: {
-                    text: 'Student Activity Levels',
-                    align: 'center',
-                    floating: false
-                },
-                subtitle: {
-                    text: 'Based on number of highlights and interactions',
-                    align: 'center',
-                },
-                tooltip: {
-                    y: {
-                        formatter: function(val) {
-                            return val + ' interactions'
-                        }
-                    },
-                    custom: function({ series, seriesIndex, dataPointIndex, w }) {
-                        const student = studentHighlightsData[dataPointIndex];
-                        let statusText = '';
-
-                        switch(student.status) {
-                            case 'active':
-                                statusText = '<span style="color:#5F71FA">Active</span>';
-                                break;
-                            case 'absent':
-                                statusText = '<span style="color:#FF4626">Absent (No Activity)</span>';
-                                break;
-                            case 'active_not_enrolled':
-                                statusText = '<span style="color:#FFC107">Not Currently Enrolled</span>';
-                                break;
-                            default:
-                                statusText = '<span style="color:#9E9E9E">Unknown</span>';
-                        }
-
-                        return `
-                        <div class="apexcharts-tooltip-title" style="font-weight:bold; margin-bottom:5px">
-                            ${student.name}
-                        </div>
-                        <div>
-                            <span style="font-weight:bold">Status:</span> ${statusText}<br>
-                            <span style="font-weight:bold">Interactions:</span> ${student.unique_count}<br>
-                            <span style="font-weight:bold">Username:</span> ${student.username}
-                        </div>
-                        `;
-                    }
-                },
-                legend: {
-                    show: true,
-                    position: 'bottom',
-                    horizontalAlign: 'center',
-                    floating: false,
-                    customLegendItems: ['Active', 'Absent (No Activity)', 'Not Currently Enrolled', 'Unknown'],
-                    markers: {
-                        fillColors: ['#5F71FA', '#FF4626', '#FFC107', '#9E9E9E']
-                    }
-                }
-            };
-
-            // Create the chart
-            const studentHighlightsChartContainer = document.querySelector("#student-highlights-chart");
-            if (studentHighlightsChartContainer) {
-                const studentHighlightsChart = new ApexCharts(
-                    studentHighlightsChartContainer,
-                    studentHighlightsChartOptions
-                );
-                studentHighlightsChart.render();
-            } else {
-                console.warn('Chart container "#student-highlights-chart" not found.');
+            // Function to anonymize student names
+            function anonymizeStudentData(data) {
+                return data.map((student, index) => ({
+                    ...student,
+                    displayName: privacyMode ? `Student ${String(index + 1).padStart(3, '0')}` : student.name
+                }));
             }
+
+            // Function to create distribution data
+            function createDistributionData(data) {
+                // Validate input data
+                if (!data || !Array.isArray(data) || data.length === 0) {
+                    console.warn('Invalid or empty data provided to createDistributionData');
+                    return [];
+                }
+
+                // Create activity ranges
+                const ranges = [
+                    { min: 0, max: 0, label: '0 (No Activity)' },
+                    { min: 1, max: 10, label: '1-10' },
+                    { min: 11, max: 25, label: '11-25' },
+                    { min: 26, max: 50, label: '26-50' },
+                    { min: 51, max: 100, label: '51-100' },
+                    { min: 101, max: 200, label: '101-200' },
+                    { min: 201, max: Infinity, label: '201+' }
+                ];
+
+                const distribution = ranges.map(range => {
+                    const count = data.filter(student => {
+                        const activityCount = student.unique_count || 0;
+                        return activityCount >= range.min && activityCount <= range.max;
+                    }).length;
+                    return {
+                        range: range.label,
+                        count: count,
+                        percentage: data.length > 0 ? ((count / data.length) * 100).toFixed(1) : '0.0'
+                    };
+                });
+
+                return distribution;
+            }
+
+            // Function to render individual students chart
+            function renderIndividualChart(data) {
+                const processedData = anonymizeStudentData(data);
+
+                const studentNames = processedData.map(item => item.displayName);
+                const activityCounts = processedData.map(item => item.unique_count);
+                const studentStatuses = processedData.map(item => item.status);
+
+                // Custom colors based on status
+                const pointColors = studentStatuses.map(status => {
+                    switch(status) {
+                        case 'active': return '#5F71FA';  // Active students - blue
+                        case 'absent': return '#FF4626';  // Absent students - red
+                        case 'active_not_enrolled': return '#FFC107';  // Active but not enrolled - yellow
+                        default: return '#9E9E9E';  // Unknown - gray
+                    }
+                });
+
+                const chartOptions = {
+                    series: [{
+                        name: 'Activity Count',
+                        data: activityCounts.map((count, index) => ({
+                            x: studentNames[index],
+                            y: count,
+                            fillColor: pointColors[index]
+                        }))
+                    }],
+                    chart: {
+                        type: 'bar',
+                        height: 500,
+                        toolbar: {
+                            show: true,
+                            offsetX: 0,
+                            offsetY: 0
+                        },
+                        zoom: {
+                            enabled: true,
+                            type: 'x',
+                            autoScaleYaxis: true
+                        },
+                        selection: {
+                            enabled: true,
+                            type: 'x',
+                            fill: {
+                                color: '#24292e',
+                                opacity: 0.1
+                            },
+                            stroke: {
+                                width: 1,
+                                dashArray: 3,
+                                color: '#24292e',
+                                opacity: 0.4
+                            }
+                        }
+                    },
+                    plotOptions: {
+                        bar: {
+                            horizontal: false,
+                            columnWidth: '60%',
+                            endingShape: 'rounded',
+                            borderRadius: 4,
+                            distributed: false
+                        }
+                    },
+                    colors: pointColors,
+                    dataLabels: {
+                        enabled: true,
+                        offsetY: -20,
+                        style: {
+                            fontSize: '12px',
+                            colors: ['#000']
+                        },
+                        formatter: function(val) {
+                            return val
+                        }
+                    },
+                    stroke: {
+                        width: 1,
+                        colors: ['#fff']
+                    },
+                    xaxis: {
+                        categories: studentNames,
+                        labels: {
+                            rotate: -45,
+                            style: {
+                                fontSize: '11px'
+                            },
+                            maxHeight: 140
+                        }
+                    },
+                    yaxis: {
+                        title: {
+                            text: 'Activity Count'
+                        }
+                    },
+                    title: {
+                        text: 'Student Activity Levels',
+                        align: 'center',
+                        floating: false
+                    },
+                    subtitle: {
+                        text: 'Based on number of highlights and interactions (Use toolbar to zoom)',
+                        align: 'center',
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function(val) {
+                                return val + ' interactions'
+                            }
+                        },
+                        custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                            const student = processedData[dataPointIndex];
+                            let statusText = '';
+
+                            switch(student.status) {
+                                case 'active':
+                                    statusText = '<span style="color:#5F71FA">Active</span>';
+                                    break;
+                                case 'absent':
+                                    statusText = '<span style="color:#FF4626">Absent (No Activity)</span>';
+                                    break;
+                                case 'active_not_enrolled':
+                                    statusText = '<span style="color:#FFC107">Not Currently Enrolled</span>';
+                                    break;
+                                default:
+                                    statusText = '<span style="color:#9E9E9E">Unknown</span>';
+                            }
+
+                            return `
+                            <div class="apexcharts-tooltip-title" style="font-weight:bold; margin-bottom:5px">
+                                ${student.displayName}
+                            </div>
+                            <div>
+                                <span style="font-weight:bold">Status:</span> ${statusText}<br>
+                                <span style="font-weight:bold">Interactions:</span> ${student.unique_count}<br>
+                                ${!privacyMode ? `<span style="font-weight:bold">Username:</span> ${student.username}` : ''}
+                            </div>
+                            `;
+                        }
+                    },
+                    legend: {
+                        show: true,
+                        position: 'bottom',
+                        horizontalAlign: 'center',
+                        floating: false,
+                        customLegendItems: ['Active', 'Absent (No Activity)', 'Not Currently Enrolled', 'Unknown'],
+                        markers: {
+                            fillColors: ['#5F71FA', '#FF4626', '#FFC107', '#9E9E9E']
+                        }
+                    }
+                };
+
+                return chartOptions;
+            }
+
+            // Function to render distribution chart
+            function renderDistributionChart(data) {
+                const distributionData = createDistributionData(data);
+
+                // Validate distribution data
+                if (!distributionData || distributionData.length === 0) {
+                    console.warn('No distribution data available');
+                    return {
+                        chart: { type: 'bar', height: 500 },
+                        series: [{ name: 'Number of Students', data: [] }],
+                        xaxis: { categories: [] },
+                        noData: { text: 'No data available' }
+                    };
+                }
+
+                // Ensure we have valid numeric data
+                const chartData = distributionData.map(item => Math.max(0, item.count || 0));
+                const categories = distributionData.map(item => item.range || 'Unknown');
+
+                const chartOptions = {
+                    series: [{
+                        name: 'Number of Students',
+                        data: chartData
+                    }],
+                    chart: {
+                        type: 'bar',
+                        height: 500,
+                        toolbar: {
+                            show: true,
+                            offsetX: 0,
+                            offsetY: 0
+                        },
+                        zoom: {
+                            enabled: true,
+                            type: 'x',
+                            autoScaleYaxis: true
+                        },
+                        selection: {
+                            enabled: true,
+                            type: 'x',
+                            fill: {
+                                color: '#24292e',
+                                opacity: 0.1
+                            },
+                            stroke: {
+                                width: 1,
+                                dashArray: 3,
+                                color: '#24292e',
+                                opacity: 0.4
+                            }
+                        }
+                    },
+                    plotOptions: {
+                        bar: {
+                            horizontal: false,
+                            columnWidth: '60%',
+                            endingShape: 'rounded',
+                            borderRadius: 4
+                        }
+                    },
+                    colors: ['#5F71FA'],
+                    dataLabels: {
+                        enabled: true,
+                        style: {
+                            fontSize: '12px',
+                            colors: ['#000']
+                        },
+                        formatter: function(val) {
+                            return val || 0;
+                        }
+                    },
+                    xaxis: {
+                        categories: categories,
+                        title: {
+                            text: 'Activity Range'
+                        },
+                        labels: {
+                            style: {
+                                fontSize: '12px'
+                            }
+                        }
+                    },
+                    yaxis: {
+                        title: {
+                            text: 'Number of Students'
+                        },
+                        min: 0,
+                        forceNiceScale: true,
+                        labels: {
+                            formatter: function(val) {
+                                return Math.floor(val);
+                            }
+                        }
+                    },
+                    title: {
+                        text: 'Student Activity Distribution',
+                        align: 'center',
+                        floating: false
+                    },
+                    subtitle: {
+                        text: 'Statistical distribution of student engagement levels (Use toolbar to zoom)',
+                        align: 'center',
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function(val) {
+                                return (val || 0) + ' students';
+                            }
+                        },
+                        custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                            if (dataPointIndex >= 0 && dataPointIndex < distributionData.length) {
+                                const item = distributionData[dataPointIndex];
+                                return `
+                                <div class="apexcharts-tooltip-title" style="font-weight:bold; margin-bottom:5px">
+                                    Activity Range: ${item.range}
+                                </div>
+                                <div>
+                                    <span style="font-weight:bold">Students:</span> ${item.count}<br>
+                                    <span style="font-weight:bold">Percentage:</span> ${item.percentage}%
+                                </div>
+                                `;
+                            }
+                            return '';
+                        }
+                    },
+                    noData: {
+                        text: 'No data available',
+                        align: 'center',
+                        verticalAlign: 'middle',
+                        style: {
+                            color: '#000',
+                            fontSize: '14px'
+                        }
+                    }
+                };
+
+                return chartOptions;
+            }
+
+            // Function to render normal distribution chart (bell curve)
+            function renderNormalDistributionChart(data) {
+                // Validate input data
+                if (!data || !Array.isArray(data) || data.length === 0) {
+                    console.warn('No data available for normal distribution');
+                    return {
+                        chart: { type: 'line', height: 500 },
+                        series: [{ name: 'Normal Distribution', data: [] }],
+                        xaxis: { categories: [] },
+                        noData: { text: 'No data available' }
+                    };
+                }
+
+                // Calculate statistics
+                const activities = data.map(student => student.unique_count || 0);
+                const mean = activities.reduce((sum, val) => sum + val, 0) / activities.length;
+                const variance = activities.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / activities.length;
+                const stdDev = Math.sqrt(variance);
+
+                // Generate normal distribution curve points
+                const points = [];
+                const labels = [];
+                const annotations = [];
+
+                // Create range from -3σ to +3σ
+                const minX = Math.max(0, mean - 3 * stdDev);
+                const maxX = mean + 3 * stdDev;
+                const step = (maxX - minX) / 100;
+
+                // Generate bell curve points
+                for (let x = minX; x <= maxX; x += step) {
+                    const y = (1 / (stdDev * Math.sqrt(2 * Math.PI))) *
+                             Math.exp(-0.5 * Math.pow((x - mean) / stdDev, 2));
+                    points.push([x, y * activities.length * 10]); // Scale for visibility
+                }
+
+                // Create histogram data for actual student distribution
+                const binSize = Math.max(1, Math.ceil((maxX - minX) / 20));
+                const bins = [];
+                const binLabels = [];
+
+                for (let i = minX; i <= maxX; i += binSize) {
+                    const binEnd = i + binSize;
+                    const count = activities.filter(val => val >= i && val < binEnd).length;
+                    bins.push(count);
+                    binLabels.push(`${Math.round(i)}-${Math.round(binEnd)}`);
+                }
+
+                // Calculate standard deviation zones
+                const zones = [
+                    { start: mean - 3 * stdDev, end: mean - 2 * stdDev, label: '-3σ to -2σ', percentage: '2.5%', color: '#E3F2FD' },
+                    { start: mean - 2 * stdDev, end: mean - stdDev, label: '-2σ to -1σ', percentage: '13.5%', color: '#BBDEFB' },
+                    { start: mean - stdDev, end: mean, label: '-1σ to μ', percentage: '34%', color: '#FF8A80' },
+                    { start: mean, end: mean + stdDev, label: 'μ to +1σ', percentage: '34%', color: '#FF8A80' },
+                    { start: mean + stdDev, end: mean + 2 * stdDev, label: '+1σ to +2σ', percentage: '13.5%', color: '#BBDEFB' },
+                    { start: mean + 2 * stdDev, end: mean + 3 * stdDev, label: '+2σ to +3σ', percentage: '2.5%', color: '#E3F2FD' }
+                ];
+
+                const chartOptions = {
+                    series: [
+                        {
+                            name: 'Normal Distribution Curve',
+                            type: 'line',
+                            data: points.map(point => ({ x: point[0], y: point[1] }))
+                        },
+                        {
+                            name: 'Actual Student Distribution',
+                            type: 'column',
+                            data: bins.map((count, index) => ({
+                                x: minX + (index * binSize) + (binSize / 2),
+                                y: count
+                            }))
+                        }
+                    ],
+                    chart: {
+                        type: 'line',
+                        height: 500,
+                        toolbar: {
+                            show: true,
+                            offsetX: 0,
+                            offsetY: 0
+                        },
+                        zoom: {
+                            enabled: true,
+                            type: 'x',
+                            autoScaleYaxis: true
+                        },
+                        selection: {
+                            enabled: true,
+                            type: 'x',
+                            fill: {
+                                color: '#24292e',
+                                opacity: 0.1
+                            },
+                            stroke: {
+                                width: 1,
+                                dashArray: 3,
+                                color: '#24292e',
+                                opacity: 0.4
+                            }
+                        }
+                    },
+                    stroke: {
+                        width: [3, 0],
+                        curve: 'smooth'
+                    },
+                    fill: {
+                        type: ['solid', 'solid'],
+                        opacity: [0.1, 0.8]
+                    },
+                    colors: ['#5F71FA', '#FF6B6B'],
+                    dataLabels: {
+                        enabled: false
+                    },
+                    xaxis: {
+                        type: 'numeric',
+                        title: {
+                            text: 'Activity Count'
+                        },
+                        labels: {
+                            formatter: function(val) {
+                                return Math.round(val);
+                            }
+                        }
+                    },
+                    yaxis: [
+                        {
+                            title: {
+                                text: 'Probability Density'
+                            },
+                            labels: {
+                                formatter: function(val) {
+                                    return val.toFixed(2);
+                                }
+                            }
+                        },
+                        {
+                            opposite: true,
+                            title: {
+                                text: 'Number of Students'
+                            },
+                            labels: {
+                                formatter: function(val) {
+                                    return Math.floor(val);
+                                }
+                            }
+                        }
+                    ],
+                    title: {
+                        text: 'Normal Distribution Analysis',
+                        align: 'center',
+                        floating: false
+                    },
+                    subtitle: {
+                        text: `Mean: ${mean.toFixed(1)}, Std Dev: ${stdDev.toFixed(1)} (Use toolbar to zoom)`,
+                        align: 'center',
+                    },
+                    legend: {
+                        show: true,
+                        position: 'top'
+                    },
+                    annotations: {
+                        xaxis: [
+                            {
+                                x: mean,
+                                borderColor: '#FF4626',
+                                label: {
+                                    text: `μ = ${mean.toFixed(1)}`,
+                                    style: {
+                                        color: '#fff',
+                                        background: '#FF4626'
+                                    }
+                                }
+                            },
+                            {
+                                x: mean - stdDev,
+                                borderColor: '#FFC107',
+                                borderWidth: 1,
+                                strokeDashArray: 5,
+                                label: {
+                                    text: '-1σ',
+                                    style: {
+                                        color: '#fff',
+                                        background: '#FFC107'
+                                    }
+                                }
+                            },
+                            {
+                                x: mean + stdDev,
+                                borderColor: '#FFC107',
+                                borderWidth: 1,
+                                strokeDashArray: 5,
+                                label: {
+                                    text: '+1σ',
+                                    style: {
+                                        color: '#fff',
+                                        background: '#FFC107'
+                                    }
+                                }
+                            },
+                            {
+                                x: mean - 2 * stdDev,
+                                borderColor: '#9C27B0',
+                                borderWidth: 1,
+                                strokeDashArray: 5,
+                                label: {
+                                    text: '-2σ',
+                                    style: {
+                                        color: '#fff',
+                                        background: '#9C27B0'
+                                    }
+                                }
+                            },
+                            {
+                                x: mean + 2 * stdDev,
+                                borderColor: '#9C27B0',
+                                borderWidth: 1,
+                                strokeDashArray: 5,
+                                label: {
+                                    text: '+2σ',
+                                    style: {
+                                        color: '#fff',
+                                        background: '#9C27B0'
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    tooltip: {
+                        shared: true,
+                        intersect: false,
+                        y: [
+                            {
+                                formatter: function(val) {
+                                    return val.toFixed(4);
+                                }
+                            },
+                            {
+                                formatter: function(val) {
+                                    return Math.floor(val) + ' students';
+                                }
+                            }
+                        ]
+                    },
+                    noData: {
+                        text: 'No data available',
+                        align: 'center',
+                        verticalAlign: 'middle',
+                        style: {
+                            color: '#000',
+                            fontSize: '14px'
+                        }
+                    }
+                };
+
+                return chartOptions;
+            }
+
+            // Function to update chart
+            function updateChart() {
+                const chartContainer = document.querySelector("#student-highlights-chart");
+                if (!chartContainer) {
+                    console.warn('Chart container not found');
+                    return;
+                }
+
+                // Validate student data
+                if (!studentHighlightsData || !Array.isArray(studentHighlightsData) || studentHighlightsData.length === 0) {
+                    console.warn('No student data available');
+                    chartContainer.innerHTML = '<div class="flex items-center justify-center h-96 text-gray-500">No student data available</div>';
+                    return;
+                }
+
+                // Destroy existing chart safely
+                if (currentChart) {
+                    try {
+                        currentChart.destroy();
+                    } catch (error) {
+                        console.warn('Error destroying chart:', error);
+                    }
+                    currentChart = null;
+                }
+
+                // Clear container content
+                chartContainer.innerHTML = '';
+
+                // Add a small delay to ensure cleanup is complete
+                setTimeout(() => {
+                    try {
+                        // Create new chart based on type
+                        let chartOptions;
+                        if (chartType === 'distribution') {
+                            chartOptions = renderDistributionChart(studentHighlightsData);
+                        } else if (chartType === 'normal') {
+                            chartOptions = renderNormalDistributionChart(studentHighlightsData);
+                        } else {
+                            chartOptions = renderIndividualChart(studentHighlightsData);
+                        }
+
+                        // Validate chart options
+                        if (!chartOptions || !chartOptions.series || !Array.isArray(chartOptions.series)) {
+                            throw new Error('Invalid chart options generated');
+                        }
+
+                        // Render new chart
+                        currentChart = new ApexCharts(chartContainer, chartOptions);
+                        currentChart.render().then(() => {
+                            console.log('Chart rendered successfully');
+                        }).catch(error => {
+                            console.error('Error rendering chart:', error);
+                            chartContainer.innerHTML = '<div class="flex items-center justify-center h-96 text-red-500"><div class="text-center"><i class="ri-error-warning-line text-4xl mb-2"></i><p>Error loading chart</p></div></div>';
+                        });
+                    } catch (error) {
+                        console.error('Error creating chart:', error);
+                        chartContainer.innerHTML = '<div class="flex items-center justify-center h-96 text-red-500"><div class="text-center"><i class="ri-error-warning-line text-4xl mb-2"></i><p>Error creating chart</p></div></div>';
+                    }
+                }, 150);
+            }
+
+            // Event listeners for controls
+            if (chartTypeSelect) {
+                chartTypeSelect.addEventListener('change', function() {
+                    const newChartType = this.value;
+                    if (newChartType !== chartType) {
+                        chartType = newChartType;
+                        updateChart();
+                    }
+                });
+            }
+
+            if (privacyToggle) {
+                privacyToggle.addEventListener('click', function() {
+                    privacyMode = !privacyMode;
+
+                    // Update button text and icon
+                    const icon = this.querySelector('i');
+                    const text = privacyMode ? 'Show Names' : 'Hide Names';
+                    const iconClass = privacyMode ? 'ri-eye-line' : 'ri-eye-off-line';
+
+                    icon.className = iconClass + ' mr-1';
+                    this.innerHTML = `<i class="${iconClass} mr-1"></i> ${text}`;
+
+                    // Only update if we're in individual view
+                    if (chartType === 'individual') {
+                        updateChart();
+                    }
+                });
+            }
+
+            // Initial chart render
+            updateChart();
 
             // Add a summary of student participation
             const studentSummaryContainer = document.querySelector("#student-participation-summary");

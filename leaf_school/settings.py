@@ -39,6 +39,7 @@ FORCE_SCRIPT_NAME = '/dashboard'
 ALLOWED_HOST_PATTERNS = [
     r'sk\.let\.media\.kyoto-u\.ac\.jp(,\s*sk\.let\.media\.kyoto-u\.ac\.jp)*',
     r'10\.236\.173\.223',
+    r'10\.236\.173\.129',
     r'localhost',
 ]
 
@@ -73,6 +74,8 @@ INSTALLED_APPS = [
     'core',
     'clickhouse_backend',
     'teacher_student',
+    'holiday',
+    'past_years',
 ]
 
 if not IS_PRODUCTION:
@@ -106,6 +109,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'past_years.context_processors.past_years_context',
             ],
         },
     },
@@ -131,7 +135,7 @@ DATABASES = {
         'NAME': os.getenv('MOODLE_DB_NAME', 'moodle'),
         'USER': os.getenv('MOODLE_DB_USER', 'moodle'),
         'PASSWORD': os.getenv('MOODLE_DB_PASSWORD', 'moodle'),
-        'HOST': '127.0.0.1',  # Use IP instead of localhost
+        'HOST': os.getenv('MOODLE_DB_HOST', '127.0.0.1'),  # Use IP instead of localhost
         'PORT': os.getenv('MOODLE_DB_PORT', '30102'),
         'OPTIONS': {
             'init_command': "SET SESSION TRANSACTION READ ONLY",
@@ -145,7 +149,7 @@ DATABASES = {
         'NAME': os.getenv('BOOKROLL_DB_NAME', 'bookroll'),
         'USER': os.getenv('BOOKROLL_DB_USER', 'bookroll'),
         'PASSWORD': os.getenv('BOOKROLL_DB_PASSWORD'),
-        'HOST': '127.0.0.1',  # Use IP instead of localhost
+        'HOST': os.getenv('BOOKROLL_DB_HOST', '127.0.0.1'),  # Use IP instead of localhost
         'PORT': os.getenv('BOOKROLL_DB_PORT', '30100'),
         'OPTIONS': {
             'init_command': "SET SESSION TRANSACTION READ ONLY",
@@ -366,3 +370,6 @@ USE_TZ = True
 
 
 LMS_URL = os.getenv('LMS_URL', '')
+
+SCHOOL_START_TIME = os.getenv('SCHOOL_START_TIME', '09:00')
+SCHOOL_END_TIME = os.getenv('SCHOOL_END_TIME', '16:00')

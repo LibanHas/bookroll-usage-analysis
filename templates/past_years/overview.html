@@ -1,0 +1,85 @@
+{% extends 'main.html' %}
+{% load static %}
+{% load i18n %}
+{% load past_years_tags %}
+
+{% block main_content %}
+<div class="grid grid-cols-12 gap-x-4">
+    <!-- Start Bread Crumb Section -->
+    <div class="col-span-full card flex-center-btween">
+        <h5 class="card-title">{{ page_title }}</h5>
+        <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
+            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&.current-page]:text-gray-500 dark:[&.current-page]:text-dark-text-two">
+                <a href="{% url 'index' %}">{% trans "Home" %}</a>
+            </li>
+            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&.current-page]:text-gray-500 dark:[&.current-page]:text-dark-text-two current-page">
+                <a href="#">{% trans "Past Years" %}</a>
+            </li>
+        </ul>
+    </div>
+    <!-- End Bread Crumb Section -->
+
+    <!-- Start Past Years Overview Section -->
+    <div class="col-span-full">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">{{ page_title }}</h5>
+                <p class="text-gray-500 dark:text-dark-text-two">{{ page_description }}</p>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {% for year in available_years %}
+                    <div class="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-border hover:shadow-lg transition-shadow duration-300">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{{ year }}</h3>
+                                <div class="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="text-primary-600 dark:text-primary-400">
+                                        <path fill="currentColor" d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-400 mb-6">
+                                {% blocktrans %}Academic year {{ year }} analysis and statistics{% endblocktrans %}
+                            </p>
+                            <div class="space-y-3">
+                                <a href="{% past_year_url year %}" class="block w-full text-center bg-primary-600 hover:bg-primary-700 text-white py-2 px-4 rounded-md transition-colors duration-200">
+                                    {% trans "View Analysis" %}
+                                </a>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <a href="{% past_year_url_safe year 'courses' %}" class="text-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-3 rounded-md text-sm transition-colors duration-200">
+                                        {% trans "Courses" %}
+                                    </a>
+                                    <a href="{% past_year_url_safe year 'students' %}" class="text-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-3 rounded-md text-sm transition-colors duration-200">
+                                        {% trans "Students" %}
+                                    </a>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <a href="{% past_year_url_safe year 'teachers' %}" class="text-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-3 rounded-md text-sm transition-colors duration-200">
+                                        {% trans "Teachers" %}
+                                    </a>
+                                    <a href="{% past_year_url_safe year 'analytics' %}" class="text-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-3 rounded-md text-sm transition-colors duration-200">
+                                        {% trans "Analytics" %}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-span-full text-center py-12">
+                        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="text-gray-400">
+                                <path fill="currentColor" d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{% trans "No Past Years Available" %}</h3>
+                        <p class="text-gray-500 dark:text-gray-400">{% trans "Historical data will appear here once available." %}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Past Years Overview Section -->
+</div>
+{% endblock %}
