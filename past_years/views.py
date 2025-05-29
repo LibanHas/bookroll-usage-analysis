@@ -1,9 +1,22 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.translation import gettext_lazy as _
+from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.views import View
 from datetime import datetime
 from typing import Dict, Any
+import json
+import logging
+from django.core.cache import cache
+
+from .models import PastYearCourseCategory, PastYearCourseActivity, PastYearStudentGrades
+
+logger = logging.getLogger(__name__)
 
 
 class PastYearsOverviewView(LoginRequiredMixin, TemplateView):
@@ -12,13 +25,18 @@ class PastYearsOverviewView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
         context = super().get_context_data(**kwargs)
-        current_year = datetime.now().year
-        start_year = 2021
-        end_year = current_year - 1
 
-        # Generate list of available years
-        available_years = list(range(start_year, end_year + 1))
-        available_years.reverse()  # Show most recent years first
+        # Get available academic years from course categories
+        available_years = PastYearCourseCategory.get_available_academic_years()
+
+        # If no years found in categories, fall back to default range
+        if not available_years:
+            current_year = datetime.now().year
+            start_year = 2021
+            end_year = current_year - 1
+            available_years = list(range(start_year, end_year + 1))
+            available_years.reverse()
+            logger.info(f"No years found in categories, using fallback years: {available_years}")
 
         context.update({
             'available_years': available_years,
@@ -56,6 +74,117 @@ class YearCoursesView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         year = kwargs.get('year', datetime.now().year - 1)
 
+        logger.info(f"Processing courses analysis request for academic year {year}")
+
+        # Get courses data for the academic year
+        courses_data = PastYearCourseCategory.get_courses_by_academic_year(year)
+        total_courses = courses_data.get('total_courses', 0)
+
+        logger.info(f"Found {total_courses} courses for academic year {year}")
+
+        # Early exit if no courses found
+        if total_courses == 0:
+            logger.info(f"No courses found for academic year {year}, skipping activity analysis")
+            context.update({
+                'year': year,
+                'page_title': _('Courses Analysis - {year}').format(year=year),
+                'page_description': _('Course statistics and analysis for {year}').format(year=year),
+                'breadcrumbs': [
+                    {'name': _('Past Years'), 'url': 'past_years:overview'},
+                    {'name': str(year), 'url': f'past_years:year_{year}'},
+                    {'name': _('Courses'), 'url': None},
+                ],
+                'courses_data': courses_data,
+                'enhanced_categories': {},
+                'activity_data': {
+                    'course_activities': [],
+                    'overall_stats': {},
+                    'daily_trends': [],
+                    'top_operations': []
+                },
+                'engagement_patterns': {
+                    'hourly_patterns': [],
+                    'daily_patterns': [],
+                    'monthly_trends': []
+                },
+                'daily_trends_json': '[]',
+                'top_operations_json': '[]',
+                'hourly_patterns_json': '[]',
+                'monthly_trends_json': '[]',
+                'has_data': False,
+                'has_activity_data': False,
+            })
+            return context
+
+        # Extract course IDs efficiently
+        course_ids = []
+        for category in courses_data.get('categories', {}).values():
+            for child_category in category.get('children', {}).values():
+                course_ids.extend([course['id'] for course in child_category.get('courses', [])])
+
+        logger.info(f"Extracted {len(course_ids)} course IDs for activity analysis")
+
+        # Get activity data for the courses
+        activity_data = PastYearCourseActivity.get_course_activity_summary(year, course_ids)
+
+        # Only get engagement patterns if we have activity data
+        engagement_patterns = {}
+        if activity_data.get('overall_stats', {}).get('total_activities', 0) > 0:
+            engagement_patterns = PastYearCourseActivity.get_course_engagement_patterns(year)
+        else:
+            logger.info(f"No activity data found for academic year {year}, skipping engagement patterns")
+            engagement_patterns = {
+                'hourly_patterns': [],
+                'daily_patterns': [],
+                'monthly_trends': []
+            }
+
+        # Create activity mapping for efficient lookup
+        activity_by_course = {}
+        for activity in activity_data.get('course_activities', []):
+            course_id = int(activity['course_id']) if activity['course_id'].isdigit() else activity['course_id']
+            activity_by_course[course_id] = activity
+
+        # Enhance courses data with activity information efficiently
+        enhanced_categories = {}
+        for category_id, category in courses_data.get('categories', {}).items():
+            enhanced_category = {
+                'id': category['id'],
+                'name': category['name'],
+                'academic_year': category['academic_year'],
+                'course_count': category['course_count'],
+                'children': {}
+            }
+
+            for child_id, child_category in category.get('children', {}).items():
+                enhanced_child = {
+                    'id': child_category['id'],
+                    'name': child_category['name'],
+                    'academic_year': child_category['academic_year'],
+                    'course_count': child_category['course_count'],
+                    'courses': []
+                }
+
+                for course in child_category.get('courses', []):
+                    enhanced_course = course.copy()
+                    enhanced_course['activity'] = activity_by_course.get(course['id'], {})
+                    enhanced_child['courses'].append(enhanced_course)
+
+                enhanced_category['children'][child_id] = enhanced_child
+
+            enhanced_categories[category_id] = enhanced_category
+
+        # Prepare chart data for templates
+        daily_trends_json = json.dumps(activity_data.get('daily_trends', []))
+        top_operations_json = json.dumps(activity_data.get('top_operations', []))
+        hourly_patterns_json = json.dumps(engagement_patterns.get('hourly_patterns', []))
+        monthly_trends_json = json.dumps(engagement_patterns.get('monthly_trends', []))
+
+        has_data = total_courses > 0
+        has_activity_data = len(activity_data.get('course_activities', [])) > 0
+
+        logger.info(f"Courses analysis completed for year {year}: {total_courses} courses, {len(activity_data.get('course_activities', []))} with activity data")
+
         context.update({
             'year': year,
             'page_title': _('Courses Analysis - {year}').format(year=year),
@@ -65,7 +194,18 @@ class YearCoursesView(LoginRequiredMixin, TemplateView):
                 {'name': str(year), 'url': f'past_years:year_{year}'},
                 {'name': _('Courses'), 'url': None},
             ],
+            'courses_data': courses_data,
+            'enhanced_categories': enhanced_categories,
+            'activity_data': activity_data,
+            'engagement_patterns': engagement_patterns,
+            'daily_trends_json': daily_trends_json,
+            'top_operations_json': top_operations_json,
+            'hourly_patterns_json': hourly_patterns_json,
+            'monthly_trends_json': monthly_trends_json,
+            'has_data': has_data,
+            'has_activity_data': has_activity_data,
         })
+
         return context
 
 
@@ -77,6 +217,135 @@ class YearStudentsView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         year = kwargs.get('year', datetime.now().year - 1)
 
+        logger.info(f"Processing student analytics request for academic year {year}")
+
+        # Check if we should show all activities or just activities for courses with grades
+        show_all_activities = self.request.GET.get('show_all_activities', 'false').lower() == 'true'
+        logger.debug(f"YEAR STUDENTS VIEW: show_all_activities = {show_all_activities}")
+
+        # Generate cache keys based on year and activity filter setting
+        cache_key_base = f'student_analytics_{year}'
+        activity_filter_suffix = '_all_activities' if show_all_activities else '_graded_only'
+
+        # Individual cache keys for different data sections
+        main_analytics_cache_key = f'{cache_key_base}_main{activity_filter_suffix}'
+        chart_data_cache_key = f'{cache_key_base}_charts{activity_filter_suffix}'
+        engagement_cache_key = f'{cache_key_base}_engagement{activity_filter_suffix}'
+        courses_context_cache_key = f'{cache_key_base}_courses_context'
+
+        logger.debug(f"CACHE: Using cache keys - main: {main_analytics_cache_key}, charts: {chart_data_cache_key}")
+
+        # Try to get cached data first
+        cached_main_analytics = cache.get(main_analytics_cache_key)
+        cached_chart_data = cache.get(chart_data_cache_key)
+        cached_engagement_data = cache.get(engagement_cache_key)
+        cached_courses_context = cache.get(courses_context_cache_key)
+
+        # Check if we have all cached data
+        if cached_main_analytics and cached_chart_data and cached_engagement_data and cached_courses_context:
+            logger.info(f"CACHE HIT: Using cached student analytics for year {year} (show_all_activities={show_all_activities})")
+
+            # Use cached data
+            student_analytics = cached_main_analytics
+            chart_data = cached_chart_data
+            engagement_categories = cached_engagement_data
+            courses_context = cached_courses_context
+
+        else:
+            logger.info(f"CACHE MISS: Generating fresh student analytics for year {year} (show_all_activities={show_all_activities})")
+
+            # Get courses data for the academic year
+            courses_data = PastYearCourseCategory.get_courses_by_academic_year(year)
+            total_courses = courses_data.get('total_courses', 0)
+            logger.debug(f"YEAR STUDENTS VIEW: Found {total_courses} courses for academic year {year}")
+
+            # Extract course IDs for the academic year
+            course_ids = []
+            if total_courses > 0:
+                for category in courses_data.get('categories', {}).values():
+                    for child_category in category.get('children', {}).values():
+                        course_ids.extend([str(course['id']) for course in child_category.get('courses', [])])
+
+            logger.info(f"Found {len(course_ids)} courses for academic year {year} to analyze student data")
+
+            if show_all_activities:
+                logger.info(f"Showing ALL activities for academic year {year} (not filtered by course IDs)")
+                # Get comprehensive student analytics for ALL courses in the academic year
+                student_analytics = PastYearStudentGrades.get_student_analytics_for_year(year, None)
+            else:
+                logger.info(f"Showing activities only for courses with grades ({len(course_ids)} courses)")
+                # Get comprehensive student analytics filtered by academic year courses with grades
+                student_analytics = PastYearStudentGrades.get_student_analytics_for_year(year, course_ids)
+
+            # Debug the student analytics result
+            logger.debug(f"YEAR STUDENTS VIEW: Student analytics keys: {list(student_analytics.keys())}")
+
+            summary_stats = student_analytics.get('summary_stats', {})
+            grade_analytics = student_analytics.get('grade_analytics', {})
+            access_analytics = student_analytics.get('access_analytics', {})
+            combined_analytics = student_analytics.get('combined_analytics', {})
+
+            # Prepare chart data for templates
+            chart_data = {
+                'grade_distribution_json': json.dumps(
+                    grade_analytics.get('grade_distribution', [])
+                ),
+                'monthly_trends_json': json.dumps(
+                    grade_analytics.get('monthly_trends', [])
+                ),
+                'activity_types_json': json.dumps(
+                    access_analytics.get('activity_types', [])
+                ),
+                'correlation_data_json': json.dumps(
+                    combined_analytics.get('student_course_correlations', [])
+                ),
+                'top_activity_types_json': json.dumps(
+                    combined_analytics.get('top_activity_types', [])
+                )
+            }
+
+            # Prepare engagement categories for display
+            engagement_categories = combined_analytics.get('engagement_categories', {})
+
+            # Prepare courses context data
+            courses_context = {
+                'courses_data': courses_data,
+                'total_courses_in_year': len(course_ids),
+                'course_ids': course_ids
+            }
+
+            # Cache the data with different TTL based on data freshness needs
+            # Main analytics: 2 hours (most expensive to generate)
+            cache.set(main_analytics_cache_key, student_analytics, 7200)
+            # Chart data: 2 hours
+            cache.set(chart_data_cache_key, chart_data, 7200)
+            # Engagement data: 2 hours
+            cache.set(engagement_cache_key, engagement_categories, 7200)
+            # Courses context: 1 hour (less expensive to regenerate)
+            cache.set(courses_context_cache_key, courses_context, 3600)
+
+            logger.info(f"CACHE SET: Cached student analytics data for year {year} (show_all_activities={show_all_activities})")
+
+        # Extract data from cached or fresh results
+        summary_stats = student_analytics.get('summary_stats', {})
+        grade_analytics = student_analytics.get('grade_analytics', {})
+        access_analytics = student_analytics.get('access_analytics', {})
+        combined_analytics = student_analytics.get('combined_analytics', {})
+
+        # Check if we have data
+        has_data = bool(
+            grade_analytics.get('overall_stats', {}).get('total_students', 0) > 0 or
+            access_analytics.get('student_access', [])
+        )
+        logger.debug(f"YEAR STUDENTS VIEW: has_data = {has_data}")
+
+        # Log the key metrics that will be displayed
+        logger.debug(f"YEAR STUDENTS VIEW: Key metrics for template:")
+        logger.debug(f"  - total_students_with_grades: {summary_stats.get('total_students_with_grades', 0)}")
+        logger.debug(f"  - total_courses_with_grades: {summary_stats.get('total_courses_with_grades', 0)}")
+        logger.debug(f"  - total_activities: {summary_stats.get('total_activities', 0)}")
+        logger.debug(f"  - overall_avg_grade: {summary_stats.get('overall_avg_grade', 0)}")
+
         context.update({
             'year': year,
             'page_title': _('Students Analysis - {year}').format(year=year),
@@ -86,6 +355,17 @@ class YearStudentsView(LoginRequiredMixin, TemplateView):
                 {'name': str(year), 'url': f'past_years:year_{year}'},
                 {'name': _('Students'), 'url': None},
             ],
+            'student_analytics': student_analytics,
+            'courses_data': courses_context['courses_data'],
+            'has_data': has_data,
+            'show_all_activities': show_all_activities,
+            'total_courses_in_year': courses_context['total_courses_in_year'],
+            'grade_distribution_json': chart_data['grade_distribution_json'],
+            'monthly_trends_json': chart_data['monthly_trends_json'],
+            'activity_types_json': chart_data['activity_types_json'],
+            'correlation_data_json': chart_data['correlation_data_json'],
+            'top_activity_types_json': chart_data['top_activity_types_json'],
+            'engagement_categories': engagement_categories,
         })
         return context
 
@@ -130,3 +410,120 @@ class YearAnalyticsView(LoginRequiredMixin, TemplateView):
             ],
         })
         return context
+
+
+class ClearCacheView(LoginRequiredMixin, View):
+    """View to clear cache for a specific academic year."""
+
+    def post(self, request, year):
+        """Clear cache for the specified academic year."""
+        try:
+            # Clear cache for the academic year
+            success = PastYearCourseCategory.clear_cache_for_year(year)
+
+            if success:
+                messages.success(
+                    request,
+                    _('Cache cleared successfully for academic year {year}').format(year=year)
+                )
+                logger.info(f"Cache cleared for academic year {year} by user {request.user.username}")
+            else:
+                messages.warning(
+                    request,
+                    _('Cache clear operation completed for academic year {year}').format(year=year)
+                )
+
+        except Exception as e:
+            logger.error(f"Error clearing cache for academic year {year}: {str(e)}")
+            messages.error(
+                request,
+                _('Error clearing cache for academic year {year}: {error}').format(year=year, error=str(e))
+            )
+
+        # Determine where to redirect based on the referring page
+        referer = request.META.get('HTTP_REFERER', '')
+
+        if 'students' in referer:
+            redirect_url = f'past_years:year_{year}_students'
+        elif 'teachers' in referer:
+            redirect_url = f'past_years:year_{year}_teachers'
+        elif 'analytics' in referer:
+            redirect_url = f'past_years:year_{year}_analytics'
+        else:
+            # Default to courses page
+            redirect_url = f'past_years:year_{year}_courses'
+
+        return redirect(redirect_url)
+
+    def get(self, request, year):
+        """Handle GET requests by redirecting based on referer or default to courses page."""
+        referer = request.META.get('HTTP_REFERER', '')
+
+        if 'students' in referer:
+            redirect_url = f'past_years:year_{year}_students'
+        elif 'teachers' in referer:
+            redirect_url = f'past_years:year_{year}_teachers'
+        elif 'analytics' in referer:
+            redirect_url = f'past_years:year_{year}_analytics'
+        else:
+            # Default to courses page
+            redirect_url = f'past_years:year_{year}_courses'
+
+        return redirect(redirect_url)
+
+
+class CourseGradeDistributionView(LoginRequiredMixin, View):
+    """AJAX view to get grade distribution data for a specific course."""
+
+    def get(self, request, year, course_id):
+        """Return grade distribution data for a course in JSON format."""
+        try:
+            # Create cache key for this specific course distribution
+            cache_key = f'course_grade_distribution_{year}_{course_id}'
+
+            # Try to get cached data first
+            cached_distribution = cache.get(cache_key)
+
+            if cached_distribution:
+                logger.info(f"CACHE HIT: Using cached grade distribution for course {course_id} in year {year}")
+                return JsonResponse({
+                    'success': True,
+                    'data': cached_distribution,
+                    'cached': True
+                })
+
+            logger.info(f"CACHE MISS: Generating fresh grade distribution for course {course_id} in year {year}")
+
+            # Get the distribution data
+            distribution_data = PastYearCourseCategory.get_course_grade_distribution(
+                course_id=course_id,
+                academic_year=year
+            )
+
+            if 'error' in distribution_data:
+                return JsonResponse({
+                    'success': False,
+                    'error': distribution_data['error']
+                }, status=404)
+
+            # Cache the distribution data for 1 hour
+            # Course-specific distributions are less expensive to regenerate
+            cache.set(cache_key, distribution_data, 3600)
+
+            # Register this cache key for future clearing
+            PastYearCourseCategory.register_course_cache_key(year, course_id)
+
+            logger.info(f"CACHE SET: Cached grade distribution for course {course_id} in year {year}")
+
+            return JsonResponse({
+                'success': True,
+                'data': distribution_data,
+                'cached': False
+            })
+
+        except Exception as e:
+            logger.error(f"Error fetching distribution for course {course_id}: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)

@@ -1,49 +1,1719 @@
 {% extends 'main.html' %}
 {% load static %}
 {% load i18n %}
+{% load past_years_tags %}
 
 {% block main_content %}
 <div class="grid grid-cols-12 gap-x-4">
     <!-- Start Bread Crumb Section -->
-    <div class="col-span-full card flex-center-btween">
-        <h5 class="card-title">{{ page_title }}</h5>
-        <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
-            {% for breadcrumb in breadcrumbs %}
-            <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden {% if not breadcrumb.url %}current-page text-gray-500 dark:text-dark-text-two{% endif %}">
-                {% if breadcrumb.url %}
-                <a href="{% url breadcrumb.url %}">{{ breadcrumb.name }}</a>
-                {% else %}
-                <span>{{ breadcrumb.name }}</span>
-                {% endif %}
-            </li>
-            {% endfor %}
-        </ul>
+    <div class="col-span-full card">
+        <div class="flex items-center justify-between p-4">
+            <!-- Left side: Title and breadcrumbs -->
+            <div>
+                <h5 class="card-title">{{ page_title }}</h5>
+                <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
+                    {% for breadcrumb in breadcrumbs %}
+                    <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden {% if not breadcrumb.url %}current-page text-gray-500 dark:text-dark-text-two{% endif %}">
+                        {% if breadcrumb.url %}
+                        <a href="{% url breadcrumb.url %}">{{ breadcrumb.name }}</a>
+                        {% else %}
+                        <span>{{ breadcrumb.name }}</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Right side: Cache clear button -->
+            <div class="flex items-center gap-2">
+                <!-- Activity Filter Toggle -->
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">{% trans "Activities:" %}</span>
+                    <a href="?show_all_activities={% if show_all_activities %}false{% else %}true{% endif %}"
+                       class="btn btn-sm {% if show_all_activities %}btn-primary-solid{% else %}btn-secondary-solid{% endif %} flex items-center gap-2 transition-colors duration-200">
+                        {% if show_all_activities %}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" class="text-white">
+                                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zM10 17l-5-5l1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                            {% trans "All Activities" %}
+                        {% else %}
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" class="text-white">
+                                <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                            </svg>
+                            {% trans "Graded Courses Only" %}
+                        {% endif %}
+                    </a>
+                </div>
+
+                <!-- Cache Status Indicator -->
+                <div class="hidden lg:flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" class="text-blue-600 dark:text-blue-400">
+                        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5l1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span class="text-xs font-medium text-blue-700 dark:text-blue-300">{% trans "Cached Data" %}</span>
+                </div>
+
+                <form method="post" action="{% past_year_clear_cache_url year %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn b-solid btn-secondary-solid btn-sm flex items-center gap-2 hover:bg-secondary-600 transition-colors duration-200"
+                            id="clear-cache-btn"
+                            title="{% trans 'Clear all cached data for this academic year including student analytics, charts, and course distributions' %}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" class="text-white">
+                            <path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                        </svg>
+                        {% trans "Clear Cache" %}
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
     <!-- End Bread Crumb Section -->
 
-    <!-- Start Year Students Section -->
-    <div class="col-span-full">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">{{ page_title }}</h5>
-                <p class="text-gray-500 dark:text-dark-text-two">{{ page_description }}</p>
-            </div>
-            <div class="card-body">
-                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-8 text-center">
-                    <div class="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="text-green-600 dark:text-green-400">
-                            <path fill="currentColor" d="M16 4c0-1.11.89-2 2-2s2 .89 2 2s-.89 2-2 2s-2-.89-2-2M4 18v-6h3v7H5.5c-.83 0-1.5-.67-1.5-1.5M12.5 11H11V7.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5M15 12.5c-1.25 0-2.45-.2-3.57-.57c-.35-.11-.68-.24-1-.4V15l-2.92-2.92c-.39-.39-.39-1.02 0-1.41L8.92 9.26c.39-.39 1.02-.39 1.41 0L12 10.93l1.67-1.67c.39-.39 1.02-.39 1.41 0l1.41 1.41c.39.39.39 1.02 0 1.41L15 12.5Z"/>
-                        </svg>
+    {% if has_data %}
+        <!-- Start Student Statistics Overview -->
+        <div class="col-span-full grid grid-cols-12 gap-4 card">
+            <!-- Students with Grades Progress Card -->
+            <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+                <div class="flex-center-between">
+                    <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Students with Grades" %}</h6>
+                    <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Analytics" %}</div>
+                </div>
+                <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                    <div class="pb-8 shrink-0">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="counter-value card-title text-blue-500" data-value="{{ student_analytics.summary_stats.total_students_with_grades|default:0 }}">{{ student_analytics.summary_stats.total_students_with_grades|default:0 }}</div>
+                        </div>
                     </div>
-                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ page_title }}</h3>
-                    <p class="text-gray-600 dark:text-gray-400 mb-6">{{ page_description }}</p>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">
-                        {% trans "Student activity data and analytics for this year will be displayed here." %}
+                    <div class="grow self-center pb-3">
+                        <div class="size-12 flex-center bg-blue-100 dark:bg-blue-900 rounded-lg ml-auto">
+                            <i class="ri-user-line text-blue-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average Grade Progress Card -->
+            <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+                <div class="flex-center-between">
+                    <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Average Grade" %}</h6>
+                    <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Analytics" %}</div>
+                </div>
+                <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                    <div class="pb-8 shrink-0">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="counter-value card-title text-green-500" data-value="{{ student_analytics.summary_stats.overall_avg_grade|default:0|floatformat:1 }}">{{ student_analytics.summary_stats.overall_avg_grade|default:0|floatformat:1 }}%</div>
+                        </div>
+                    </div>
+                    <div class="grow self-center pb-3">
+                        <div class="size-12 flex-center bg-green-100 dark:bg-green-900 rounded-lg ml-auto">
+                            <i class="ri-award-line text-green-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Activities Progress Card -->
+            <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+                <div class="flex-center-between">
+                    <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Total Activities" %}</h6>
+                    <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">
+                        {% if show_all_activities %}
+                            {% trans "All Courses" %}
+                        {% else %}
+                            {% trans "Graded Only" %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                    <div class="pb-8 shrink-0">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="counter-value card-title text-purple-500" data-value="{{ student_analytics.summary_stats.total_activities|default:0 }}">{{ student_analytics.summary_stats.total_activities|default:0|floatformat:0 }}</div>
+                        </div>
+                        {% if show_all_activities %}
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{% trans "All activities in academic year" %}</p>
+                        {% else %}
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                {% trans "Activities in courses with grades" %} <br />
+                                ({{ student_analytics.access_analytics.overall_stats.total_courses_with_activity|default:0 }}
+                                {% trans "of" %} {{ student_analytics.summary_stats.total_courses_with_grades|default:0 }}
+                                {% trans "courses have activity data" %})
+                            </p>
+                        {% endif %}
+                    </div>
+                    <div class="grow self-center pb-3">
+                        <div class="size-12 flex-center bg-purple-100 dark:bg-purple-900 rounded-lg ml-auto">
+                            <i class="ri-bar-chart-line text-purple-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Courses with Grades Progress Card -->
+            <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+                <div class="flex-center-between">
+                    <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Courses with Grades" %}</h6>
+                    <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Analytics" %}</div>
+                </div>
+                <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                    <div class="pb-8 shrink-0">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="counter-value card-title text-orange-500" data-value="{{ student_analytics.summary_stats.total_courses_with_grades|default:0 }}">{{ student_analytics.summary_stats.total_courses_with_grades|default:0 }}</div>
+                        </div>
+                    </div>
+                    <div class="grow self-center pb-3">
+                        <div class="size-12 flex-center bg-orange-100 dark:bg-orange-900 rounded-lg ml-auto">
+                            <i class="ri-book-line text-orange-500 text-xl"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <!-- End Year Students Section -->
+        <!-- End Student Statistics Overview -->
+
+
+        <!-- Start Charts Section -->
+        {% if student_analytics.grade_analytics.grade_distribution or student_analytics.access_analytics.activity_types %}
+        <!-- Grade Distribution Chart -->
+        {% if student_analytics.grade_analytics.grade_distribution %}
+        <div class="col-span-full lg:col-span-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">{% trans "Grade Distribution" %}</h5>
+                    <p class="text-gray-500 dark:text-dark-text-two">{% trans "Distribution of student grades by range" %}</p>
+                </div>
+                <div class="card-body">
+                    <div id="grade-distribution-chart" style="height: 350px;"></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Monthly Grade Trends -->
+        {% if student_analytics.grade_analytics.monthly_trends %}
+        <div class="col-span-full lg:col-span-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">{% trans "Monthly Grade Trends" %}</h5>
+                    <p class="text-gray-500 dark:text-dark-text-two">{% trans "Average grades and student activity by month" %}</p>
+                </div>
+                <div class="card-body">
+                    <div id="monthly-trends-chart" style="height: 350px;"></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Activity Types Distribution -->
+        {% if student_analytics.access_analytics.activity_types %}
+        <div class="col-span-full lg:col-span-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">{% trans "Student Activity Types" %}</h5>
+                    <p class="text-gray-500 dark:text-dark-text-two">{% trans "Most common student activities" %}</p>
+                </div>
+                <div class="card-body">
+                    <div id="activity-types-chart" style="height: 350px;"></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <!-- Individual Student Activities vs Grades Scatter Plot -->
+
+        {% if student_analytics.combined_analytics.student_course_correlations %}
+        <div class="col-span-full lg:col-span-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">{% trans "Individual Student: Activities vs Grades" %}</h5>
+                    <p class="text-gray-500 dark:text-dark-text-two">{% trans "Toggle activity types to see how different types of student engagement relate to academic performance" %}</p>
+                </div>
+                <div class="card-body">
+                    <!-- Activity Type Legend Controls -->
+                    <div class="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div class="flex items-center justify-between mb-3">
+                            <h6 class="font-semibold text-gray-800 dark:text-gray-200">{% trans "Activity Types" %}</h6>
+                            <div class="flex items-center gap-2">
+                                <button id="select-all-activities" class="btn btn-xs btn-primary-solid">
+                                    {% trans "Select All" %}
+                                </button>
+                                <button id="deselect-all-activities" class="btn btn-xs btn-secondary-solid">
+                                    {% trans "Deselect All" %}
+                                </button>
+                            </div>
+                        </div>
+                        <div id="activity-type-controls" class="flex flex-wrap gap-3">
+                            <!-- Activity type checkboxes will be populated by JavaScript -->
+                        </div>
+                        <div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                            {% trans "Select which activity types to include in the analysis. The chart will update automatically to show only the selected activities." %}
+                        </div>
+                    </div>
+
+                    <!-- Chart Container -->
+                    <div id="student-correlation-chart" style="height: 550px;"></div>
+
+                    <!-- Activity Count Range Selector -->
+                    <div class="mt-4 mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div class="relative mb-2">
+                            <!-- Dual-handle range slider container -->
+                            <div class="relative h-8 bg-gray-300 dark:bg-gray-600 rounded-lg border border-gray-400 dark:border-gray-500">
+                                <div id="range-track" class="absolute h-6 bg-gradient-to-r from-blue-400 to-blue-600 rounded-md top-1 transition-all duration-200 shadow-sm"></div>
+                                <input type="range" id="range-min" class="absolute w-full h-8 bg-transparent appearance-none cursor-pointer range-slider"
+                                       min="0" max="1000" value="0" step="10">
+                                <input type="range" id="range-max" class="absolute w-full h-8 bg-transparent appearance-none cursor-pointer range-slider"
+                                       min="0" max="1000" value="1000" step="10">
+                            </div>
+                            <div class="flex justify-between pt-3 text-xs font-medium text-gray-700 dark:text-gray-300">
+                                <span id="range-min-display" class="bg-white dark:bg-gray-700 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 shadow-sm">0</span>
+                                <span class="text-gray-500 dark:text-gray-400 self-center">{% trans "Activity Range" %}</span>
+                                <span id="range-max-display" class="bg-white dark:bg-gray-700 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 shadow-sm">1000</span>
+                            </div>
+                        </div>
+                        <div id="range-filter-info" class="text-xs text-blue-600 dark:text-blue-400 text-center mb-3">
+                            <!-- Range filter info will be displayed here -->
+                        </div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <h6 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{% trans "Activity Count Range Filter" %}</h6>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{% trans "Drag the sliders to focus on specific activity ranges and filter out outliers" %}</p>
+                            </div>
+                            <button id="reset-activity-range" class="btn btn-xs btn-secondary-solid">
+                                {% trans "Reset" %}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Performance Category Legend -->
+                    <div class="mt-3">
+                        <div class="flex flex-wrap items-center gap-4 text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                <span>{% trans "High Activity, High Grade" %}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                <span>{% trans "High Activity, Low Grade" %}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                <span>{% trans "Low Activity, High Grade" %}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                <span>{% trans "Low Activity, Low Grade" %}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+        <!-- End Charts Section -->
+
+        <!-- Engagement Categories -->
+        {% if engagement_categories %}
+        <div class="col-span-full grid grid-cols-12 gap-4 card">
+            <div class="col-span-full mb-4">
+                <h5 class="card-title">{% trans "Course Engagement Categories" %}</h5>
+                <p class="text-gray-500 dark:text-dark-text-two">{% trans "Courses categorized by student engagement and performance" %}</p>
+            </div>
+
+            <!-- High Activity, High Grade -->
+            <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+                <div class="flex-center-between">
+                    <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "High Activity, High Grade" %}</h6>
+                    <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Optimal" %}</div>
+                </div>
+                <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                    <div class="pb-8 shrink-0">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="counter-value card-title text-green-500" data-value="{{ engagement_categories.high_activity_high_grade|length }}">{{ engagement_categories.high_activity_high_grade|length }}</div>
+                        </div>
+                    </div>
+                    <div class="grow self-center pb-3">
+                        <div class="size-12 flex-center bg-green-100 dark:bg-green-900 rounded-lg ml-auto">
+                            <i class="ri-trophy-line text-green-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- High Activity, Low Grade -->
+            <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+                <div class="flex-center-between">
+                    <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "High Activity, Low Grade" %}</h6>
+                    <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Review" %}</div>
+                </div>
+                <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                    <div class="pb-8 shrink-0">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="counter-value card-title text-yellow-500" data-value="{{ engagement_categories.high_activity_low_grade|length }}">{{ engagement_categories.high_activity_low_grade|length }}</div>
+                        </div>
+                    </div>
+                    <div class="grow self-center pb-3">
+                        <div class="size-12 flex-center bg-yellow-100 dark:bg-yellow-900 rounded-lg ml-auto">
+                            <i class="ri-alert-line text-yellow-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Activity, High Grade -->
+            <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+                <div class="flex-center-between">
+                    <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Low Activity, High Grade" %}</h6>
+                    <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Efficient" %}</div>
+                </div>
+                <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                    <div class="pb-8 shrink-0">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="counter-value card-title text-blue-500" data-value="{{ engagement_categories.low_activity_high_grade|length }}">{{ engagement_categories.low_activity_high_grade|length }}</div>
+                        </div>
+                    </div>
+                    <div class="grow self-center pb-3">
+                        <div class="size-12 flex-center bg-blue-100 dark:bg-blue-900 rounded-lg ml-auto">
+                            <i class="ri-lightbulb-line text-blue-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Activity, Low Grade -->
+            <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+                <div class="flex-center-between">
+                    <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Low Activity, Low Grade" %}</h6>
+                    <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Attention" %}</div>
+                </div>
+                <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                    <div class="pb-8 shrink-0">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="counter-value card-title text-red-500" data-value="{{ engagement_categories.low_activity_low_grade|length }}">{{ engagement_categories.low_activity_low_grade|length }}</div>
+                        </div>
+                    </div>
+                    <div class="grow self-center pb-3">
+                        <div class="size-12 flex-center bg-red-100 dark:bg-red-900 rounded-lg ml-auto">
+                            <i class="ri-error-warning-line text-red-500 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Hypothesis Test Results -->
+        {% if student_analytics.combined_analytics.student_course_correlations %}
+        <div class="col-span-full">
+            <div class="card">
+                <div class="card-header">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h5 class="card-title">{% trans " Do More Activities Lead to Higher Grades?" %}</h5>
+                            <p class="text-gray-500 dark:text-dark-text-two">{% trans "Statistical analysis of the relationship between student activities and academic performance" %}</p>
+                        </div>
+                        <button id="toggle-hypothesis-results" class="btn btn-sm btn-secondary-solid flex items-center gap-2 transition-all duration-200">
+                            <svg id="hypothesis-toggle-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" class="transition-transform duration-200 transform rotate-0">
+                                <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6l-6-6l1.41-1.41z"/>
+                            </svg>
+                            <span id="hypothesis-toggle-text">{% trans "Show Details" %}</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="hypothesis-results" class="space-y-4" style="display: none;">
+                        <!-- Results will be populated by JavaScript -->
+                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" class="text-blue-600">
+                                    <path fill="currentColor" d="M11 9h2V7h-2m1 13c-4.41 0-8-3.59-8-8s3.59-8 8-8s8 3.59 8 8m0-18A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2z"/>
+                                </svg>
+                                <h6 class="font-semibold text-blue-800 dark:text-blue-200">{% trans "Methodology" %}</h6>
+                            </div>
+                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                {% trans "Students are categorized based on median activity and grade thresholds. Each point in the scatter plot represents one student's performance in one course." %}
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+                            <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 lg:p-4 text-center">
+                                <div class="text-xl lg:text-2xl font-bold text-green-600 dark:text-green-400" id="supporting-count">--</div>
+                                <div class="text-xs lg:text-sm text-green-700 dark:text-green-300 font-medium">{% trans "Supporting Evidence" %}</div>
+                                <div class="text-xs text-green-600 dark:text-green-400 mt-1">{% trans "High Activity + High Grade" %}</div>
+                            </div>
+
+                            <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 lg:p-4 text-center">
+                                <div class="text-xl lg:text-2xl font-bold text-yellow-600 dark:text-yellow-400" id="contradicting-count">--</div>
+                                <div class="text-xs lg:text-sm text-yellow-700 dark:text-yellow-300 font-medium">{% trans "Contradicting Evidence" %}</div>
+                                <div class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">{% trans "High Activity + Low Grade" %}</div>
+                            </div>
+
+                            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 lg:p-4 text-center">
+                                <div class="text-xl lg:text-2xl font-bold text-blue-600 dark:text-blue-400" id="efficient-count">--</div>
+                                <div class="text-xs lg:text-sm text-blue-700 dark:text-blue-300 font-medium">{% trans "Efficient Learners" %}</div>
+                                <div class="text-xs text-blue-600 dark:text-blue-400 mt-1">{% trans "Low Activity + High Grade" %}</div>
+                            </div>
+
+                            <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 lg:p-4 text-center">
+                                <div class="text-xl lg:text-2xl font-bold text-red-600 dark:text-red-400" id="struggling-count">--</div>
+                                <div class="text-xs lg:text-sm text-red-700 dark:text-red-300 font-medium">{% trans "Struggling Students" %}</div>
+                                <div class="text-xs text-red-600 dark:text-red-400 mt-1">{% trans "Low Activity + Low Grade" %}</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                            <h6 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">{% trans "Hypothesis Strength" %}</h6>
+                            <div class="flex items-center gap-4">
+                                <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-4 relative overflow-hidden">
+                                    <div id="hypothesis-bar" class="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    <span id="hypothesis-percentage">--%</span> {% trans "Support" %}
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <span id="hypothesis-conclusion" class="text-sm text-gray-600 dark:text-gray-400">{% trans "Calculating..." %}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Insights Section -->
+        {% if student_analytics.combined_analytics.insights %}
+        <div class="col-span-full">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">{% trans "Key Insights" %}</h5>
+                    <p class="text-gray-500 dark:text-dark-text-two">{% trans "Automated insights from the data analysis" %}</p>
+                </div>
+                <div class="card-body">
+                    <div class="space-y-3">
+                        {% for insight in student_analytics.combined_analytics.insights %}
+                        <div class="flex items-start space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                            <div class="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" class="text-white">
+                                    <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22L12 18.77L5.82 22L7 14.14L2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                            </div>
+                            <p class="text-sm text-blue-800 dark:text-blue-200">{{ insight }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Course Performance Table -->
+        {% if student_analytics.grade_analytics.course_stats %}
+        <div class="col-span-full">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">{% trans "Course Performance Summary" %}</h5>
+                    <p class="text-gray-500 dark:text-dark-text-two">{% trans "Detailed statistics for each course" %}</p>
+                </div>
+                <div class="card-body">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-800">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{% trans "Course" %}</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{% trans "Students" %}</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{% trans "Avg Grade" %}</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{% trans "Min Grade" %}</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{% trans "Max Grade" %}</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{% trans "Median" %}</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{% trans "Distribution" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                                {% for course in student_analytics.grade_analytics.course_stats|slice:":20" %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">{{ course.course_name|default:course.course_id }}</div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">ID: {{ course.course_id }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ course.student_count }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                            {% if course.avg_grade >= 80 %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                            {% elif course.avg_grade >= 70 %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                            {% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200{% endif %}">
+                                            {{ course.avg_grade|floatformat:1 }}%
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ course.min_grade|floatformat:1 }}%</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ course.max_grade|floatformat:1 }}%</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ course.median_grade|floatformat:1 }}%</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <button
+                                            class="btn btn-sm btn-primary-solid view-distribution-btn"
+                                            data-course-id="{{ course.course_id }}"
+                                            data-course-name="{{ course.course_name|default:course.course_id }}"
+                                            title="{% trans 'View grade distribution chart for this course' %}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" class="text-white mr-2">
+                                                <path fill="currentColor" d="M3 3v18h18v-2H5V3H3zm4 14h2V9H7v8zm4 0h2V7h-2v10zm4 0h2v-8h-2v8z"/>
+                                            </svg>
+                                            {% trans "Distribution" %}
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <!-- No Data State -->
+        <div class="col-span-full">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">{{ page_title }}</h5>
+                    <p class="text-gray-500 dark:text-dark-text-two">{{ page_description }}</p>
+                </div>
+                <div class="card-body">
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-8 text-center">
+                        <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="text-blue-600 dark:text-blue-400">
+                                <path fill="currentColor" d="M16 4c0-1.11.89-2 2-2s2 .89 2 2s-.89 2-2 2s-2-.89-2-2M4 18v-6h3v7H5.5c-.83 0-1.5-.67-1.5-1.5M12.5 11H11V7.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ page_title }}</h3>
+                        <p class="text-gray-600 dark:text-gray-400 mb-6">{{ page_description }}</p>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                            {% trans "No student data available for this academic year. This could be because:" %}
+                            <ul class="mt-2 text-left max-w-md mx-auto space-y-1">
+                                <li>• {% trans "No grades have been recorded yet" %}</li>
+                                <li>• {% trans "No student activity data is available" %}</li>
+                                <li>• {% trans "Data is still being processed" %}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 </div>
+
+<!-- Grade Distribution Modal -->
+<div id="grade-distribution-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50 flex items-center justify-center" style="display: none;">
+    <div class="bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all max-w-4xl w-[55%] mx-4 h-[calc(100vh_-_calc(theme(spacing.header)_+_32px))]
+     max-h-[90vh] overflow-y-auto border border-gray-900 p-8">
+        <!-- Modal Header -->
+        <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                        {% trans "Grade Distribution" %}
+                    </h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400" id="modal-subtitle">
+                        {% trans "Loading course data..." %}
+                    </p>
+                </div>
+                <button type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" id="close-modal-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Loading State -->
+            <div id="distribution-loading" class="text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p class="mt-4 text-gray-600 dark:text-gray-400">{% trans "Loading grade distribution data..." %}</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="distribution-error" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <div class="flex">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" class="text-red-400 mr-3 mt-0.5">
+                        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5l1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <div>
+                        <h4 class="text-red-800 dark:text-red-200 font-medium">{% trans "Error Loading Data" %}</h4>
+                        <p class="text-red-700 dark:text-red-300 text-sm mt-1" id="error-message"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Content -->
+            <div id="distribution-content" class="hidden">
+                <!-- Statistics Cards Section -->
+                <div class="grid grid-cols-12 gap-4 mb-6">
+                    <!-- Mean Progress Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+                        <div class="flex-center-between">
+                            <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Mean" %}</h6>
+                            <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Average" %}</div>
+                        </div>
+                        <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                            <div class="pb-8 shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="counter-value card-title text-blue-500" id="stat-mean">--</div>
+                                </div>
+                            </div>
+                            <div class="grow self-center pb-3">
+                                <div class="size-12 flex-center bg-blue-100 dark:bg-blue-900 rounded-lg ml-auto">
+                                    <i class="ri-bar-chart-line text-blue-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Median Progress Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+                        <div class="flex-center-between">
+                            <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Median" %}</h6>
+                            <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Middle" %}</div>
+                        </div>
+                        <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                            <div class="pb-8 shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="counter-value card-title text-green-500" id="stat-median">--</div>
+                                </div>
+                            </div>
+                            <div class="grow self-center pb-3">
+                                <div class="size-12 flex-center bg-green-100 dark:bg-green-900 rounded-lg ml-auto">
+                                    <i class="ri-line-chart-line text-green-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Standard Deviation Progress Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+                        <div class="flex-center-between">
+                            <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Std Dev" %}</h6>
+                            <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Spread" %}</div>
+                        </div>
+                        <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                            <div class="pb-8 shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="counter-value card-title text-purple-500" id="stat-stddev">--</div>
+                                </div>
+                            </div>
+                            <div class="grow self-center pb-3">
+                                <div class="size-12 flex-center bg-purple-100 dark:bg-purple-900 rounded-lg ml-auto">
+                                    <i class="ri-donut-chart-line text-purple-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Count Progress Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+                        <div class="flex-center-between">
+                            <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Count" %}</h6>
+                            <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Total" %}</div>
+                        </div>
+                        <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                            <div class="pb-8 shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="counter-value card-title text-orange-500" id="stat-count">--</div>
+                                </div>
+                            </div>
+                            <div class="grow self-center pb-3">
+                                <div class="size-12 flex-center bg-orange-100 dark:bg-orange-900 rounded-lg ml-auto">
+                                    <i class="ri-user-line text-orange-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div id="distribution-chart" style="height: 400px;"></div>
+                </div>
+
+                <!-- Distribution Table -->
+                <div class="mt-6">
+                    <h4 class="text-md font-medium text-gray-900 dark:text-white mb-3">{% trans "Distribution Breakdown" %}</h4>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-800">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{% trans "Grade Range" %}</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{% trans "Students" %}</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{% trans "Percentage" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody id="distribution-table-body" class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                                <!-- Table rows will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <button type="button" class="btn btn-secondary-solid" id="close-modal-footer-btn">
+                {% trans "Close" %}
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Data Scripts -->
+{% if has_data %}
+<!-- Include ApexCharts library for charts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<script type="application/json" id="grade-distribution-data">{{ grade_distribution_json|safe }}</script>
+<script type="application/json" id="monthly-trends-data">{{ monthly_trends_json|safe }}</script>
+<script type="application/json" id="activity-types-data">{{ activity_types_json|safe }}</script>
+<script type="application/json" id="correlation-data">{{ correlation_data_json|safe }}</script>
+<script type="application/json" id="top-activity-types-data">{{ top_activity_types_json|safe }}</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 🔍 JAVASCRIPT DEBUGGING
+    console.log('🔍 Starting JavaScript execution...');
+
+    // Parse data from Django
+    const gradeDistribution = JSON.parse(document.getElementById('grade-distribution-data').textContent);
+    const monthlyTrends = JSON.parse(document.getElementById('monthly-trends-data').textContent);
+    const activityTypes = JSON.parse(document.getElementById('activity-types-data').textContent);
+    const correlationData = JSON.parse(document.getElementById('correlation-data').textContent);
+    const topActivityTypes = JSON.parse(document.getElementById('top-activity-types-data').textContent);
+
+    // Debug all data
+    console.log('🔍 Parsed data:');
+    console.log('  - gradeDistribution length:', gradeDistribution.length);
+    console.log('  - monthlyTrends length:', monthlyTrends.length);
+    console.log('  - activityTypes length:', activityTypes.length);
+    console.log('  - correlationData length:', correlationData.length);
+    console.log('  - topActivityTypes:', topActivityTypes);
+    console.log('  - correlationData sample:', correlationData.slice(0, 3));
+
+    // Initialize activity type controls
+    if (topActivityTypes && topActivityTypes.length > 0) {
+        initializeActivityTypeControls(topActivityTypes);
+    }
+
+    // Initialize activity range controls
+    if (correlationData.length > 0) {
+        initializeActivityRangeControls(correlationData);
+    }
+
+    // Initialize hypothesis toggle functionality
+    initializeHypothesisToggle();
+
+    // Store original correlation data for filtering
+    window.originalCorrelationData = correlationData;
+    window.currentChart = null; // Store chart instance for updates
+
+    // Check if correlation chart element exists
+    const correlationChartElement = document.querySelector("#student-correlation-chart");
+    console.log('🔍 Correlation chart element exists:', !!correlationChartElement);
+    if (correlationChartElement) {
+        console.log('🔍 Chart element found, proceeding with chart creation...');
+    } else {
+        console.log('❌ Chart element #student-correlation-chart not found in DOM!');
+    }
+
+    // Grade Distribution Chart
+    if (gradeDistribution.length > 0) {
+        const gradeDistributionOptions = {
+            series: gradeDistribution.map(item => item.count),
+            chart: {
+                type: 'donut',
+                height: 350,
+                toolbar: { show: false }
+            },
+            labels: gradeDistribution.map(item => item.grade_range),
+            colors: ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#6B7280'],
+            legend: {
+                position: 'bottom'
+            }
+        };
+        new ApexCharts(document.querySelector("#grade-distribution-chart"), gradeDistributionOptions).render();
+    }
+
+    // Monthly Trends Chart
+    if (monthlyTrends.length > 0) {
+        const monthlyTrendsOptions = {
+            series: [{
+                name: '{% trans "Average Grade" %}',
+                data: monthlyTrends.map(item => item.avg_grade),
+                yAxisIndex: 0
+            }, {
+                name: '{% trans "Active Students" %}',
+                data: monthlyTrends.map(item => item.active_students),
+                yAxisIndex: 1
+            }],
+            chart: {
+                type: 'line',
+                height: 350,
+                toolbar: { show: false }
+            },
+            xaxis: {
+                categories: monthlyTrends.map(item => {
+                    const month = item.month;
+                    return month.substring(0, 4) + '-' + month.substring(4, 6);
+                }),
+                title: { text: '{% trans "Month" %}' }
+            },
+            yaxis: [{
+                title: { text: '{% trans "Average Grade (%)" %}' },
+                seriesName: '{% trans "Average Grade" %}'
+            }, {
+                opposite: true,
+                title: { text: '{% trans "Number of Students" %}' },
+                seriesName: '{% trans "Active Students" %}'
+            }],
+            colors: ['#3B82F6', '#10B981']
+        };
+        new ApexCharts(document.querySelector("#monthly-trends-chart"), monthlyTrendsOptions).render();
+    }
+
+    // Activity Types Chart
+    if (activityTypes.length > 0) {
+        const activityTypesOptions = {
+            series: [{
+                name: '{% trans "Activity Count" %}',
+                data: activityTypes.map(item => item.activity_count)
+            }],
+            chart: {
+                type: 'bar',
+                height: 350,
+                toolbar: { show: false }
+            },
+            xaxis: {
+                categories: activityTypes.map(item => item.operation_name),
+                title: { text: '{% trans "Activity Type" %}' }
+            },
+            yaxis: {
+                title: { text: '{% trans "Number of Activities" %}' }
+            },
+            colors: ['#8B5CF6']
+        };
+        new ApexCharts(document.querySelector("#activity-types-chart"), activityTypesOptions).render();
+    }
+
+    // Individual Student Activities vs Grades Scatter Plot
+    if (correlationData.length > 0) {
+        // Create initial chart with all activity types selected and full range
+        const allActivityTypes = topActivityTypes.map(at => at.key);
+        const activityCounts = correlationData.map(item => item.total_activities || 0);
+        const minActivity = Math.min(...activityCounts);
+        const maxActivity = Math.max(...activityCounts);
+        createCorrelationChart(correlationData, allActivityTypes, minActivity, maxActivity);
+    }
+
+    // Function to initialize activity type controls
+    function initializeActivityTypeControls(topActivityTypes) {
+        const controlsContainer = document.getElementById('activity-type-controls');
+        if (!controlsContainer) return;
+
+        console.log('🔍 Initializing activity type controls:', topActivityTypes);
+
+        // Clear existing controls
+        controlsContainer.innerHTML = '';
+
+        // Create checkbox for each activity type
+        topActivityTypes.forEach((activityType, index) => {
+            const checkboxWrapper = document.createElement('div');
+            checkboxWrapper.className = 'flex items-center space-x-2 bg-white dark:bg-gray-700 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `activity-${activityType.key}`;
+            checkbox.value = activityType.key;
+            checkbox.checked = true; // All selected by default
+            checkbox.className = 'w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600';
+
+            const label = document.createElement('label');
+            label.htmlFor = checkbox.id;
+            label.className = 'text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer';
+            label.innerHTML = `
+                <span class="block">${activityType.name}</span>
+                <span class="block text-xs text-gray-500 dark:text-gray-400">${activityType.total_count.toLocaleString()} total</span>
+            `;
+
+            // Add change event listener
+            checkbox.addEventListener('change', function() {
+                updateChartBasedOnSelection();
+            });
+
+            checkboxWrapper.appendChild(checkbox);
+            checkboxWrapper.appendChild(label);
+            controlsContainer.appendChild(checkboxWrapper);
+        });
+
+        // Add event listeners for select/deselect all buttons
+        document.getElementById('select-all-activities')?.addEventListener('click', function() {
+            const checkboxes = controlsContainer.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = true;
+            });
+            updateChartBasedOnSelection();
+        });
+
+        document.getElementById('deselect-all-activities')?.addEventListener('click', function() {
+            const checkboxes = controlsContainer.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+            });
+            updateChartBasedOnSelection();
+        });
+    }
+
+    // Function to update chart based on selected activity types
+    function updateChartBasedOnSelection() {
+        const selectedActivityTypes = [];
+        const checkboxes = document.querySelectorAll('#activity-type-controls input[type="checkbox"]:checked');
+
+        checkboxes.forEach(cb => {
+            selectedActivityTypes.push(cb.value);
+        });
+
+        console.log('🔍 Selected activity types:', selectedActivityTypes);
+
+        // Get current activity range values
+        const minRangeSlider = document.getElementById('range-min');
+        const maxRangeSlider = document.getElementById('range-max');
+
+        let minRange = window.originalActivityRange ? window.originalActivityRange.min : 0;
+        let maxRange = window.originalActivityRange ? window.originalActivityRange.max : 1000000;
+
+        if (minRangeSlider && maxRangeSlider) {
+            minRange = parseInt(minRangeSlider.value);
+            maxRange = parseInt(maxRangeSlider.value);
+        }
+
+        console.log('🔍 Activity range:', minRange, '-', maxRange);
+
+        // Always create chart, even if no activity types are selected
+        // When no types are selected, all dots will show at X=0
+        createCorrelationChart(window.originalCorrelationData, selectedActivityTypes, minRange, maxRange);
+    }
+
+    // Function to create correlation chart with filtered data
+    function createCorrelationChart(correlationData, selectedActivityTypes, minRange = null, maxRange = null) {
+        console.log('🔍 Creating correlation chart with activity types:', selectedActivityTypes);
+        console.log('🔍 Activity range filter:', minRange, '-', maxRange);
+
+        // Clear any existing content in the chart container first
+        const chartContainer = document.querySelector("#student-correlation-chart");
+        chartContainer.innerHTML = '';
+
+        // ALWAYS show all correlation data, but calculate custom total activities based on selected types
+        const filteredCorrelationData = correlationData.map(item => {
+            let customTotalActivities = 0;
+
+            if (selectedActivityTypes.length === 0) {
+                // When no activity types are selected, use total_activities (ALL activities from database)
+                customTotalActivities = item.total_activities || 0;
+            } else {
+                // Only add activities from selected types
+                selectedActivityTypes.forEach(activityType => {
+                    customTotalActivities += item[activityType] || 0;
+                });
+            }
+
+            return {
+                ...item,
+                custom_total_activities: customTotalActivities
+            };
+        });
+
+        // Apply activity range filter if specified
+        let rangeFilteredData = filteredCorrelationData;
+        if (minRange !== null && maxRange !== null) {
+            rangeFilteredData = filteredCorrelationData.filter(item => {
+                const activityCount = item.custom_total_activities;
+                return activityCount >= minRange && activityCount <= maxRange;
+            });
+
+            const originalCount = filteredCorrelationData.length;
+            const filteredCount = rangeFilteredData.length;
+            const percentage = originalCount > 0 ? (filteredCount/originalCount*100).toFixed(1) : 0;
+            console.log('🔍 Range filter applied: ' + originalCount + ' → ' + filteredCount + ' records (' + percentage + '% remaining)');
+
+            if (filteredCount === 0) {
+                chartContainer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400"><p>No data points in the selected activity range. Try adjusting the range sliders.</p></div>';
+                return;
+            }
+        }
+
+        // Use the range-filtered data
+        const validData = rangeFilteredData;
+
+        // Update range filter info display
+        const rangeInfoElement = document.getElementById('range-filter-info');
+        if (rangeInfoElement) {
+            if (minRange !== null && maxRange !== null && rangeFilteredData.length !== filteredCorrelationData.length) {
+                const percentage = filteredCorrelationData.length > 0 ? (rangeFilteredData.length/filteredCorrelationData.length*100).toFixed(1) : 0;
+                rangeInfoElement.textContent = 'Showing ' + rangeFilteredData.length + ' of ' + filteredCorrelationData.length + ' data points (' + percentage + '% remaining) in range ' + minRange.toLocaleString() + '-' + maxRange.toLocaleString() + ' activities';
+            } else {
+                rangeInfoElement.textContent = 'Showing all ' + rangeFilteredData.length + ' data points';
+            }
+        }
+
+        if (validData.length === 0) {
+            console.log('⚠️ No correlation data available');
+            if (window.currentChart) {
+                window.currentChart.destroy();
+                window.currentChart = null;
+            }
+            chartContainer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400"><p>No student correlation data available.</p></div>';
+            return;
+        }
+
+        console.log('🔍 Showing ' + validData.length + ' student-course records after filtering');
+
+        // Calculate thresholds for categorization (median values) using custom totals
+        const activities = validData.map(item => item.custom_total_activities);
+        const grades = validData.map(item => item.avg_grade);
+
+        activities.sort((a, b) => a - b);
+        grades.sort((a, b) => a - b);
+
+        const activityThreshold = activities[Math.floor(activities.length / 2)];
+        const gradeThreshold = grades[Math.floor(grades.length / 2)];
+
+        // Get min and max values for better axis scaling
+        const minActivities = Math.min(...activities);
+        const maxActivities = Math.max(...activities);
+        const minGrades = Math.min(...grades);
+        const maxGrades = Math.max(...grades);
+
+        console.log(`🔍 Thresholds - Activity: ${activityThreshold}, Grade: ${gradeThreshold}`);
+        console.log(`🔍 Ranges - Activities: ${minActivities}-${maxActivities}, Grades: ${minGrades}-${maxGrades}`);
+
+        // Handle axis title and scaling based on selection
+        let xAxisTitle = '{% trans "Number of Selected Activities" %}';
+        let xAxisMin = Math.max(0, minActivities - Math.max(5, Math.floor((maxActivities || 10) * 0.1)));
+        let xAxisMax = (maxActivities || 10) + Math.max(5, Math.floor((maxActivities || 10) * 0.1));
+
+        if (selectedActivityTypes.length === 0) {
+            xAxisTitle = '{% trans "Total Activities (All Types)" %}';
+            // Use normal scaling since we have real activity data
+            xAxisMin = Math.max(0, minActivities - Math.max(5, Math.floor((maxActivities || 10) * 0.1)));
+            xAxisMax = (maxActivities || 10) + Math.max(5, Math.floor((maxActivities || 10) * 0.1));
+        } else {
+            xAxisTitle += ` (${selectedActivityTypes.length} type${selectedActivityTypes.length !== 1 ? 's' : ''})`;
+        }
+
+        // Categorize each student-course record and assign colors
+        const categorizedData = {
+            highActivityHighGrade: [],
+            highActivityLowGrade: [],
+            lowActivityHighGrade: [],
+            lowActivityLowGrade: []
+        };
+
+        validData.forEach(item => {
+            const point = {
+                x: item.custom_total_activities,
+                y: item.avg_grade,
+                z: item.student_id, // For custom tooltip
+                course: item.course_name || item.course_id,
+                // Add activity breakdown for tooltip
+                activityBreakdown: selectedActivityTypes.length > 0
+                    ? selectedActivityTypes.map(type => `${type}: ${item[type] || 0}`).join(', ')
+                    : `Total activities: ${item.total_activities || 0} (all types)`
+            };
+
+            if (item.custom_total_activities >= activityThreshold && item.avg_grade >= gradeThreshold) {
+                categorizedData.highActivityHighGrade.push(point);
+            } else if (item.custom_total_activities >= activityThreshold && item.avg_grade < gradeThreshold) {
+                categorizedData.highActivityLowGrade.push(point);
+            } else if (item.custom_total_activities < activityThreshold && item.avg_grade >= gradeThreshold) {
+                categorizedData.lowActivityHighGrade.push(point);
+            } else {
+                categorizedData.lowActivityLowGrade.push(point);
+            }
+        });
+
+        console.log('🔍 Categorized data:', {
+            highActivityHighGrade: categorizedData.highActivityHighGrade.length,
+            highActivityLowGrade: categorizedData.highActivityLowGrade.length,
+            lowActivityHighGrade: categorizedData.lowActivityHighGrade.length,
+            lowActivityLowGrade: categorizedData.lowActivityLowGrade.length
+        });
+
+        const studentCorrelationOptions = {
+            series: [
+                {
+                    name: '{% trans "High Activity, High Grade" %}',
+                    data: categorizedData.highActivityHighGrade,
+                    color: '#10B981'
+                },
+                {
+                    name: '{% trans "High Activity, Low Grade" %}',
+                    data: categorizedData.highActivityLowGrade,
+                    color: '#F59E0B'
+                },
+                {
+                    name: '{% trans "Low Activity, High Grade" %}',
+                    data: categorizedData.lowActivityHighGrade,
+                    color: '#3B82F6'
+                },
+                {
+                    name: '{% trans "Low Activity, Low Grade" %}',
+                    data: categorizedData.lowActivityLowGrade,
+                    color: '#EF4444'
+                }
+            ],
+            chart: {
+                type: 'scatter',
+                height: 550,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                },
+                zoom: {
+                    enabled: true,
+                    type: 'xy'
+                }
+            },
+            xaxis: {
+                type: 'numeric',
+                title: {
+                    text: xAxisTitle,
+                    style: { fontSize: '14px', fontWeight: 600 }
+                },
+                min: xAxisMin,
+                max: xAxisMax,
+                tickAmount: 10,
+                labels: {
+                    formatter: function(val) {
+                        return Math.round(val);
+                    }
+                },
+                axisBorder: {
+                    show: true,
+                    color: '#e0e0e0'
+                },
+                axisTicks: {
+                    show: true,
+                    color: '#e0e0e0'
+                }
+            },
+            yaxis: {
+                type: 'numeric',
+                title: {
+                    text: '{% trans "Average Grade (%)" %}',
+                    style: { fontSize: '14px', fontWeight: 600 }
+                },
+                min: Math.max(0, minGrades - 5),
+                max: Math.min(100, maxGrades + 5),
+                tickAmount: 8,
+                labels: {
+                    formatter: function(val) {
+                        return val.toFixed(1) + '%';
+                    }
+                },
+                axisBorder: {
+                    show: true,
+                    color: '#e0e0e0'
+                },
+                axisTicks: {
+                    show: true,
+                    color: '#e0e0e0'
+                }
+            },
+            tooltip: {
+                custom: function({series, seriesIndex, dataPointIndex, w}) {
+                    const data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
+                    const category = w.globals.seriesNames[seriesIndex];
+                    return '<div class="p-3 bg-white dark:bg-gray-800 rounded shadow-lg border max-w-sm">' +
+                           '<div class="font-semibold text-gray-900 dark:text-white mb-2">' + category + '</div>' +
+                           '<div class="space-y-1 text-sm">' +
+                           '<div class="text-gray-600 dark:text-gray-400"><strong>Student:</strong> ' + data.z + '</div>' +
+                           '<div class="text-gray-600 dark:text-gray-400"><strong>Course:</strong> ' + data.course + '</div>' +
+                           '<div class="text-gray-600 dark:text-gray-400"><strong>Selected Activities:</strong> ' + data.x.toLocaleString() + '</div>' +
+                           '<div class="text-gray-600 dark:text-gray-400"><strong>Grade:</strong> ' + data.y.toFixed(1) + '%</div>' +
+                           (data.activityBreakdown ? '<div class="text-gray-600 dark:text-gray-400 mt-2 text-xs"><strong>Breakdown:</strong><br>' + data.activityBreakdown + '</div>' : '') +
+                           '</div>' +
+                           '</div>';
+                }
+            },
+            legend: {
+                show: false // We have our own legend below the chart
+            },
+            markers: {
+                size: 4,
+                strokeWidth: 1,
+                strokeColors: '#fff',
+                fillOpacity: 0.8,
+                hover: {
+                    size: 6,
+                    fillOpacity: 1
+                }
+            },
+            grid: {
+                show: true,
+                borderColor: '#e0e0e0',
+                strokeDashArray: 3,
+                xaxis: {
+                    lines: {
+                        show: true
+                    }
+                },
+                yaxis: {
+                    lines: {
+                        show: true
+                    }
+                }
+            },
+            annotations: {
+                xaxis: [{
+                    x: activityThreshold,
+                    borderColor: '#999',
+                    strokeDashArray: 5,
+                    opacity: 0.8,
+                    label: {
+                        text: '{% trans "Activity Threshold" %} (' + activityThreshold + ')',
+                        style: {
+                            color: '#666',
+                            fontSize: '11px',
+                            background: '#fff',
+                            border: '1px solid #999'
+                        },
+                        position: 'top'
+                    }
+                }],
+                yaxis: [{
+                    y: gradeThreshold,
+                    borderColor: '#999',
+                    strokeDashArray: 5,
+                    opacity: 0.8,
+                    label: {
+                        text: '{% trans "Grade Threshold" %} (' + gradeThreshold.toFixed(1) + '%)',
+                        style: {
+                            color: '#666',
+                            fontSize: '11px',
+                            background: '#fff',
+                            border: '1px solid #999'
+                        },
+                        position: 'right'
+                    }
+                }]
+            },
+            dataLabels: {
+                enabled: false
+            }
+        };
+
+        // Destroy existing chart if it exists
+        if (window.currentChart) {
+            window.currentChart.destroy();
+        }
+
+        // Create new chart
+        window.currentChart = new ApexCharts(document.querySelector("#student-correlation-chart"), studentCorrelationOptions);
+        window.currentChart.render();
+
+        // Update hypothesis test results display
+        const totalStudents = validData.length;
+        const supportingCount = categorizedData.highActivityHighGrade.length;
+        const contradictingCount = categorizedData.highActivityLowGrade.length;
+        const efficientCount = categorizedData.lowActivityHighGrade.length;
+        const strugglingCount = categorizedData.lowActivityLowGrade.length;
+        const supportingPercentage = totalStudents > 0 ? ((supportingCount / totalStudents) * 100).toFixed(1) : 0;
+
+        // Update the display elements
+        document.getElementById('supporting-count').textContent = supportingCount;
+        document.getElementById('contradicting-count').textContent = contradictingCount;
+        document.getElementById('efficient-count').textContent = efficientCount;
+        document.getElementById('struggling-count').textContent = strugglingCount;
+        document.getElementById('hypothesis-percentage').textContent = supportingPercentage + '%';
+
+        // Update progress bar
+        const progressBar = document.getElementById('hypothesis-bar');
+        progressBar.style.width = supportingPercentage + '%';
+
+        // Update conclusion based on percentage
+        const conclusionElement = document.getElementById('hypothesis-conclusion');
+        let conclusion = '';
+        let strengthColor = '';
+
+        if (supportingPercentage >= 60) {
+            conclusion = '{% trans "Strong evidence supports the hypothesis. Students with more activities tend to achieve higher grades." %}';
+            strengthColor = 'text-green-600 dark:text-green-400';
+        } else if (supportingPercentage >= 40) {
+            conclusion = '{% trans "Moderate evidence supports the hypothesis. The relationship exists but other factors also influence grades." %}';
+            strengthColor = 'text-yellow-600 dark:text-yellow-400';
+        } else {
+            conclusion = '{% trans "Weak evidence for the hypothesis. Activity level alone may not be a strong predictor of grades." %}';
+            strengthColor = 'text-red-600 dark:text-red-400';
+        }
+
+        conclusionElement.textContent = conclusion;
+        conclusionElement.className = `text-sm ${strengthColor}`;
+
+        // Display hypothesis test results in console
+        console.log('🔍 Updated Hypothesis Test Results:');
+        console.log('Total student-course records:', totalStudents);
+        console.log('Supporting hypothesis (High Activity, High Grade):', supportingCount, '(' + supportingPercentage + '%)');
+        console.log('Contradicting hypothesis (High Activity, Low Grade):', contradictingCount);
+        console.log('Efficient learners (Low Activity, High Grade):', efficientCount);
+        console.log('Struggling students (Low Activity, Low Grade):', strugglingCount);
+        console.log('Activity threshold:', activityThreshold);
+        console.log('Grade threshold:', gradeThreshold);
+    }
+
+    // Initialize hypothesis test results toggle functionality
+    function initializeHypothesisToggle() {
+        const toggleHypothesisResults = document.getElementById('toggle-hypothesis-results');
+        const hypothesisResults = document.getElementById('hypothesis-results');
+        const hypothesisToggleIcon = document.getElementById('hypothesis-toggle-icon');
+        const hypothesisToggleText = document.getElementById('hypothesis-toggle-text');
+
+        if (toggleHypothesisResults && hypothesisResults && hypothesisToggleIcon && hypothesisToggleText) {
+            toggleHypothesisResults.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (hypothesisResults.style.display === 'none') {
+                    hypothesisResults.style.display = 'block';
+                    hypothesisToggleIcon.classList.remove('rotate-0');
+                    hypothesisToggleIcon.classList.add('rotate-180');
+                    hypothesisToggleText.textContent = '{% trans "Hide Details" %}';
+                } else {
+                    hypothesisResults.style.display = 'none';
+                    hypothesisToggleIcon.classList.remove('rotate-180');
+                    hypothesisToggleIcon.classList.add('rotate-0');
+                    hypothesisToggleText.textContent = '{% trans "Show Details" %}';
+                }
+            });
+        }
+    }
+
+    // Function to initialize activity range controls
+    function initializeActivityRangeControls(correlationData) {
+        console.log('🔍 Initializing activity range controls...');
+
+        // Calculate the actual range of total activities in the data
+        const activityCounts = correlationData.map(item => item.total_activities || 0);
+        const minActivity = Math.min(...activityCounts);
+        const maxActivity = Math.max(...activityCounts);
+
+        console.log('🔍 Activity range: ' + minActivity + ' to ' + maxActivity);
+
+        // Set up the range sliders
+        const minSlider = document.getElementById('range-min');
+        const maxSlider = document.getElementById('range-max');
+        const minValueDisplay = document.getElementById('range-min-display');
+        const maxValueDisplay = document.getElementById('range-max-display');
+        const rangeTrack = document.getElementById('range-track');
+        const resetButton = document.getElementById('reset-activity-range');
+
+        if (!minSlider || !maxSlider || !minValueDisplay || !maxValueDisplay || !rangeTrack) {
+            console.error('❌ Activity range controls not found in DOM');
+            return;
+        }
+
+        // Set slider ranges based on actual data
+        minSlider.min = minActivity;
+        minSlider.max = maxActivity;
+        minSlider.value = minActivity;
+
+        maxSlider.min = minActivity;
+        maxSlider.max = maxActivity;
+        maxSlider.value = maxActivity;
+
+        // Set step size based on range
+        const step = Math.max(1, Math.floor((maxActivity - minActivity) / 100));
+        minSlider.step = step;
+        maxSlider.step = step;
+
+        // Update displays
+        minValueDisplay.textContent = minActivity.toLocaleString();
+        maxValueDisplay.textContent = maxActivity.toLocaleString();
+
+        // Store the original range for reset
+        window.originalActivityRange = {
+            min: minActivity,
+            max: maxActivity
+        };
+
+        console.log('🔍 Range sliders configured: ' + minActivity + ' - ' + maxActivity + ', step: ' + step);
+
+        // Function to update the visual track
+        function updateRangeTrack() {
+            const minVal = parseInt(minSlider.value);
+            const maxVal = parseInt(maxSlider.value);
+            const min = parseInt(minSlider.min);
+            const max = parseInt(minSlider.max);
+
+            const minPercent = ((minVal - min) / (max - min)) * 100;
+            const maxPercent = ((maxVal - min) / (max - min)) * 100;
+
+            rangeTrack.style.left = minPercent + '%';
+            rangeTrack.style.width = (maxPercent - minPercent) + '%';
+        }
+
+        // Initial track update
+        updateRangeTrack();
+
+        // Add event listeners
+        function updateChart() {
+            const selectedActivityTypes = [];
+            const checkboxes = document.querySelectorAll('#activity-type-controls input[type="checkbox"]:checked');
+            checkboxes.forEach(cb => {
+                selectedActivityTypes.push(cb.value);
+            });
+
+            let minRange = parseInt(minSlider.value);
+            let maxRange = parseInt(maxSlider.value);
+
+            // Ensure min is not greater than max
+            if (minRange > maxRange) {
+                const temp = minRange;
+                minRange = maxRange;
+                maxRange = temp;
+                minSlider.value = minRange;
+                maxSlider.value = maxRange;
+            }
+
+            // Update displays
+            minValueDisplay.textContent = minRange.toLocaleString();
+            maxValueDisplay.textContent = maxRange.toLocaleString();
+            updateRangeTrack();
+
+            console.log('🔍 Updating chart with activity range: ' + minRange + ' - ' + maxRange);
+            createCorrelationChart(window.originalCorrelationData, selectedActivityTypes, minRange, maxRange);
+        }
+
+        minSlider.addEventListener('input', updateChart);
+        maxSlider.addEventListener('input', updateChart);
+
+        if (resetButton) {
+            resetButton.addEventListener('click', function() {
+                minSlider.value = window.originalActivityRange.min;
+                maxSlider.value = window.originalActivityRange.max;
+                minValueDisplay.textContent = window.originalActivityRange.min.toLocaleString();
+                maxValueDisplay.textContent = window.originalActivityRange.max.toLocaleString();
+                updateRangeTrack();
+                updateChart();
+            });
+        }
+    }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Enhanced cache clear confirmation
+    const clearCacheBtn = document.getElementById('clear-cache-btn');
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', function(e) {
+            const year = {{ year }};
+            const showAllActivities = {% if show_all_activities %}true{% else %}false{% endif %};
+            const activityMode = showAllActivities ? 'All Activities' : 'Graded Courses Only';
+
+            const confirmMessage = 'Are you sure you want to clear all cached data for academic year ' + year + '?\n\n' +
+                                 'This will clear:\n' +
+                                 '• Student analytics data (' + activityMode + ')\n' +
+                                 '• Chart data (trends, distributions, correlations)\n' +
+                                 '• Course performance statistics\n' +
+                                 '• Individual course grade distributions\n' +
+                                 '• Engagement category analysis\n\n' +
+                                 'The page will refresh with updated data. This may take a moment to regenerate.';
+
+            if (!confirm(confirmMessage)) {
+                e.preventDefault();
+            } else {
+                // Show loading state on the button
+                const button = e.target.closest('button');
+                const originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<svg class="animate-spin h-4 w-4 text-white mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">' +
+                                 '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>' +
+                                 '<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>' +
+                                 '</svg>Clearing...';
+            }
+        });
+    }
+
+    // Grade Distribution Modal Functionality
+    const modal = document.getElementById('grade-distribution-modal');
+    if (!modal) return; // Exit if modal doesn't exist
+
+    const modalTitle = document.getElementById('modal-title');
+    const modalSubtitle = document.getElementById('modal-subtitle');
+    const loadingDiv = document.getElementById('distribution-loading');
+    const errorDiv = document.getElementById('distribution-error');
+    const contentDiv = document.getElementById('distribution-content');
+    const errorMessage = document.getElementById('error-message');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const closeModalFooterBtn = document.getElementById('close-modal-footer-btn');
+
+    // Statistics elements
+    const statMean = document.getElementById('stat-mean');
+    const statMedian = document.getElementById('stat-median');
+    const statStddev = document.getElementById('stat-stddev');
+    const statCount = document.getElementById('stat-count');
+    const distributionTableBody = document.getElementById('distribution-table-body');
+
+    // Store current chart instance
+    let currentDistributionChart = null;
+
+    // Modal helper functions
+    function closeModal() {
+        modal.style.display = 'none';
+        if (currentDistributionChart) {
+            currentDistributionChart.destroy();
+            currentDistributionChart = null;
+        }
+    }
+
+    function showLoading() {
+        loadingDiv.style.display = 'flex';
+        errorDiv.classList.add('hidden');
+        contentDiv.classList.add('hidden');
+    }
+
+    function showError(message) {
+        loadingDiv.style.display = 'none';
+        errorMessage.textContent = message;
+        errorDiv.classList.remove('hidden');
+        contentDiv.classList.add('hidden');
+    }
+
+    function showContent() {
+        loadingDiv.style.display = 'none';
+        errorDiv.classList.add('hidden');
+        contentDiv.classList.remove('hidden');
+    }
+
+    function displayDistributionData(data) {
+        console.log('📊 Displaying distribution data:', data);
+
+        // Update statistics
+        const stats = data.stats;
+        statMean.textContent = `${stats.mean}%`;
+        statMedian.textContent = `${stats.median}%`;
+        statStddev.textContent = `${stats.std_dev}%`;
+        statCount.textContent = stats.count;
+
+        // Update distribution table
+        distributionTableBody.innerHTML = '';
+        data.distribution_data.forEach(bin => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${bin.bin_label}%</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">${bin.count}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-white">${bin.percentage}%</td>
+            `;
+            distributionTableBody.appendChild(row);
+        });
+
+        // Create distribution chart
+        createDistributionChart(data);
+
+        // Show content
+        showContent();
+    }
+
+    function createDistributionChart(data) {
+        // Create histogram chart using ApexCharts
+        const chartContainer = document.getElementById('distribution-chart');
+        if (chartContainer && data.distribution_data) {
+            const chartOptions = {
+                series: [{
+                    name: '{% trans "Students" %}',
+                    data: data.distribution_data.map(bin => bin.count)
+                }],
+                chart: {
+                    type: 'bar',
+                    height: 400,
+                    toolbar: { show: true }
+                },
+                xaxis: {
+                    categories: data.distribution_data.map(bin => `${bin.bin_label}%`),
+                    title: { text: '{% trans "Grade Range" %}' }
+                },
+                yaxis: {
+                    title: { text: '{% trans "Number of Students" %}' }
+                },
+                title: {
+                    text: '{% trans "Grade Distribution" %}',
+                    align: 'center'
+                },
+                colors: ['#3B82F6'],
+                dataLabels: {
+                    enabled: true
+                }
+            };
+
+            if (currentDistributionChart) {
+                currentDistributionChart.destroy();
+            }
+            currentDistributionChart = new ApexCharts(chartContainer, chartOptions);
+            currentDistributionChart.render();
+        }
+    }
+
+    // Event listeners for modal controls
+    closeModalBtn?.addEventListener('click', closeModal);
+    closeModalFooterBtn?.addEventListener('click', closeModal);
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.style.display === 'flex') {
+            closeModal();
+        }
+    });
+
+    // Add the View Distribution event listener
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('view-distribution-btn')) {
+            const courseId = e.target.dataset.courseId;
+            const courseName = e.target.dataset.courseName;
+
+            // Show modal
+            modal.style.display = 'flex';
+            modalTitle.textContent = courseName || `Course ${courseId}`;
+            modalSubtitle.textContent = `Grade Distribution Analysis`;
+
+            // Show loading state
+            showLoading();
+
+            // Fetch distribution data
+            const url = `/past-years/{{ year }}/students/course/${courseId}/distribution/`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayDistributionData(data.data);
+                    } else {
+                        showError(data.error || 'Failed to load distribution data');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching distribution data:', error);
+                    showError('Network error: Unable to load distribution data');
+                });
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}
