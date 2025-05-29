@@ -296,7 +296,7 @@ class MostActiveStudentsView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
 
         # Get time frame parameter from request
-        time_frame = self.request.GET.get('time_frame', 'this_month')
+        time_frame = self.request.GET.get('time_frame', 'last_3_months')
         context['selected_time_frame'] = time_frame
 
         try:
@@ -318,10 +318,21 @@ class MostActiveStudentsView(LoginRequiredMixin, TemplateView):
             logger.info(f"Learning insights data: {learning_insights}")
             context['learning_insights'] = learning_insights
 
+            # Get hourly activity heatmap data with time frame
+            logger.info("Fetching hourly activity heatmap...")
+            hourly_heatmap = MostActiveStudents.get_hourly_activity_heatmap(time_frame=time_frame)
+            logger.info(f"Hourly heatmap data: combined series count={len(hourly_heatmap.get('combined_series', []))}, school max={hourly_heatmap['stats']['max_school_activity']}, non-school max={hourly_heatmap['stats']['max_non_school_activity']}")
+            context['hourly_heatmap'] = hourly_heatmap
+
             # Convert data to JSON for charts
             context['analytics_json'] = json.dumps(analytics)
             context['engagement_patterns_json'] = json.dumps(engagement_patterns)
             context['learning_insights_json'] = json.dumps(learning_insights)
+            context['hourly_heatmap_json'] = json.dumps(hourly_heatmap)
+
+            # Add school time settings to context for display
+            context['school_start_time'] = getattr(settings, 'SCHOOL_START_TIME', '09:00')
+            context['school_end_time'] = getattr(settings, 'SCHOOL_END_TIME', '16:00')
 
         except Exception as e:
             logger.error(f"Error in MostActiveStudentsView.get_context_data: {str(e)}")
@@ -351,6 +362,8 @@ class MostActiveStudentsView(LoginRequiredMixin, TemplateView):
             context['analytics_json'] = json.dumps(default_analytics)
             context['engagement_patterns_json'] = json.dumps({})
             context['learning_insights_json'] = json.dumps(default_learning_insights)
+            context['hourly_heatmap'] = {}
+            context['hourly_heatmap_json'] = json.dumps({})
             context['error_message'] = "Unable to load analytics data. Please check the database connection."
 
         return context

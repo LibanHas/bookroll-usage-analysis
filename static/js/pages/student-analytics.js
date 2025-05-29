@@ -44,6 +44,15 @@ document.addEventListener('DOMContentLoaded', function() {
         content_interactions: []
     };
 
+    let hourlyHeatmapData = {
+        series: [],
+        stats: {
+            max_activity: 0,
+            min_activity: 0,
+            avg_activity: 0
+        }
+    };
+
     // Parse data from hidden script tags with comprehensive error handling
     try {
         const analyticsElement = document.getElementById('analytics-data');
@@ -69,6 +78,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     } catch (e) {
         console.warn('Failed to parse learning insights data:', e);
+    }
+
+    try {
+        const heatmapElement = document.getElementById('hourly-heatmap-data');
+        if (heatmapElement && heatmapElement.textContent.trim()) {
+            const parsedData = JSON.parse(heatmapElement.textContent);
+            if (parsedData && typeof parsedData === 'object') {
+                hourlyHeatmapData = { ...hourlyHeatmapData, ...parsedData };
+                console.log('Hourly heatmap data loaded:', hourlyHeatmapData);
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to parse hourly heatmap data:', e);
     }
 
     // Helper function to safely render charts
@@ -201,6 +223,286 @@ document.addEventListener('DOMContentLoaded', function() {
             '<div class="flex items-center justify-center h-80 text-gray-500"><div class="text-center"><i class="ri-pie-chart-line text-4xl mb-2"></i><p>No engagement data available</p></div></div>';
     }
 
+    // Hourly Activity Heatmap Chart
+    if (hourlyHeatmapData.combined_series && hourlyHeatmapData.combined_series.length > 0) {
+
+        // Calculate max values for color scaling
+        const maxSchoolActivity = hourlyHeatmapData.stats.max_school_activity || 0;
+        const maxNonSchoolActivity = hourlyHeatmapData.stats.max_non_school_activity || 0;
+
+        const combinedHeatmapOptions = {
+            series: hourlyHeatmapData.combined_series,
+            chart: {
+                height: 600, // Taller since it's a single comprehensive chart
+                type: 'heatmap',
+                toolbar: { show: false },
+                background: 'transparent'
+            },
+            dataLabels: {
+                enabled: false
+            },
+            title: {
+                text: 'Student Activity Patterns by Time Type',
+                align: 'left',
+                style: { fontSize: '16px', fontWeight: 'bold' }
+            },
+            subtitle: {
+                text: 'School Time (Green) vs Non-School Time (Orange) - JST timezone',
+                align: 'left',
+                style: { fontSize: '12px', color: '#666' }
+            },
+            xaxis: {
+                type: 'datetime',
+                title: {
+                    text: 'Date',
+                    style: { fontSize: '14px' }
+                },
+                labels: {
+                    style: { fontSize: '10px' },
+                    format: 'MMM dd'
+                },
+                axisBorder: {
+                    show: true
+                },
+                axisTicks: {
+                    show: true
+                }
+            },
+            yaxis: {
+                title: {
+                    text: 'Hour (JST)',
+                    style: { fontSize: '14px' }
+                },
+                labels: {
+                    style: { fontSize: '10px' }
+                },
+                reversed: true // 00:00 at top, 23:00 at bottom
+            },
+            plotOptions: {
+                heatmap: {
+                    shadeIntensity: 0.5,
+                    radius: 3,
+                    useFillColorAsStroke: false,
+                    colorScale: {
+                        inverse: false,
+                        ranges: [
+                            // No activity (both school and non-school)
+                            {
+                                from: 0,
+                                to: 0,
+                                name: 'No Activity',
+                                color: '#F3F4F6'
+                            },
+                            // School time colors (green gradient)
+                            {
+                                from: 0.1,
+                                to: Math.max(1, Math.floor(maxSchoolActivity * 0.25)),
+                                name: 'Low School Activity',
+                                color: '#C6E48B'
+                            },
+                            {
+                                from: Math.floor(maxSchoolActivity * 0.25) + 1,
+                                to: Math.max(1, Math.floor(maxSchoolActivity * 0.5)),
+                                name: 'Medium School Activity',
+                                color: '#7BC96F'
+                            },
+                            {
+                                from: Math.floor(maxSchoolActivity * 0.5) + 1,
+                                to: Math.max(1, Math.floor(maxSchoolActivity * 0.75)),
+                                name: 'High School Activity',
+                                color: '#239A3B'
+                            },
+                            {
+                                from: Math.floor(maxSchoolActivity * 0.75) + 1,
+                                to: maxSchoolActivity,
+                                name: 'Very High School Activity',
+                                color: '#196127'
+                            }
+                        ]
+                    }
+                }
+            },
+            // Custom color function to handle school vs non-school time
+            colors: ['#239A3B'], // Default school time color
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    colorStops: []
+                }
+            },
+            tooltip: {
+                custom: function({series, seriesIndex, dataPointIndex, w}) {
+                    const hourName = w.globals.seriesNames[seriesIndex];
+                    const dateValue = w.globals.categoryLabels[dataPointIndex];
+                    const value = series[seriesIndex][dataPointIndex];
+
+                    // Get the original data point to check if it's school time
+                    const dataPoint = hourlyHeatmapData.combined_series[seriesIndex].data[dataPointIndex];
+                    const isSchoolTime = dataPoint.school_time;
+
+                    // Format date nicely - handle different date formats
+                    let dateStr = 'Invalid Date';
+                    let dateIsoString = null;
+                    try {
+                        // Try to get the original date from the data point first
+                        const originalDateStr = dataPoint.x;
+                        let date;
+
+                        if (originalDateStr) {
+                            // Parse the ISO date string from our data
+                            date = new Date(originalDateStr);
+                            dateIsoString = originalDateStr; // Store for holiday lookup
+                        } else {
+                            // Fallback to the category label
+                            date = new Date(dateValue);
+                            if (!isNaN(date.getTime())) {
+                                dateIsoString = date.toISOString().split('T')[0]; // Convert to YYYY-MM-DD format
+                            }
+                        }
+
+                        // Check if date is valid
+                        if (!isNaN(date.getTime())) {
+                            dateStr = date.toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric'
+                            });
+                        } else {
+                            // Last resort: try to parse as timestamp
+                            const timestamp = parseInt(dateValue);
+                            if (!isNaN(timestamp)) {
+                                date = new Date(timestamp);
+                                dateStr = date.toLocaleDateString('en-US', {
+                                    weekday: 'short',
+                                    month: 'short',
+                                    day: 'numeric'
+                                });
+                                dateIsoString = date.toISOString().split('T')[0];
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Error parsing date in tooltip:', e, 'dateValue:', dateValue);
+                        dateStr = 'Date unavailable';
+                    }
+
+                    // Check if this date is a holiday
+                    const holidayInfo = hourlyHeatmapData.holiday_info || {};
+                    const holidayName = dateIsoString ? holidayInfo[dateIsoString] : null;
+
+                    const timeType = isSchoolTime ? 'School Time' : 'Non-School Time';
+                    const colorClass = isSchoolTime ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400';
+
+                    // Build tooltip HTML
+                    let tooltipHTML = `
+                        <div class="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg">
+                            <div class="font-semibold text-gray-900 dark:text-white">${dateStr}</div>
+                    `;
+
+                    // Add holiday information if it exists
+                    if (holidayName) {
+                        tooltipHTML += `
+                            <div style="background-color: #fed7aa; color: #9a3412; font-weight: 600; padding: 4px 8px; border-radius: 4px; margin-top: 4px; border-left: 3px solid #ea580c;">
+                                <i class="ri-calendar-event-line" style="margin-right: 4px;"></i>${holidayName}
+                            </div>
+                        `;
+                    }
+
+                    tooltipHTML += `
+                            <div class="text-sm text-gray-600 dark:text-gray-300 mt-1">Time: ${hourName}</div>
+                            <div class="text-sm ${colorClass}">${timeType}</div>
+                            <div class="text-sm font-medium ${colorClass}">Activities: ${value}</div>
+                        </div>
+                    `;
+
+                    return tooltipHTML;
+                }
+            },
+            grid: {
+                borderColor: '#e7e7e7',
+                strokeDashArray: 0,
+                padding: {
+                    right: 20
+                }
+            },
+            // Add week separations if available
+            annotations: hourlyHeatmapData.week_boundaries ? {
+                xaxis: hourlyHeatmapData.week_boundaries.map(date => ({
+                    x: new Date(date).getTime(),
+                    strokeDashArray: 2,
+                    borderColor: '#999',
+                    opacity: 0.3
+                }))
+            } : {}
+        };
+
+        // Apply custom coloring based on school vs non-school time
+        if (hourlyHeatmapData.combined_series) {
+            // Create a custom color function for each data point
+            combinedHeatmapOptions.chart.events = {
+                dataPointSelection: function(event, chartContext, config) {
+                    // Optional: handle data point selection
+                },
+                mounted: function(chartContext, config) {
+                    // After chart is mounted, we can apply custom colors
+                    const chart = chartContext;
+
+                    // Apply colors based on school_time property
+                    setTimeout(() => {
+                        const heatmapElements = document.querySelectorAll('#combined-activity-heatmap .apexcharts-heatmap-rect');
+
+                        heatmapElements.forEach((element, index) => {
+                            // Calculate series and data point indices
+                            const seriesIndex = Math.floor(index / hourlyHeatmapData.combined_series[0].data.length);
+                            const dataPointIndex = index % hourlyHeatmapData.combined_series[0].data.length;
+
+                            if (hourlyHeatmapData.combined_series[seriesIndex] &&
+                                hourlyHeatmapData.combined_series[seriesIndex].data[dataPointIndex]) {
+
+                                const dataPoint = hourlyHeatmapData.combined_series[seriesIndex].data[dataPointIndex];
+                                const isSchoolTime = dataPoint.school_time;
+                                const activityValue = dataPoint.y;
+
+                                if (activityValue > 0) {
+                                    let color;
+                                    if (isSchoolTime) {
+                                        // Green colors for school time
+                                        if (activityValue <= Math.floor(maxSchoolActivity * 0.25)) {
+                                            color = '#C6E48B';
+                                        } else if (activityValue <= Math.floor(maxSchoolActivity * 0.5)) {
+                                            color = '#7BC96F';
+                                        } else if (activityValue <= Math.floor(maxSchoolActivity * 0.75)) {
+                                            color = '#239A3B';
+                                        } else {
+                                            color = '#196127';
+                                        }
+                                    } else {
+                                        // Orange colors for non-school time
+                                        if (activityValue <= Math.floor(maxNonSchoolActivity * 0.25)) {
+                                            color = '#FED7AA';
+                                        } else if (activityValue <= Math.floor(maxNonSchoolActivity * 0.5)) {
+                                            color = '#FDBA74';
+                                        } else if (activityValue <= Math.floor(maxNonSchoolActivity * 0.75)) {
+                                            color = '#FB923C';
+                                        } else {
+                                            color = '#EA580C';
+                                        }
+                                    }
+                                    element.setAttribute('fill', color);
+                                }
+                            }
+                        });
+                    }, 100);
+                }
+            };
+        }
+
+        renderChart("#combined-activity-heatmap", combinedHeatmapOptions, "Error loading combined activity heatmap");
+
+    } else {
+        document.querySelector("#combined-activity-heatmap").innerHTML =
+            '<div class="flex items-center justify-center h-96 text-gray-500"><div class="text-center"><i class="ri-calendar-2-line text-4xl mb-2"></i><p>No hourly activity data available</p></div></div>';
+    }
+
     // Daily Trends Chart
     if (analyticsData.daily_trends && analyticsData.daily_trends.length > 0) {
         const dailyTrendsOptions = {
@@ -313,3 +615,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log('Student Analytics Dashboard initialization complete');
 });
+
+// Toggle function for legend show/hide
+function toggleLegend() {
+    const content = document.getElementById('legend-content');
+    const arrow = document.getElementById('legend-arrow');
+
+    if (content.classList.contains('hidden')) {
+        // Show content
+        content.classList.remove('hidden');
+        arrow.classList.add('rotate-180');
+    } else {
+        // Hide content
+        content.classList.add('hidden');
+        arrow.classList.remove('rotate-180');
+    }
+}

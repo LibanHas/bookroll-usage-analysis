@@ -4,6 +4,7 @@ import datetime
 from django.db import models
 from django.db import connections
 from clickhouse_backend.models import ClickhouseModel
+from django.conf import settings
 
 from django.http import JsonResponse
 logger = logging.getLogger(__name__)
@@ -198,6 +199,7 @@ class MostActiveContents(models.Model):
             SELECT DISTINCT operation_name
             FROM statements_mv
             WHERE operation_name != ''
+                AND actor_name_role = 'student'
             ORDER BY operation_name
         """
 
@@ -225,6 +227,7 @@ class MostActiveContents(models.Model):
                 object_id
             FROM statements_mv
             WHERE contents_id != ''
+                AND actor_name_role = 'student'
         """
 
         if search:
@@ -260,6 +263,7 @@ class MostActiveContents(models.Model):
                 contents_id
             FROM statements_mv
             WHERE contents_id != ''
+                AND actor_name_role = 'student'
         """
 
         if search:
@@ -305,6 +309,7 @@ class MostActiveContents(models.Model):
             FROM statements_mv
             WHERE contents_id IN ('{content_ids_str}')
                 AND operation_name != ''
+                AND actor_name_role = 'student'
         """
 
         if search:
@@ -371,6 +376,7 @@ class DailyActiveUsers(models.Model):
         FROM statements_mv
         WHERE timestamp >= today() - 30
             AND actor_account_name != ''
+            AND actor_name_role = 'student'
         GROUP BY date
         ORDER BY date
         """
@@ -400,6 +406,7 @@ class DailyActivities(models.Model):
                 uniqExact(_id) AS total_activities
             FROM statements_mv
             WHERE timestamp >= today() - 30
+                AND actor_name_role = 'student'
             GROUP BY date
             ORDER BY date
         """
@@ -433,9 +440,25 @@ class MostActiveStudents(models.Model):
             return "AND timestamp >= toStartOfMonth(today())"
         elif time_frame == 'this_year':
             return "AND timestamp >= toStartOfYear(today())"
+        elif time_frame == 'last_3_months':
+            return "AND timestamp >= today() - INTERVAL 3 MONTH"
+        elif time_frame == 'academic_year':
+            # Academic year: April 1 to March 31 (next year)
+            return """AND timestamp >=
+                CASE
+                    WHEN toMonth(today()) >= 4
+                    THEN toDate(concat(toString(toYear(today())), '-04-01'))
+                    ELSE toDate(concat(toString(toYear(today()) - 1), '-04-01'))
+                END
+            AND timestamp <=
+                CASE
+                    WHEN toMonth(today()) >= 4
+                    THEN toDate(concat(toString(toYear(today()) + 1), '-03-31'))
+                    ELSE toDate(concat(toString(toYear(today())), '-03-31'))
+                END"""
         else:
-            # Default to this month
-            return "AND timestamp >= toStartOfMonth(today())"
+            # Default to last 3 months
+            return "AND timestamp >= today() - INTERVAL 3 MONTH"
 
     @staticmethod
     def _get_daily_trends_days(time_frame):
@@ -448,8 +471,12 @@ class MostActiveStudents(models.Model):
             return 31
         elif time_frame == 'this_year':
             return 365
+        elif time_frame == 'last_3_months':
+            return 90
+        elif time_frame == 'academic_year':
+            return 365
         else:
-            return 31
+            return 90
 
     @classmethod
     def get_most_active_students(cls, limit=10, offset=0, search=None):
@@ -567,7 +594,7 @@ class MostActiveStudents(models.Model):
         return results
 
     @classmethod
-    def get_student_activity_analytics(cls, time_frame='this_month'):
+    def get_student_activity_analytics(cls, time_frame='last_3_months'):
         """
         Get comprehensive analytics about student activities without exposing personal information.
         Returns aggregated statistics, distributions, and insights.
@@ -774,7 +801,7 @@ class MostActiveStudents(models.Model):
             }
 
     @classmethod
-    def get_operation_engagement_patterns(cls, time_frame='this_month'):
+    def get_operation_engagement_patterns(cls, time_frame='last_3_months'):
         """
         Analyze engagement patterns by operation type to understand learning behaviors.
         """
@@ -853,7 +880,7 @@ class MostActiveStudents(models.Model):
             return {}
 
     @classmethod
-    def get_learning_insights(cls, time_frame='this_month'):
+    def get_learning_insights(cls, time_frame='last_3_months'):
         """
         Generate educational insights from student activity data.
         """
@@ -950,6 +977,195 @@ class MostActiveStudents(models.Model):
             return {
                 'content_interactions': [],
                 'engagement_levels': []
+            }
+
+    @classmethod
+    def get_hourly_activity_heatmap(cls, time_frame='last_3_months'):
+        """
+        Generate hourly activity heatmap data showing student activity patterns by actual dates and hours.
+        Combines School Time and Non-School Time activities in a single heatmap with different color coding.
+
+        School Time: Weekdays during school hours (excluding holidays) - GREEN colors
+        Non-School Time: Weekends, holidays, outside school hours - ORANGE colors
+
+        Returns data suitable for ApexCharts heatmap visualization in GitHub contribution style.
+        X-axis: Days (actual calendar dates)
+        Y-axis: Hours (00:00 to 23:00)
+        """
+        logger.info(f"Hourly activity heatmap hitting >>>----------------: {time_frame}")
+        try:
+            # Get time filter for the selected time frame
+            time_filter = cls._get_time_filter(time_frame)
+
+            with connections['clickhouse_db'].cursor() as cursor:
+                # Get activity counts grouped by actual date and hour
+                # Convert timestamp to JST (UTC+9) for proper local time analysis
+                cursor.execute(f"""
+                    SELECT
+                        toDate(addHours(timestamp, 9)) as activity_date,
+                        toHour(addHours(timestamp, 9)) as hour_of_day,
+                        toDayOfWeek(addHours(timestamp, 9)) as day_of_week,
+                        uniqExact(_id) as activity_count
+                    FROM statements_mv
+                    WHERE actor_name_role == 'student'
+                        AND actor_account_name != ''
+                        {time_filter}
+                    GROUP BY activity_date, hour_of_day, day_of_week
+                    ORDER BY activity_date, hour_of_day
+                """)
+
+                hourly_data = cursor.fetchall()
+
+                if not hourly_data:
+                    logger.warning("No hourly activity data found")
+                    return {
+                        'combined_series': [],
+                        'stats': {
+                            'max_school_activity': 0,
+                            'max_non_school_activity': 0,
+                            'total_school_activity': 0,
+                            'total_non_school_activity': 0
+                        },
+                        'date_range': [],
+                        'week_boundaries': []
+                    }
+
+                # Get date range from the data
+                dates = sorted(set([row[0] for row in hourly_data]))
+                start_date = min(dates)
+                end_date = max(dates)
+
+                # Create a complete date range (fill gaps)
+                current_date = start_date
+                complete_dates = []
+                while current_date <= end_date:
+                    complete_dates.append(current_date)
+                    current_date += datetime.timedelta(days=1)
+
+                # Get Japanese holidays for the date range
+                from holiday.models import JapaneseHoliday
+                holiday_dates = set()
+                holiday_info = {}  # Store holiday names
+                holidays = JapaneseHoliday.objects.filter(
+                    date__gte=start_date,
+                    date__lte=end_date
+                ).values_list('date', 'name', flat=False)
+
+                for holiday_date, holiday_name in holidays:
+                    holiday_dates.add(holiday_date)
+                    holiday_info[holiday_date.isoformat()] = holiday_name
+
+                # Get school time settings
+                school_start_time = getattr(settings, 'SCHOOL_START_TIME', '09:00')
+                school_end_time = getattr(settings, 'SCHOOL_END_TIME', '16:00')
+
+                # Parse school hours
+                school_start_hour, school_start_minute = map(int, school_start_time.split(':'))
+                school_end_hour, school_end_minute = map(int, school_end_time.split(':'))
+
+                # Create combined activity matrix: [hour][date] = {activity_count, is_school_time}
+                activity_matrix = {}
+                school_values = []
+                non_school_values = []
+
+                for hour in range(24):
+                    activity_matrix[hour] = {}
+                    for date in complete_dates:
+                        activity_matrix[hour][date] = {'activity_count': 0, 'is_school_time': False}
+
+                # Fill the matrix with actual data, categorizing as school vs non-school time
+                for row in hourly_data:
+                    activity_date = row[0]
+                    hour_of_day = row[1]
+                    day_of_week = row[2]  # 1=Monday, 7=Sunday
+                    activity_count = row[3]
+
+                    if 0 <= hour_of_day < 24:
+                        # Determine if this is school time or non-school time
+                        is_school_time = False
+
+                        # Check if it's a weekday (Monday=1 to Friday=5)
+                        if 1 <= day_of_week <= 5:
+                            # Check if it's not a holiday
+                            if activity_date not in holiday_dates:
+                                # Check if it's within school hours
+                                activity_time_minutes = hour_of_day * 60
+                                school_start_minutes = school_start_hour * 60 + school_start_minute
+                                school_end_minutes = school_end_hour * 60 + school_end_minute
+
+                                if school_start_minutes <= activity_time_minutes < school_end_minutes:
+                                    is_school_time = True
+
+                        # Store in matrix
+                        activity_matrix[hour_of_day][activity_date] = {
+                            'activity_count': activity_count,
+                            'is_school_time': is_school_time
+                        }
+
+                        # Collect values for statistics
+                        if is_school_time:
+                            school_values.append(activity_count)
+                        else:
+                            non_school_values.append(activity_count)
+
+                # Convert to ApexCharts heatmap format with combined data
+                combined_series = []
+                for hour in range(24):
+                    hour_data = []
+                    for date in complete_dates:
+                        data_point = activity_matrix[hour][date]
+                        hour_data.append({
+                            'x': date.isoformat(),
+                            'y': data_point['activity_count'],
+                            'school_time': data_point['is_school_time']  # Custom property for color coding
+                        })
+
+                    combined_series.append({
+                        'name': f"{hour:02d}:00",
+                        'data': hour_data
+                    })
+
+                # Calculate statistics for both types
+                max_school_activity = max(school_values) if school_values else 0
+                max_non_school_activity = max(non_school_values) if non_school_values else 0
+                total_school_activity = sum(school_values) if school_values else 0
+                total_non_school_activity = sum(non_school_values) if non_school_values else 0
+
+                # Generate week boundaries for visual separation
+                week_boundaries = []
+                for date in complete_dates:
+                    if date.weekday() == 0:  # Monday = start of week
+                        week_boundaries.append(date.isoformat())
+
+                logger.info(f"Combined heatmap data: {len(combined_series)} hours, {len(complete_dates)} days")
+                logger.info(f"School time max: {max_school_activity}, Non-school time max: {max_non_school_activity}")
+
+                return {
+                    'combined_series': combined_series,
+                    'stats': {
+                        'max_school_activity': max_school_activity,
+                        'max_non_school_activity': max_non_school_activity,
+                        'total_school_activity': total_school_activity,
+                        'total_non_school_activity': total_non_school_activity
+                    },
+                    'date_range': [start_date.isoformat(), end_date.isoformat()],
+                    'week_boundaries': week_boundaries,
+                    'holiday_info': holiday_info
+                }
+
+        except Exception as e:
+            logger.error(f"Error fetching hourly activity heatmap: {str(e)}")
+            return {
+                'combined_series': [],
+                'stats': {
+                    'max_school_activity': 0,
+                    'max_non_school_activity': 0,
+                    'total_school_activity': 0,
+                    'total_non_school_activity': 0
+                },
+                'date_range': [],
+                'week_boundaries': [],
+                'holiday_info': {}
             }
 
     class Meta:
@@ -1448,13 +1664,15 @@ class CourseDetail(models.Model):
 
             # Get Japanese holidays for the date range
             holiday_dates = set()
+            holiday_info = {}  # Store holiday names
             holidays = JapaneseHoliday.objects.filter(
                 date__gte=start_date,
                 date__lte=end_date
-            ).values_list('date', flat=True)
+            ).values_list('date', 'name', flat=False)
 
-            for holiday_date in holidays:
-                holiday_dates.add(holiday_date.strftime('%Y-%m-%d'))
+            for holiday_date, holiday_name in holidays:
+                holiday_dates.add(holiday_date)
+                holiday_info[holiday_date.isoformat()] = holiday_name
 
             # Step 1: Get all enrolled students from Moodle
             enrolled_students = {}
@@ -1495,9 +1713,9 @@ class CourseDetail(models.Model):
                         _id,
                         timestamp,
                         toDate(timestamp) as activity_date,
-                        toHour(timestamp + INTERVAL 9 HOUR) as jst_hour,
-                        toMinute(timestamp + INTERVAL 9 HOUR) as jst_minute,
-                        toDayOfWeek(timestamp + INTERVAL 9 HOUR) as jst_day_of_week
+                        toHour(addHours(timestamp, 9)) as jst_hour,
+                        toMinute(addHours(timestamp, 9)) as jst_minute,
+                        toDayOfWeek(addHours(timestamp, 9)) as jst_day_of_week
                     FROM saikyo_new.statements_mv
                     WHERE context_id = %s
                     AND actor_name_id != ''

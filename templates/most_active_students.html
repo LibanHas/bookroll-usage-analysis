@@ -3,12 +3,6 @@
 {% load i18n %}
 {% block main_content %}
 
-{% if error_message %}
-<div class="col-span-full bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-    <strong>Error:</strong> {{ error_message }}
-</div>
-{% endif %}
-
 <div class="grid grid-cols-12 gap-x-4">
     {% if error_message %}
     <div class="col-span-full bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -35,7 +29,9 @@
                 <select id="time-frame-select" class="form-input form-select min-w-[140px]">
                     <option value="this_week" {% if selected_time_frame == 'this_week' %}selected{% endif %}>{% trans "This Week" %}</option>
                     <option value="this_month" {% if selected_time_frame == 'this_month' %}selected{% endif %}>{% trans "This Month" %}</option>
+                    <option value="last_3_months" {% if selected_time_frame == 'last_3_months' %}selected{% endif %}>{% trans "Last 3 Months" %}</option>
                     <option value="this_year" {% if selected_time_frame == 'this_year' %}selected{% endif %}>{% trans "This Year" %}</option>
+                    <option value="academic_year" {% if selected_time_frame == 'academic_year' %}selected{% endif %}>{% trans "Academic Year" %}</option>
                 </select>
             </div>
         </div>
@@ -159,6 +155,132 @@
         <div id="engagement-levels-chart" class="h-80"></div>
     </div>
 
+    <!-- Hourly Activity Heatmap -->
+    <div class="col-span-full card">
+        <div class="flex-center-between mb-4">
+            <h6 class="card-title">{% trans "Student Activity Patterns by Time Type" %}</h6>
+            <div class="text-sm text-gray-500 dark:text-dark-text-two">
+                {% trans "School time vs Non-school time activity comparison (JST)" %}
+            </div>
+        </div>
+
+        <!-- Combined Activity Heatmap -->
+        <div class="mb-6">
+            <div id="combined-activity-heatmap" class="h-[600px]"></div>
+        </div>
+
+        <!-- Legend and Instructions (Collapsible) -->
+        <div class="mt-4">
+            <!-- Toggle Button -->
+            <button
+                type="button"
+                class="flex items-center justify-between w-full p-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200"
+                onclick="toggleLegend()"
+                id="legend-toggle-btn"
+            >
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <i class="ri-information-line mr-2"></i>
+                    {% trans "Legend & Time Type Explanation" %}
+                </span>
+                <i class="ri-arrow-down-s-line text-gray-500 dark:text-gray-400 transform transition-transform duration-200" id="legend-arrow"></i>
+            </button>
+
+            <!-- Collapsible Content -->
+            <div id="legend-content" class="hidden mt-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div class="col-span-full grid grid-cols-2 gap-4 card">
+                    <!-- School Time Legend -->
+                    <div>
+                        <h6 class="font-semibold text-green-700 dark:text-green-300 mb-3">{% trans "School Time (Green)" %}</h6>
+                        <div class="mb-3">
+                            <span class="text-sm text-gray-600 dark:text-gray-300 font-medium">{% trans "Activity Level:" %}</span>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 bg-gray-100 border rounded"></div>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">{% trans "None" %}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 border rounded" style="background-color: #C6E48B;"></div>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">{% trans "Low" %}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 border rounded" style="background-color: #7BC96F;"></div>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">{% trans "Medium" %}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 border rounded" style="background-color: #239A3B;"></div>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">{% trans "High" %}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 border rounded" style="background-color: #196127;"></div>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">{% trans "Very High" %}</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                            {% trans "Weekdays" %} {{ school_start_time|default:"09:00" }}-{{ school_end_time|default:"16:00" }} {% trans "(excluding holidays)" %}
+                        </div>
+                    </div>
+
+                    <!-- Non-School Time Legend -->
+                    <div>
+                        <h6 class="font-semibold text-orange-700 dark:text-orange-300 mb-3">{% trans "Non-School Time (Orange)" %}</h6>
+                        <div class="mb-3">
+                            <span class="text-sm text-gray-600 dark:text-gray-300 font-medium">{% trans "Activity Level:" %}</span>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 bg-gray-100 border rounded"></div>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">{% trans "None" %}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 border rounded" style="background-color: #FED7AA;"></div>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">{% trans "Low" %}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 border rounded" style="background-color: #FDBA74;"></div>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">{% trans "Medium" %}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 border rounded" style="background-color: #FB923C;"></div>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">{% trans "High" %}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-4 h-4 border rounded" style="background-color: #EA580C;"></div>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">{% trans "Very High" %}</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                            {% trans "Weekends, holidays, outside school hours" %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <div class="text-center text-sm text-gray-500 dark:text-gray-400">
+                        <div class="flex flex-wrap justify-center items-center gap-2">
+                            <span>{% trans "School hours: " %}{{ school_start_time|default:"09:00" }} - {{ school_end_time|default:"16:00" }} JST</span>
+                            <span class="text-gray-300 dark:text-gray-600">•</span>
+                            <span>{% trans "Holidays from Japanese national holiday database" %}</span>
+                            <span class="text-gray-300 dark:text-gray-600">•</span>
+                            <span class="font-medium text-gray-700 dark:text-gray-300">{% trans "Green = School Time, Orange = Non-School Time" %}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Activity Trends -->
+    <div class="col-span-full card">
+        <div class="flex-center-between mb-4">
+            <h6 class="card-title">{% trans "Daily Activity Trends (Last 30 Days)" %}</h6>
+            <div class="text-sm text-gray-500 dark:text-dark-text-two">
+                {% trans "Active students and total activities over time" %}
+            </div>
+        </div>
+        <div id="daily-trends-chart" class="h-96"></div>
+    </div>
+
     <!-- Top Learning Activities -->
     <div class="col-span-full lg:col-span-8 card">
         <div class="flex-center-between mb-4">
@@ -259,23 +381,13 @@
             </div>
         </div>
     </div>
-
-    <!-- Daily Activity Trends -->
-    <div class="col-span-full card">
-        <div class="flex-center-between mb-4">
-            <h6 class="card-title">{% trans "Daily Activity Trends (Last 30 Days)" %}</h6>
-            <div class="text-sm text-gray-500 dark:text-dark-text-two">
-                {% trans "Active students and total activities over time" %}
-            </div>
-        </div>
-        <div id="daily-trends-chart" class="h-96"></div>
-    </div>
 </div>
 
 <!-- Hidden data for JavaScript -->
 <script type="application/json" id="analytics-data">{{ analytics_json|safe }}</script>
 <script type="application/json" id="engagement-patterns-data">{{ engagement_patterns_json|safe }}</script>
 <script type="application/json" id="learning-insights-data">{{ learning_insights_json|safe }}</script>
+<script type="application/json" id="hourly-heatmap-data">{{ hourly_heatmap_json|safe }}</script>
 
 {% endblock %}
 
