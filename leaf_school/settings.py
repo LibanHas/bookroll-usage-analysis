@@ -451,7 +451,7 @@ USE_TZ = True
 
 LMS_URL = os.getenv('LMS_URL', '')
 
-SCHOOL_START_TIME = os.getenv('SCHOOL_START_TIME', '09:00')
+SCHOOL_START_TIME = os.getenv('SCHOOL_START_TIME', '08:00')
 SCHOOL_END_TIME = os.getenv('SCHOOL_END_TIME', '16:00')
 
 # Course Management Settings
@@ -463,3 +463,6 @@ COURSE_SUBJECT_CATEGORIES = [
 # Course sync settings
 COURSE_SYNC_BATCH_SIZE = int(os.getenv('COURSE_SYNC_BATCH_SIZE', '100'))
 COURSE_SYNC_TIMEOUT = int(os.getenv('COURSE_SYNC_TIMEOUT', '300'))  # 5 minutes
+
+
+MAX_SESSION_DURATION = int(os.getenv('MAX_SESSION_DURATION', '5400'))  # 1.5 hours

@@ -1005,7 +1005,8 @@ class MostActiveStudents(models.Model):
                         toDate(addHours(timestamp, 9)) as activity_date,
                         toHour(addHours(timestamp, 9)) as hour_of_day,
                         toDayOfWeek(addHours(timestamp, 9)) as day_of_week,
-                        uniqExact(_id) as activity_count
+                        uniqExact(_id) as activity_count,
+                        COUNT(DISTINCT actor_account_name) as student_count
                     FROM statements_mv
                     WHERE actor_name_role == 'student'
                         AND actor_account_name != ''
@@ -1071,7 +1072,7 @@ class MostActiveStudents(models.Model):
                 for hour in range(24):
                     activity_matrix[hour] = {}
                     for date in complete_dates:
-                        activity_matrix[hour][date] = {'activity_count': 0, 'is_school_time': False}
+                        activity_matrix[hour][date] = {'activity_count': 0, 'is_school_time': False, 'student_count': 0}
 
                 # Fill the matrix with actual data, categorizing as school vs non-school time
                 for row in hourly_data:
@@ -1079,6 +1080,7 @@ class MostActiveStudents(models.Model):
                     hour_of_day = row[1]
                     day_of_week = row[2]  # 1=Monday, 7=Sunday
                     activity_count = row[3]
+                    student_count = row[4]
 
                     if 0 <= hour_of_day < 24:
                         # Determine if this is school time or non-school time
@@ -1099,7 +1101,8 @@ class MostActiveStudents(models.Model):
                         # Store in matrix
                         activity_matrix[hour_of_day][activity_date] = {
                             'activity_count': activity_count,
-                            'is_school_time': is_school_time
+                            'is_school_time': is_school_time,
+                            'student_count': student_count
                         }
 
                         # Collect values for statistics
@@ -1117,7 +1120,8 @@ class MostActiveStudents(models.Model):
                         hour_data.append({
                             'x': date.isoformat(),
                             'y': data_point['activity_count'],
-                            'school_time': data_point['is_school_time']  # Custom property for color coding
+                            'school_time': data_point['is_school_time'],
+                            'student_count': data_point['student_count']
                         })
 
                     combined_series.append({
@@ -1166,6 +1170,228 @@ class MostActiveStudents(models.Model):
                 'date_range': [],
                 'week_boundaries': [],
                 'holiday_info': {}
+            }
+
+    @classmethod
+    def get_time_spent_distribution(cls, time_frame='last_3_months'):
+        """
+        Get time spent distribution data for normal distribution analysis.
+
+        Uses optimized ClickHouse query to calculate daily hours spent per student,
+        then generates distribution statistics and bins for normal distribution chart.
+
+        Returns data suitable for normal distribution visualization with curve overlay.
+        """
+        logger.info(f"Getting time spent distribution for time frame: {time_frame}")
+        try:
+            # Get time filter for the selected time frame
+            time_filter = cls._get_time_filter(time_frame)
+
+            # Get maximum session duration from Django settings (in seconds)
+            max_session_duration = getattr(settings, 'MAX_SESSION_DURATION', 5400)  # Default 1.5 hours
+            max_activity_duration = 1800  # 30 minutes cap per individual activity session
+            logger.info(f"Using MAX_SESSION_DURATION: {max_session_duration} seconds ({max_session_duration/3600:.1f} hours)")
+            logger.info(f"Using MAX_ACTIVITY_DURATION: {max_activity_duration} seconds ({max_activity_duration/60:.0f} minutes)")
+
+            with connections['clickhouse_db'].cursor() as cursor:
+                # Improved three-tier query for accurate session boundary detection
+                # Tier 1: Calculate time differences between consecutive activities
+                # Tier 2: Apply session boundary logic (discard if > MAX_SESSION_DURATION, cap individual activities)
+                # Tier 3: Aggregate by student and day
+                cursor.execute(f"""
+                    SELECT
+                        student_id,
+                        day,
+                        round(sum(read_seconds) / 3600, 2) AS hours_spent
+                    FROM
+                    (
+                        SELECT
+                            actor_account_name AS student_id,
+                            toDate(timestamp) AS day,
+                            CASE
+                                WHEN time_diff <= {max_session_duration} THEN greatest(0, least({max_activity_duration}, time_diff))
+                                ELSE 0
+                            END AS read_seconds
+                        FROM
+                        (
+                            SELECT
+                                actor_account_name,
+                                timestamp,
+                                dateDiff(
+                                    'second',
+                                    timestamp,
+                                    leadInFrame(timestamp) OVER (
+                                        PARTITION BY actor_account_name
+                                        ORDER BY timestamp
+                                        ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+                                    )
+                                ) AS time_diff
+                            FROM statements_mv
+                            WHERE actor_name_role == 'student'
+                                AND actor_account_name != ''
+                                {time_filter}
+                        )
+                    )
+                    GROUP BY
+                        student_id,
+                        day
+                    HAVING hours_spent > 0
+                    ORDER BY
+                        day,
+                        student_id
+                """)
+
+                time_spent_data = cursor.fetchall()
+
+                if not time_spent_data:
+                    logger.warning("No time spent data found")
+                    return {
+                        'distribution_data': [],
+                        'statistics': {
+                            'mean': 0,
+                            'std_dev': 0,
+                            'median': 0,
+                            'mode': 0,
+                            'min': 0,
+                            'max': 0,
+                            'count': 0,
+                            'max_session_hours': round(max_session_duration / 3600, 1),
+                            'max_activity_minutes': round(max_activity_duration / 60, 0)
+                        },
+                        'normal_curve': [],
+                        'bins': []
+                    }
+
+                # Extract hours spent values for statistical analysis
+                hours_values = [row[2] for row in time_spent_data if row[2] > 0]
+
+                if not hours_values:
+                    logger.warning("No valid hours spent values found")
+                    return {
+                        'distribution_data': [],
+                        'statistics': {
+                            'mean': 0,
+                            'std_dev': 0,
+                            'median': 0,
+                            'mode': 0,
+                            'min': 0,
+                            'max': 0,
+                            'count': 0,
+                            'max_session_hours': round(max_session_duration / 3600, 1),
+                            'max_activity_minutes': round(max_activity_duration / 60, 0)
+                        },
+                        'normal_curve': [],
+                        'bins': []
+                    }
+
+                # Calculate basic statistics
+                import statistics
+                import math
+
+                mean_hours = statistics.mean(hours_values)
+                std_dev_hours = statistics.stdev(hours_values) if len(hours_values) > 1 else 0
+                median_hours = statistics.median(hours_values)
+                min_hours = min(hours_values)
+                max_hours = max(hours_values)
+                count = len(hours_values)
+
+                # Calculate mode (most frequent value rounded to nearest 0.1)
+                rounded_values = [round(val, 1) for val in hours_values]
+                try:
+                    mode_hours = statistics.mode(rounded_values)
+                except statistics.StatisticsError:
+                    # If no unique mode, use the first value of the most common bin
+                    from collections import Counter
+                    counter = Counter(rounded_values)
+                    mode_hours = counter.most_common(1)[0][0] if counter else mean_hours
+
+                # Create bins for histogram (using Sturges' rule for bin count)
+                bin_count = min(max(int(math.ceil(math.log2(count) + 1)), 10), 50)  # Between 10-50 bins
+                bin_width = (max_hours - min_hours) / bin_count
+
+                bins = []
+                bin_edges = []
+                for i in range(bin_count):
+                    bin_start = min_hours + i * bin_width
+                    bin_end = min_hours + (i + 1) * bin_width
+                    bin_center = (bin_start + bin_end) / 2
+
+                    # Count values in this bin
+                    bin_count_val = sum(1 for val in hours_values if bin_start <= val < bin_end)
+                    if i == bin_count - 1:  # Include max value in last bin
+                        bin_count_val = sum(1 for val in hours_values if bin_start <= val <= bin_end)
+
+                    bins.append({
+                        'bin_center': round(bin_center, 2),
+                        'bin_start': round(bin_start, 2),
+                        'bin_end': round(bin_end, 2),
+                        'frequency': bin_count_val,
+                        'density': bin_count_val / (count * bin_width) if count > 0 and bin_width > 0 else 0
+                    })
+                    bin_edges.append(bin_center)
+
+                # Generate normal curve points for overlay
+                normal_curve = []
+                if std_dev_hours > 0:
+                    x_min = max(0, mean_hours - 4 * std_dev_hours)  # Don't go below 0 hours
+                    x_max = mean_hours + 4 * std_dev_hours
+                    x_step = (x_max - x_min) / 100
+
+                    for i in range(101):
+                        x = x_min + i * x_step
+                        # Normal distribution probability density function
+                        y = (1 / (std_dev_hours * math.sqrt(2 * math.pi))) * \
+                            math.exp(-0.5 * ((x - mean_hours) / std_dev_hours) ** 2)
+                        normal_curve.append({
+                            'x': round(x, 2),
+                            'y': round(y, 6)
+                        })
+
+                # Create student daily data for detailed view
+                student_daily_data = []
+                for row in time_spent_data:
+                    student_daily_data.append({
+                        'student_id': row[0],
+                        'date': row[1].isoformat(),
+                        'hours_spent': row[2]
+                    })
+
+                logger.info(f"Time spent distribution: {count} data points, mean={mean_hours:.2f}h, std={std_dev_hours:.2f}h, session_cap={max_session_duration/3600:.1f}h, activity_cap={max_activity_duration/60:.0f}min")
+
+                return {
+                    'distribution_data': student_daily_data,
+                    'statistics': {
+                        'mean': round(mean_hours, 2),
+                        'std_dev': round(std_dev_hours, 2),
+                        'median': round(median_hours, 2),
+                        'mode': round(mode_hours, 2),
+                        'min': round(min_hours, 2),
+                        'max': round(max_hours, 2),
+                        'count': count,
+                        'max_session_hours': round(max_session_duration / 3600, 1),
+                        'max_activity_minutes': round(max_activity_duration / 60, 0)
+                    },
+                    'normal_curve': normal_curve,
+                    'bins': bins
+                }
+
+        except Exception as e:
+            logger.error(f"Error fetching time spent distribution: {str(e)}")
+            return {
+                'distribution_data': [],
+                'statistics': {
+                    'mean': 0,
+                    'std_dev': 0,
+                    'median': 0,
+                    'mode': 0,
+                    'min': 0,
+                    'max': 0,
+                    'count': 0,
+                    'max_session_hours': round(getattr(settings, 'MAX_SESSION_DURATION', 5400) / 3600, 1),
+                    'max_activity_minutes': 30
+                },
+                'normal_curve': [],
+                'bins': []
             }
 
     class Meta:

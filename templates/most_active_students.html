@@ -33,6 +33,15 @@
                     <option value="this_year" {% if selected_time_frame == 'this_year' %}selected{% endif %}>{% trans "This Year" %}</option>
                     <option value="academic_year" {% if selected_time_frame == 'academic_year' %}selected{% endif %}>{% trans "Academic Year" %}</option>
                 </select>
+                <button
+                    id="heatmap-toggle-btn"
+                    type="button"
+                    class="px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    title="{% trans 'Toggle detailed view with numbers in cells' %}"
+                >
+                    <i class="ri-list-check-line mr-1"></i>
+                    {% trans "Show Details" %}
+                </button>
             </div>
         </div>
     </div>
@@ -50,9 +59,6 @@
                 <div class="pb-8 shrink-0">
                     <div class="flex items-center gap-2 mb-3">
                         <div class="counter-value card-title text-primary-500" data-value="{{ analytics.overall_stats.total_students|default:0 }}">{{ analytics.overall_stats.total_students|default:0 }}</div>
-                        <div class="flex-center text-primary-500 size-5 rounded-50 border border-primary-500">
-                            <i class="ri-user-line text-inherit text-sm"></i>
-                        </div>
                     </div>
                 </div>
                 <div class="grow self-center pb-3">
@@ -73,9 +79,6 @@
                 <div class="pb-8 shrink-0">
                     <div class="flex items-center gap-2 mb-3">
                         <div class="counter-value card-title text-green-500" data-value="{{ analytics.overall_stats.total_activities|default:0 }}">{{ analytics.overall_stats.total_activities|default:0 }}</div>
-                        <div class="flex-center text-green-500 size-5 rounded-50 border border-green-500">
-                            <i class="ri-bar-chart-line text-inherit text-sm"></i>
-                        </div>
                     </div>
                 </div>
                 <div class="grow self-center pb-3">
@@ -96,9 +99,6 @@
                 <div class="pb-8 shrink-0">
                     <div class="flex items-center gap-2 mb-3">
                         <div class="counter-value card-title text-blue-500" data-value="{{ analytics.overall_stats.avg_activities|default:0 }}">{{ analytics.overall_stats.avg_activities|default:0 }}</div>
-                        <div class="flex-center text-blue-500 size-5 rounded-50 border border-blue-500">
-                            <i class="ri-line-chart-line text-inherit text-sm"></i>
-                        </div>
                     </div>
                 </div>
                 <div class="grow self-center pb-3">
@@ -119,9 +119,6 @@
                 <div class="pb-8 shrink-0">
                     <div class="flex items-center gap-2 mb-3">
                         <div class="counter-value card-title text-orange-500" data-value="{{ analytics.overall_stats.std_dev_activities|default:0 }}">{{ analytics.overall_stats.std_dev_activities|default:0 }}</div>
-                        <div class="flex-center text-orange-500 size-5 rounded-50 border border-orange-500">
-                            <i class="ri-pulse-line text-inherit text-sm"></i>
-                        </div>
                     </div>
                 </div>
                 <div class="grow self-center pb-3">
@@ -160,7 +157,7 @@
         <div class="flex-center-between mb-4">
             <h6 class="card-title">{% trans "Student Activity Patterns by Time Type" %}</h6>
             <div class="text-sm text-gray-500 dark:text-dark-text-two">
-                {% trans "School time vs Non-school time activity comparison (JST)" %}
+                {% trans "Activity volume and student participation by hour (JST)" %}
             </div>
         </div>
 
@@ -264,7 +261,131 @@
                             <span class="text-gray-300 dark:text-gray-600">•</span>
                             <span class="font-medium text-gray-700 dark:text-gray-300">{% trans "Green = School Time, Orange = Non-School Time" %}</span>
                         </div>
+                        <div class="mt-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                            <i class="ri-information-line mr-1"></i>
+                            {% trans "Hover over any cell to see activity count, student count, and engagement quality (calculated from data quartiles)" %}
+                        </div>
+                        <div id="engagement-thresholds-display" class="mt-2 text-xs text-gray-600 dark:text-gray-400 hidden">
+                            <strong>{% trans "Current engagement thresholds:" %}</strong>
+                            <div class="ml-2 mt-1">
+                                <span class="text-green-600">{% trans "High:" %}</span> <span id="threshold-high">-</span>+ {% trans "activities/student" %}<br>
+                                <span class="text-yellow-600">{% trans "Moderate:" %}</span> <span id="threshold-moderate">-</span>+ {% trans "activities/student" %}<br>
+                                <span class="text-orange-600">{% trans "Light:" %}</span> <span id="threshold-light">-</span>+ {% trans "activities/student" %}<br>
+                                <span class="text-red-600">{% trans "Minimal:" %}</span> <span id="threshold-brief">-</span>+ {% trans "activities/student" %}
+                            </div>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Time Spent Distribution -->
+    <div class="col-span-full card">
+        <div class="flex-center-between mb-4">
+            <h6 class="card-title">{% trans "Daily Time Spent Distribution" %}</h6>
+            <div class="text-sm text-gray-500 dark:text-dark-text-two">
+                {% trans "Normal distribution of daily hours spent on the system by students" %}
+            </div>
+        </div>
+
+        <!-- Distribution Chart -->
+        <div class="mb-6">
+            <div id="time-spent-distribution-chart" class="h-96"></div>
+        </div>
+
+        <!-- Statistics Summary -->
+        <div class="col-span-full grid-cols-12 flex-center-between grid  justify-between  p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <!-- First Row -->
+            <div class="text-center">
+                <div class="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                    {{ time_spent_distribution.statistics.mean }}h
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{% trans "Mean" %}</div>
+            </div>
+            <div class="text-center">
+                <div class="text-lg font-semibold text-green-600 dark:text-green-400">
+                    {{ time_spent_distribution.statistics.std_dev }}h
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{% trans "Std Dev" %}</div>
+            </div>
+            <div class="text-center">
+                <div class="text-lg font-semibold text-purple-600 dark:text-purple-400">
+                    {{ time_spent_distribution.statistics.median }}h
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{% trans "Median" %}</div>
+            </div>
+            <div class="text-center">
+                <div class="text-lg font-semibold text-orange-600 dark:text-orange-400">
+                    {{ time_spent_distribution.statistics.mode }}h
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{% trans "Mode" %}</div>
+            </div>
+
+            <!-- Second Row -->
+            <div class="text-center">
+                <div class="text-lg font-semibold text-red-600 dark:text-red-400">
+                    {{ time_spent_distribution.statistics.min }}h
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{% trans "Min" %}</div>
+            </div>
+            <div class="text-center">
+                <div class="text-lg font-semibold text-indigo-600 dark:text-indigo-400">
+                    {{ time_spent_distribution.statistics.max }}h
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{% trans "Max" %}</div>
+            </div>
+            <div class="text-center">
+                <div class="text-lg font-semibold text-gray-600 dark:text-gray-400">
+                    {{ time_spent_distribution.statistics.count }}
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{% trans "Data Points" %}</div>
+            </div>
+            <div class="text-center">
+                <div class="text-lg font-semibold text-teal-600 dark:text-teal-400">
+                    {{ time_spent_distribution.statistics.max_session_hours|default:"1.5" }}h
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{% trans "Max Session" %}</div>
+            </div>
+        </div>
+
+        <!-- Interpretation Guide (Collapsible) -->
+        <div class="mt-4">
+            <!-- Toggle Button -->
+            <button
+                type="button"
+                class="flex items-center justify-between w-full p-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200"
+                onclick="toggleInterpretationGuide()"
+                id="interpretation-toggle-btn"
+            >
+                <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    <i class="ri-information-line mr-2"></i>
+                    {% trans "Interpretation Guide" %}
+                </span>
+                <i class="ri-arrow-down-s-line text-blue-500 dark:text-blue-400 transform transition-transform duration-200" id="interpretation-arrow"></i>
+            </button>
+
+            <!-- Collapsible Content -->
+            <div id="interpretation-content" class="hidden mt-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div class="text-sm text-gray-600 dark:text-blue-300 space-y-1">
+                    <p><strong>{% trans "Normal Distribution:" %}</strong> {% trans "Shows how daily study hours are distributed across students" %}</p>
+                    <p><strong class="text-danger dark:text-warning-400">{% trans "Red Curve:" %}</strong> {% trans "Theoretical normal distribution based on calculated mean and standard deviation" %}</p>
+                    <p><strong class="text-info dark:text-info-400">{% trans "Blue Bars:" %}</strong> {% trans "Actual frequency of students spending time in each hour range" %}</p>
+                    <p><strong>{% trans "Session Calculation:" %}</strong> {% trans "Two-level time filtering system:" %}</p>
+                    <div class="ml-4 space-y-1">
+                        <p class="text-xs">
+                            <i class="ri-time-line mr-1"></i>
+                            <strong>{% trans "Session Boundary:" %}</strong> {% trans "Gaps longer than" %} {{ time_spent_distribution.statistics.max_session_hours|default:"1.5" }}h {% trans "are treated as separate sessions (time not counted)" %}
+                        </p>
+                        <p class="text-xs">
+                            <i class="ri-timer-line mr-1"></i>
+                            <strong>{% trans "Activity Cap:" %}</strong> {% trans "Individual activities capped at" %} {{ time_spent_distribution.statistics.max_activity_minutes|default:"30" }}{% trans "min to exclude idle browser time" %}
+                        </p>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 bg-gray-100 dark:bg-gray-600 p-2 rounded">
+                        <i class="ri-information-line mr-1"></i>
+                        <strong>{% trans "Example:" %}</strong> {% trans "Student does activity at 9:00 AM, closes app, returns at 2:00 PM (5h gap) → no time counted. Student active from 9:00-9:45 AM → counted as 30min max per activity transition." %}
+                    </p>
                 </div>
             </div>
         </div>
@@ -326,9 +447,9 @@
                             <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                 {% if analytics.top_operations.0.total_count > 0 %}
                                     {% widthratio operation.total_count analytics.top_operations.0.total_count 100 as percentage %}
-                                    <div class="bg-primary-500 h-2 rounded-full" style="width: {{ percentage|default:'0' }}%"></div>
+                                    <div class="bg-primary-500 h-2 rounded-full progress-bar" data-width="{{ percentage|default:'0' }}"></div>
                                 {% else %}
-                                    <div class="bg-primary-500 h-2 rounded-full" style="width: 0%"></div>
+                                    <div class="bg-primary-500 h-2 rounded-full progress-bar" data-width="0"></div>
                                 {% endif %}
                             </div>
                         </td>
@@ -388,6 +509,7 @@
 <script type="application/json" id="engagement-patterns-data">{{ engagement_patterns_json|safe }}</script>
 <script type="application/json" id="learning-insights-data">{{ learning_insights_json|safe }}</script>
 <script type="application/json" id="hourly-heatmap-data">{{ hourly_heatmap_json|safe }}</script>
+<script type="application/json" id="time-spent-distribution-data">{{ time_spent_distribution_json|safe }}</script>
 
 {% endblock %}
 

@@ -324,11 +324,18 @@ class MostActiveStudentsView(LoginRequiredMixin, TemplateView):
             logger.info(f"Hourly heatmap data: combined series count={len(hourly_heatmap.get('combined_series', []))}, school max={hourly_heatmap['stats']['max_school_activity']}, non-school max={hourly_heatmap['stats']['max_non_school_activity']}")
             context['hourly_heatmap'] = hourly_heatmap
 
+            # Get time spent distribution data with time frame
+            logger.info("Fetching time spent distribution...")
+            time_spent_distribution = MostActiveStudents.get_time_spent_distribution(time_frame=time_frame)
+            logger.info(f"Time spent distribution data: {time_spent_distribution['statistics']['count']} data points, mean={time_spent_distribution['statistics']['mean']}h, std={time_spent_distribution['statistics']['std_dev']}h")
+            context['time_spent_distribution'] = time_spent_distribution
+
             # Convert data to JSON for charts
             context['analytics_json'] = json.dumps(analytics)
             context['engagement_patterns_json'] = json.dumps(engagement_patterns)
             context['learning_insights_json'] = json.dumps(learning_insights)
             context['hourly_heatmap_json'] = json.dumps(hourly_heatmap)
+            context['time_spent_distribution_json'] = json.dumps(time_spent_distribution)
 
             # Add school time settings to context for display
             context['school_start_time'] = getattr(settings, 'SCHOOL_START_TIME', '09:00')
@@ -364,6 +371,8 @@ class MostActiveStudentsView(LoginRequiredMixin, TemplateView):
             context['learning_insights_json'] = json.dumps(default_learning_insights)
             context['hourly_heatmap'] = {}
             context['hourly_heatmap_json'] = json.dumps({})
+            context['time_spent_distribution'] = {}
+            context['time_spent_distribution_json'] = json.dumps({})
             context['error_message'] = "Unable to load analytics data. Please check the database connection."
 
         return context
