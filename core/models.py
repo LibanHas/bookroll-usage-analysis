@@ -679,41 +679,118 @@ class MostActiveStudents(models.Model):
 
                 logger.info(f"Stats row: {stats_row}")
 
-                # Get activity distribution by ranges
-                # Use the student_activities data we already have to calculate distribution
-                distribution_data = {
-                    '1-10': 0,
-                    '11-50': 0,
-                    '51-100': 0,
-                    '101-500': 0,
-                    '501-1000': 0,
-                    '1000+': 0
-                }
+                # Calculate dynamic activity distribution ranges based on actual data
+                distribution_data = {}
+                distribution_rows = []
 
-                if student_activities:
-                    for _, activity_count in student_activities:
-                        if activity_count <= 10:
-                            distribution_data['1-10'] += 1
-                        elif activity_count <= 50:
-                            distribution_data['11-50'] += 1
-                        elif activity_count <= 100:
-                            distribution_data['51-100'] += 1
-                        elif activity_count <= 500:
-                            distribution_data['101-500'] += 1
-                        elif activity_count <= 1000:
-                            distribution_data['501-1000'] += 1
+                if student_activities and len(activity_counts) > 0:
+                    # Calculate percentiles for dynamic ranges using pure Python
+                    def calculate_percentile(data, percentile):
+                        """Calculate percentile using pure Python"""
+                        sorted_data = sorted(data)
+                        n = len(sorted_data)
+                        if n == 0:
+                            return 0
+                        index = (percentile / 100.0) * (n - 1)
+                        if index.is_integer():
+                            return sorted_data[int(index)]
                         else:
-                            distribution_data['1000+'] += 1
+                            lower = sorted_data[int(index)]
+                            upper = sorted_data[int(index) + 1]
+                            return lower + (upper - lower) * (index - int(index))
 
-                # Convert to the expected format
-                distribution_rows = [
-                    ('1-10', distribution_data['1-10']),
-                    ('11-50', distribution_data['11-50']),
-                    ('51-100', distribution_data['51-100']),
-                    ('101-500', distribution_data['101-500']),
-                    ('501-1000', distribution_data['501-1000']),
-                    ('1000+', distribution_data['1000+'])
-                ]
+                    # Calculate percentiles (10th, 25th, 50th, 75th, 90th, 95th)
+                    percentiles = [10, 25, 50, 75, 90, 95]
+                    percentile_values = [calculate_percentile(activity_counts, p) for p in percentiles]
+
+                    # Create dynamic ranges based on data distribution
+                    ranges = []
+
+                    # Handle edge case where all students have the same activity count
+                    if min_activities == max_activities:
+                        ranges = [
+                            {'min': min_activities, 'max': min_activities, 'label': f'{min_activities}'}
+                        ]
+                    else:
+                        # Create ranges based on data characteristics
+                        if max_activities <= 100:
+                            # For smaller datasets, use smaller increments
+                            ranges = [
+                                {'min': 1, 'max': 10, 'label': '1-10'},
+                                {'min': 11, 'max': 25, 'label': '11-25'},
+                                {'min': 26, 'max': 50, 'label': '26-50'},
+                                {'min': 51, 'max': 75, 'label': '51-75'},
+                                {'min': 76, 'max': 100, 'label': '76-100'},
+                                {'min': 101, 'max': float('inf'), 'label': '100+'}
+                            ]
+                        elif max_activities <= 1000:
+                            # For medium datasets
+                            ranges = [
+                                {'min': 1, 'max': 50, 'label': '1-50'},
+                                {'min': 51, 'max': 100, 'label': '51-100'},
+                                {'min': 101, 'max': 250, 'label': '101-250'},
+                                {'min': 251, 'max': 500, 'label': '251-500'},
+                                {'min': 501, 'max': 1000, 'label': '501-1K'},
+                                {'min': 1001, 'max': float('inf'), 'label': '1K+'}
+                            ]
+                        elif max_activities <= 10000:
+                            # For large datasets
+                            ranges = [
+                                {'min': 1, 'max': 100, 'label': '1-100'},
+                                {'min': 101, 'max': 500, 'label': '101-500'},
+                                {'min': 501, 'max': 1000, 'label': '501-1K'},
+                                {'min': 1001, 'max': 2500, 'label': '1K-2.5K'},
+                                {'min': 2501, 'max': 5000, 'label': '2.5K-5K'},
+                                {'min': 5001, 'max': 10000, 'label': '5K-10K'},
+                                {'min': 10001, 'max': float('inf'), 'label': '10K+'}
+                            ]
+                        elif max_activities <= 100000:
+                            # For very large datasets
+                            ranges = [
+                                {'min': 1, 'max': 1000, 'label': '1-1K'},
+                                {'min': 1001, 'max': 5000, 'label': '1K-5K'},
+                                {'min': 5001, 'max': 10000, 'label': '5K-10K'},
+                                {'min': 10001, 'max': 25000, 'label': '10K-25K'},
+                                {'min': 25001, 'max': 50000, 'label': '25K-50K'},
+                                {'min': 50001, 'max': 100000, 'label': '50K-100K'},
+                                {'min': 100001, 'max': float('inf'), 'label': '100K+'}
+                            ]
+                        else:
+                            # For extremely large datasets (millions)
+                            ranges = [
+                                {'min': 1, 'max': 10000, 'label': '1-10K'},
+                                {'min': 10001, 'max': 50000, 'label': '10K-50K'},
+                                {'min': 50001, 'max': 100000, 'label': '50K-100K'},
+                                {'min': 100001, 'max': 500000, 'label': '100K-500K'},
+                                {'min': 500001, 'max': 1000000, 'label': '500K-1M'},
+                                {'min': 1000001, 'max': 5000000, 'label': '1M-5M'},
+                                {'min': 5000001, 'max': float('inf'), 'label': '5M+'}
+                            ]
+
+                    # Count students in each range
+                    for range_def in ranges:
+                        count = 0
+                        for activity_count in activity_counts:
+                            if range_def['min'] <= activity_count <= range_def['max']:
+                                count += 1
+
+                        # Only include ranges that have students
+                        if count > 0:
+                            distribution_rows.append((range_def['label'], count))
+
+                    logger.info(f"Dynamic ranges created based on max_activities={max_activities}: {[r['label'] for r in ranges]}")
+                    logger.info(f"Distribution: {distribution_rows}")
+
+                else:
+                    # Fallback to default ranges if no data
+                    distribution_rows = [
+                        ('1-10', 0),
+                        ('11-50', 0),
+                        ('51-100', 0),
+                        ('101-500', 0),
+                        ('501-1000', 0),
+                        ('1000+', 0)
+                    ]
 
                 # Get top operation types across all students
                 cursor.execute(f"""

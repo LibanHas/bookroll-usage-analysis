@@ -1,15 +1,226 @@
 from django.db import models, connections
 from django.core.cache import cache
+from django.conf import settings
 import datetime
 import logging
 import re
 from typing import Dict, List, Any, Optional
 import statistics
+import hashlib
+import json
+import time
 
 logger = logging.getLogger(__name__)
 
+# Cache configuration for historical data
+CACHE_CONFIG = {
+    'DEFAULT_TTL': 3600 * 6,  # 6 hours for most data
+    'LONG_TTL': 3600 * 24,    # 24 hours for stable historical data
+    'SHORT_TTL': 3600,        # 1 hour for frequently changing data
+    'LOG_ANALYTICS_TTL': 3600 * 12,  # 12 hours for log analytics
+    'COURSE_DATA_TTL': 3600 * 8,     # 8 hours for course data
+}
 
-class PastYearCourseCategory(models.Model):
+def generate_cache_key(*args, **kwargs) -> str:
+    """
+    Generate a consistent cache key from arguments.
+
+    Args:
+        *args: Positional arguments to include in key
+        **kwargs: Keyword arguments to include in key
+
+    Returns:
+        str: A consistent cache key
+    """
+    # Create a string representation of all arguments
+    key_parts = []
+
+    # Add positional arguments
+    for arg in args:
+        if isinstance(arg, (list, dict)):
+            # For complex types, create a hash
+            key_parts.append(hashlib.md5(json.dumps(arg, sort_keys=True, default=str).encode()).hexdigest()[:8])
+        else:
+            key_parts.append(str(arg))
+
+    # Add keyword arguments
+    for key, value in sorted(kwargs.items()):
+        if isinstance(value, (list, dict)):
+            value_hash = hashlib.md5(json.dumps(value, sort_keys=True, default=str).encode()).hexdigest()[:8]
+            key_parts.append(f"{key}_{value_hash}")
+        else:
+            key_parts.append(f"{key}_{value}")
+
+    # Join with underscores and ensure it's not too long
+    cache_key = "_".join(key_parts)
+
+    # Redis keys should be under 250 characters
+    if len(cache_key) > 200:
+        # Create a hash of the long key
+        cache_key = hashlib.md5(cache_key.encode()).hexdigest()
+
+    return f"past_years_{cache_key}"
+
+def clear_all_past_years_cache() -> Dict[str, Any]:
+    """
+    Clear all past years related cache entries.
+
+    Returns:
+        Dict with clearing results
+    """
+    try:
+        # Get Redis connection
+        from django.core.cache.backends.redis import RedisCache
+
+        if not isinstance(cache, RedisCache):
+            logger.warning("Cache backend is not Redis, using Django cache.clear()")
+            cache.clear()
+            return {
+                'success': True,
+                'method': 'django_clear_all',
+                'keys_cleared': 'all',
+                'message': 'All cache cleared (non-Redis backend)'
+            }
+
+        # Get Redis client
+        redis_client = cache._cache.get_client(write=True)
+
+        # Find all past years related keys
+        patterns = [
+            'past_years_*',
+            'available_academic_years*',
+            'student_user_ids_*',
+            'non_student_user_ids_*',
+            'student_analytics_*',
+            'cache_registry_*',
+            'course_grade_distribution_*',
+            'log_analytics_*',
+            'grade_performance_*',
+            'grade_analytics_*',
+            'course_activity_*',
+            'engagement_patterns_*'
+        ]
+
+        total_cleared = 0
+        cleared_patterns = []
+
+        for pattern in patterns:
+            keys = redis_client.keys(pattern)
+            if keys:
+                redis_client.delete(*keys)
+                total_cleared += len(keys)
+                cleared_patterns.append(f"{pattern}: {len(keys)} keys")
+                logger.info(f"Cleared {len(keys)} keys matching pattern: {pattern}")
+
+        logger.info(f"Cache clear completed: {total_cleared} total keys cleared")
+
+        return {
+            'success': True,
+            'method': 'redis_pattern_clear',
+            'keys_cleared': total_cleared,
+            'patterns_cleared': cleared_patterns,
+            'message': f'Successfully cleared {total_cleared} cache entries'
+        }
+
+    except Exception as e:
+        logger.error(f"Error clearing past years cache: {str(e)}")
+
+        # Fallback to Django's cache.clear()
+        try:
+            cache.clear()
+            return {
+                'success': True,
+                'method': 'django_fallback_clear',
+                'keys_cleared': 'all',
+                'message': 'Cache cleared using Django fallback method',
+                'error': str(e)
+            }
+        except Exception as fallback_error:
+            return {
+                'success': False,
+                'method': 'failed',
+                'keys_cleared': 0,
+                'message': f'Failed to clear cache: {str(fallback_error)}',
+                'original_error': str(e)
+            }
+
+class CachedModelMixin:
+    """Mixin to provide caching functionality to models"""
+
+    @classmethod
+    def get_cached_data(cls, cache_key: str, fetch_function, ttl: int = None, *args, **kwargs):
+        """
+        Generic method to get cached data or fetch and cache it.
+
+        Args:
+            cache_key (str): The cache key to use
+            fetch_function: Function to call if cache miss
+            ttl (int): Time to live in seconds
+            *args, **kwargs: Arguments to pass to fetch_function
+
+        Returns:
+            The cached or freshly fetched data
+        """
+        if ttl is None:
+            ttl = CACHE_CONFIG['DEFAULT_TTL']
+
+        # Try to get from cache first
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            logger.info(f"Cache HIT for key: {cache_key}")
+            return cached_data
+
+        logger.info(f"Cache MISS for key: {cache_key}, fetching fresh data")
+
+        # Fetch fresh data
+        try:
+            fresh_data = fetch_function(*args, **kwargs)
+
+            # Cache the result
+            cache.set(cache_key, fresh_data, ttl)
+            logger.info(f"Cached data with key: {cache_key}, TTL: {ttl}s")
+
+            return fresh_data
+
+        except Exception as e:
+            logger.error(f"Error fetching data for cache key {cache_key}: {str(e)}")
+            # Return empty result structure to prevent crashes
+            return {}
+
+    @classmethod
+    def invalidate_cache_pattern(cls, pattern: str) -> int:
+        """
+        Invalidate all cache keys matching a pattern.
+
+        Args:
+            pattern (str): Pattern to match (e.g., 'past_years_2024_*')
+
+        Returns:
+            int: Number of keys invalidated
+        """
+        try:
+            from django.core.cache.backends.redis import RedisCache
+
+            if not isinstance(cache, RedisCache):
+                logger.warning("Cannot use pattern invalidation with non-Redis cache")
+                return 0
+
+            redis_client = cache._cache.get_client(write=True)
+            keys = redis_client.keys(pattern)
+
+            if keys:
+                redis_client.delete(*keys)
+                logger.info(f"Invalidated {len(keys)} cache keys matching pattern: {pattern}")
+                return len(keys)
+
+            return 0
+
+        except Exception as e:
+            logger.error(f"Error invalidating cache pattern {pattern}: {str(e)}")
+            return 0
+
+
+class PastYearCourseCategory(CachedModelMixin, models.Model):
     """Model to access course categories for past years analysis"""
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
@@ -36,125 +247,28 @@ class PastYearCourseCategory(models.Model):
     @classmethod
     def get_courses_by_academic_year(cls, academic_year: int) -> Dict[str, Any]:
         """
-        Get all courses for a specific academic year.
-        Only relies on parent category names containing the academic year.
-        All courses under matching parent categories are included regardless of course dates.
-
-        Args:
-            academic_year (int): The academic year (e.g., 2024 for 2024年度)
-
-        Returns:
-            Dict containing categorized courses for the academic year
+        Get all courses for a specific academic year with Redis caching.
         """
-        cache_key = f'past_year_courses_{academic_year}'
+        cache_key = generate_cache_key('courses_by_year', academic_year)
 
-        cached_data = cache.get(cache_key)
+        def fetch_courses():
+            return cls._fetch_courses_by_academic_year(academic_year)
 
-        if cached_data:
-            logger.info(f"Using cached course data for academic year {academic_year} - {cached_data.get('total_courses', 0)} courses")
-            logger.info(f"CACHE DEBUG: Cache key '{cache_key}' found with data: {type(cached_data)}")
-            logger.info(f"CACHE DEBUG: Cached categories count: {len(cached_data.get('categories', {}))}")
+        return cls.get_cached_data(
+            cache_key,
+            fetch_courses,
+            ttl=CACHE_CONFIG['COURSE_DATA_TTL']
+        )
 
-            # Let's also check if we should bypass cache for debugging
-            logger.info(f"CACHE DEBUG: To bypass cache, delete key '{cache_key}' or set BYPASS_CACHE=True")
-            return cached_data
-
+    @classmethod
+    def _fetch_courses_by_academic_year(cls, academic_year: int) -> Dict[str, Any]:
+        """Original implementation moved to separate method for caching"""
         logger.info(f"Fetching course data for academic year {academic_year} - NO CACHE FOUND")
-        logger.info(f"CACHE DEBUG: Cache key '{cache_key}' not found, executing fresh query")
 
         try:
             with connections['moodle_db'].cursor() as cursor:
-                # First, let's debug what's in the database
-                debug_total_query = """
-                    SELECT COUNT(*) as total_courses
-                    FROM mdl_course course
-                """
-                cursor.execute(debug_total_query)
-                total_courses_in_db = cursor.fetchone()[0]
-                logger.info(f"SQL DEBUG: Total courses in database (all): {total_courses_in_db}")
-
-                debug_visible_query = """
-                    SELECT
-                        COUNT(CASE WHEN visible = 1 THEN 1 END) as visible_courses,
-                        COUNT(CASE WHEN visible = 0 THEN 1 END) as hidden_courses
-                    FROM mdl_course course
-                """
-                cursor.execute(debug_visible_query)
-                visibility_stats = cursor.fetchone()
-                logger.info(f"SQL DEBUG: Visible courses: {visibility_stats[0]}, Hidden courses: {visibility_stats[1]}")
-
-                # Check total categories
-                debug_categories_query = """
-                    SELECT
-                        COUNT(*) as total_categories,
-                        COUNT(CASE WHEN parent = 0 THEN 1 END) as parent_categories,
-                        COUNT(CASE WHEN parent != 0 THEN 1 END) as child_categories
-                    FROM mdl_course_categories
-                """
-                cursor.execute(debug_categories_query)
-                cat_stats = cursor.fetchone()
-                logger.info(f"SQL DEBUG: Categories - Total: {cat_stats[0]}, Parent: {cat_stats[1]}, Child: {cat_stats[2]}")
-
-                # Check what parent categories exist
-                parent_cat_query = """
-                    SELECT id, name, sortorder
-                    FROM mdl_course_categories
-                    WHERE parent = 0
-                    ORDER BY sortorder
-                """
-                cursor.execute(parent_cat_query)
-                parent_categories = cursor.fetchall()
-                logger.info(f"SQL DEBUG: Found {len(parent_categories)} parent categories:")
-                for cat in parent_categories:
-                    year = cls.get_academic_year_from_category_name(cat[1])
-                    logger.info(f"SQL DEBUG: Parent Category - ID: {cat[0]}, Name: '{cat[1]}', Year: {year}")
-
-                # Let's also check how many courses we have per parent category (including all courses)
-                courses_per_parent_query = """
-                    SELECT
-                        parent_cat.id,
-                        parent_cat.name,
-                        COUNT(CASE WHEN course.visible = 1 THEN 1 END) as visible_courses,
-                        COUNT(CASE WHEN course.visible = 0 THEN 1 END) as hidden_courses,
-                        COUNT(course.id) as total_courses
-                    FROM mdl_course_categories parent_cat
-                    JOIN mdl_course_categories child_cat ON child_cat.parent = parent_cat.id
-                    LEFT JOIN mdl_course course ON course.category = child_cat.id
-                    WHERE parent_cat.parent = 0
-                    AND course.id IS NOT NULL
-                    GROUP BY parent_cat.id, parent_cat.name
-                    ORDER BY parent_cat.id
-                """
-                cursor.execute(courses_per_parent_query)
-                courses_per_parent = cursor.fetchall()
-                logger.info(f"SQL DEBUG: Courses per parent category (including all courses):")
-                for row in courses_per_parent:
-                    year = cls.get_academic_year_from_category_name(row[1])
-                    logger.info(f"SQL DEBUG: Parent {row[0]} '{row[1]}' (Year: {year}) -> Visible: {row[2]}, Hidden: {row[3]}, Total: {row[4]}")
-
-                # Specific check for 2024年度 courses
-                specific_2024_query = """
-                    SELECT
-                        child_cat.id,
-                        child_cat.name,
-                        COUNT(CASE WHEN course.visible = 1 THEN 1 END) as visible_courses,
-                        COUNT(CASE WHEN course.visible = 0 THEN 1 END) as hidden_courses
-                    FROM mdl_course_categories parent_cat
-                    JOIN mdl_course_categories child_cat ON child_cat.parent = parent_cat.id
-                    LEFT JOIN mdl_course course ON course.category = child_cat.id
-                    WHERE parent_cat.id = 142
-                    AND course.id IS NOT NULL
-                    GROUP BY child_cat.id, child_cat.name
-                    ORDER BY child_cat.id
-                """
-                cursor.execute(specific_2024_query)
-                cat_2024_courses = cursor.fetchall()
-                logger.info(f"SQL DEBUG: 2024年度 child categories and their courses:")
-                for row in cat_2024_courses:
-                    logger.info(f"SQL DEBUG: Child {row[0]} '{row[1]}' -> Visible: {row[2]}, Hidden: {row[3]}")
-
+                # [Previous implementation remains the same]
                 # Use the working query to get all courses with their category hierarchy
-                # Include ALL courses regardless of visibility for historical analysis
                 courses_query = """
                     SELECT
                         parent_cat.id AS parent_category_id,
@@ -179,12 +293,8 @@ class PastYearCourseCategory(models.Model):
                     ORDER BY parent_cat.sortorder, child_cat.sortorder, course.sortorder
                 """
 
-                logger.info(f"SQL DEBUG: Executing courses query for all categories")
-                logger.info(f"SQL DEBUG: {courses_query}")
-
                 cursor.execute(courses_query)
                 rows = cursor.fetchall()
-                logger.info(f"SQL DEBUG: Retrieved {len(rows)} total course records from database")
 
                 # Initialize result structure
                 year_courses = {
@@ -198,7 +308,6 @@ class PastYearCourseCategory(models.Model):
                     }
                 }
 
-                processed_categories = set()
                 matched_courses_count = 0
 
                 for row in rows:
@@ -220,19 +329,11 @@ class PastYearCourseCategory(models.Model):
                     # Check if parent category contains the academic year
                     parent_year = cls.get_academic_year_from_category_name(parent_name)
 
-                    # Log category info only once per category
-                    category_key = f"{parent_id}_{child_id}"
-                    if category_key not in processed_categories:
-                        logger.info(f"SQL DEBUG: Processing category: {parent_name} > {child_name} (Parent Year: {parent_year})")
-                        processed_categories.add(category_key)
-
                     # Only include courses if parent category matches the academic year
                     if parent_year == academic_year:
                         matched_courses_count += 1
-                        visibility_status = "VISIBLE" if course_visible == 1 else "HIDDEN"
-                        logger.info(f"SQL DEBUG: ✓ Course '{course_name}' (ID: {course_id}) matches academic year {academic_year} - Status: {visibility_status}")
 
-                        # Convert Unix timestamps to datetime objects (keeping for compatibility)
+                        # Convert Unix timestamps to datetime objects
                         if course_startdate:
                             course_startdate = datetime.datetime.fromtimestamp(course_startdate)
                         if course_enddate:
@@ -257,12 +358,12 @@ class PastYearCourseCategory(models.Model):
                             year_courses['categories'][parent_id]['children'][child_id] = {
                                 'id': child_id,
                                 'name': child_name,
-                                'academic_year': parent_year,  # Use parent year, not child year
+                                'academic_year': parent_year,
                                 'courses': [],
                                 'course_count': 0
                             }
 
-                        # Add course (including both visible and hidden courses)
+                        # Add course
                         course_data = {
                             'id': course_id,
                             'name': course_name,
@@ -297,26 +398,12 @@ class PastYearCourseCategory(models.Model):
                         # Count visible courses for summary
                         if course_visible:
                             year_courses['course_summary']['total_visible'] += 1
-                    else:
-                        # Log some examples of non-matching courses for debugging
-                        if matched_courses_count < 5:  # Only log first few to avoid spam
-                            logger.info(f"SQL DEBUG: ✗ Course '{course_name}' (ID: {course_id}) does NOT match academic year {academic_year} (parent_year={parent_year})")
 
-                logger.info(f"SQL DEBUG: FINAL RESULTS for academic year {academic_year}:")
-                logger.info(f"SQL DEBUG: - Total course records processed: {len(rows)}")
-                logger.info(f"SQL DEBUG: - Courses matching academic year: {matched_courses_count}")
-                logger.info(f"SQL DEBUG: - Categories found: {len(year_courses['categories'])}")
-                logger.info(f"SQL DEBUG: - Final total_courses: {year_courses['total_courses']}")
-
-                # Cache the result for 1 hour
-                cache.set(cache_key, year_courses, 3600)
-                logger.info(f"CACHE DEBUG: Cached results for academic year {academic_year} with key '{cache_key}'")
-
+                logger.info(f"Fetched {matched_courses_count} courses for academic year {academic_year}")
                 return year_courses
 
         except Exception as e:
-            logger.error(f"SQL DEBUG: Error fetching courses for academic year {academic_year}: {str(e)}")
-            logger.error(f"SQL DEBUG: Exception details:", exc_info=True)
+            logger.error(f"Error fetching courses for academic year {academic_year}: {str(e)}")
             return {
                 'academic_year': academic_year,
                 'categories': {},
@@ -330,96 +417,24 @@ class PastYearCourseCategory(models.Model):
             }
 
     @classmethod
-    def clear_cache_for_year(cls, academic_year: int) -> bool:
-        """Clear all cache keys for a specific academic year"""
-        cache_keys_cleared = []
-
-        # Clear existing cache keys
-        course_cache_key = f'past_year_courses_{academic_year}'
-        cache.delete(course_cache_key)
-        cache_keys_cleared.append(course_cache_key)
-
-        student_cache_key = f'student_user_ids_{academic_year}'
-        cache.delete(student_cache_key)
-        cache_keys_cleared.append(student_cache_key)
-
-        non_student_cache_key = f'non_student_user_ids_{academic_year}'
-        cache.delete(non_student_cache_key)
-        cache_keys_cleared.append(non_student_cache_key)
-
-        # Clear new student analytics cache keys for both activity filter settings
-        cache_key_base = f'student_analytics_{academic_year}'
-
-        # Clear cache for both activity filter variants
-        for activity_suffix in ['_all_activities', '_graded_only']:
-            # Main analytics cache
-            main_cache_key = f'{cache_key_base}_main{activity_suffix}'
-            cache.delete(main_cache_key)
-            cache_keys_cleared.append(main_cache_key)
-
-            # Chart data cache
-            chart_cache_key = f'{cache_key_base}_charts{activity_suffix}'
-            cache.delete(chart_cache_key)
-            cache_keys_cleared.append(chart_cache_key)
-
-            # Engagement categories cache
-            engagement_cache_key = f'{cache_key_base}_engagement{activity_suffix}'
-            cache.delete(engagement_cache_key)
-            cache_keys_cleared.append(engagement_cache_key)
-
-        # Clear courses context cache (shared between activity filters)
-        courses_context_cache_key = f'{cache_key_base}_courses_context'
-        cache.delete(courses_context_cache_key)
-        cache_keys_cleared.append(courses_context_cache_key)
-
-        # Clear course-specific grade distribution caches
-        # Get cache key registry for this year
-        registry_key = f'cache_registry_{academic_year}'
-        cached_course_keys = cache.get(registry_key, [])
-
-        for course_cache_key in cached_course_keys:
-            cache.delete(course_cache_key)
-            cache_keys_cleared.append(course_cache_key)
-
-        # Clear the registry itself
-        cache.delete(registry_key)
-        if cached_course_keys:
-            cache_keys_cleared.append(registry_key)
-
-        logger.info(f"CACHE CLEAR: Cleared {len(cache_keys_cleared)} cache keys for academic year {academic_year}")
-        logger.debug(f"CACHE CLEAR: Keys cleared: {cache_keys_cleared}")
-
-        return True
-
-    @classmethod
-    def register_course_cache_key(cls, academic_year: int, course_id: str) -> None:
-        """Register a course-specific cache key for later clearing"""
-        registry_key = f'cache_registry_{academic_year}'
-        course_cache_key = f'course_grade_distribution_{academic_year}_{course_id}'
-
-        # Get existing registry or create new one
-        cached_keys = cache.get(registry_key, [])
-
-        # Add the new key if not already present
-        if course_cache_key not in cached_keys:
-            cached_keys.append(course_cache_key)
-            # Store registry with longer TTL (4 hours) than individual caches
-            cache.set(registry_key, cached_keys, 14400)
-            logger.debug(f"CACHE REGISTRY: Added {course_cache_key} to registry for year {academic_year}")
-
-    @classmethod
     def get_available_academic_years(cls) -> List[int]:
         """
-        Get all available academic years from course categories.
-        Returns a list of academic years found in category names.
+        Get all available academic years from course categories with Redis caching.
         """
-        cache_key = 'available_academic_years'
-        cached_data = cache.get(cache_key)
+        cache_key = generate_cache_key('available_academic_years')
 
-        if cached_data:
-            logger.info(f"Using cached academic years: {cached_data}")
-            return cached_data
+        def fetch_years():
+            return cls._fetch_available_academic_years()
 
+        return cls.get_cached_data(
+            cache_key,
+            fetch_years,
+            ttl=CACHE_CONFIG['LONG_TTL']
+        )
+
+    @classmethod
+    def _fetch_available_academic_years(cls) -> List[int]:
+        """Original implementation for fetching available years"""
         logger.info("Fetching available academic years from categories")
 
         try:
@@ -431,51 +446,43 @@ class PastYearCourseCategory(models.Model):
                     ORDER BY name DESC
                 """
 
-                logger.info(f"SQL DEBUG: Executing academic years query: {query}")
                 cursor.execute(query)
                 category_names = [row[0] for row in cursor.fetchall()]
-                logger.info(f"SQL DEBUG: Retrieved {len(category_names)} top-level categories: {category_names}")
 
                 # Extract academic years from category names
                 academic_years = []
                 for name in category_names:
                     year = cls.get_academic_year_from_category_name(name)
-                    logger.info(f"SQL DEBUG: Category '{name}' -> Academic year: {year}")
                     if year and year not in academic_years:
                         academic_years.append(year)
 
                 # Sort in descending order (most recent first)
                 academic_years.sort(reverse=True)
-                logger.info(f"SQL DEBUG: Final academic years: {academic_years}")
-
-                # Cache for 1 hour
-                cache.set(cache_key, academic_years, 3600)
-
                 return academic_years
 
         except Exception as e:
-            logger.error(f"SQL DEBUG: Error fetching available academic years: {str(e)}")
+            logger.error(f"Error fetching available academic years: {str(e)}")
             return []
 
     @classmethod
     def get_student_user_ids_for_academic_year(cls, academic_year: int) -> List[str]:
         """
-        Get all student user IDs enrolled in courses for a specific academic year.
-        This returns only actual students (not teachers, managers, etc.) based on Moodle role assignments.
-
-        Args:
-            academic_year (int): The academic year (e.g., 2024 for 2024年度)
-
-        Returns:
-            List[str]: List of student user IDs for the academic year
+        Get all student user IDs enrolled in courses for a specific academic year with Redis caching.
         """
-        cache_key = f'student_user_ids_{academic_year}'
-        cached_data = cache.get(cache_key)
+        cache_key = generate_cache_key('student_user_ids', academic_year)
 
-        if cached_data:
-            logger.info(f"Using cached student user IDs for academic year {academic_year}: {len(cached_data)} students")
-            return cached_data
+        def fetch_student_ids():
+            return cls._fetch_student_user_ids_for_academic_year(academic_year)
 
+        return cls.get_cached_data(
+            cache_key,
+            fetch_student_ids,
+            ttl=CACHE_CONFIG['DEFAULT_TTL']
+        )
+
+    @classmethod
+    def _fetch_student_user_ids_for_academic_year(cls, academic_year: int) -> List[str]:
+        """Original implementation for fetching student user IDs"""
         logger.info(f"Fetching student user IDs for academic year {academic_year}")
 
         try:
@@ -496,11 +503,8 @@ class PastYearCourseCategory(models.Model):
                 logger.warning(f"No course IDs found for academic year {academic_year}")
                 return []
 
-            logger.info(f"Found {len(course_ids)} courses for academic year {academic_year}")
-
             # Get students enrolled in these courses
             with connections['moodle_db'].cursor() as cursor:
-                # Build query with placeholders for course IDs
                 course_placeholders = ','.join(['%s'] * len(course_ids))
                 query = f"""
                     SELECT DISTINCT u.id
@@ -517,23 +521,40 @@ class PastYearCourseCategory(models.Model):
                     ORDER BY u.id
                 """
 
-                logger.debug(f"Executing student enrollment query for {len(course_ids)} courses")
                 cursor.execute(query, course_ids)
                 student_records = cursor.fetchall()
 
-            # Convert to list of strings for consistency with ClickHouse data
+            # Convert to list of strings
             student_user_ids = [str(record[0]) for record in student_records]
-
-            logger.info(f"Found {len(student_user_ids)} students enrolled in academic year {academic_year} courses")
-
-            # Cache for 1 hour
-            cache.set(cache_key, student_user_ids, 3600)
-
+            logger.info(f"Found {len(student_user_ids)} students for academic year {academic_year}")
             return student_user_ids
 
         except Exception as e:
             logger.error(f"Error fetching student user IDs for academic year {academic_year}: {str(e)}")
             return []
+
+    @classmethod
+    def clear_cache_for_year(cls, academic_year: int) -> bool:
+        """Clear all cache keys for a specific academic year"""
+        try:
+            patterns_to_clear = [
+                f"past_years_*{academic_year}*",
+                f"past_years_courses_by_year_{academic_year}*",
+                f"past_years_student_user_ids_{academic_year}*",
+                f"past_years_student_analytics_{academic_year}*",
+            ]
+
+            total_cleared = 0
+            for pattern in patterns_to_clear:
+                cleared = cls.invalidate_cache_pattern(pattern)
+                total_cleared += cleared
+
+            logger.info(f"Cleared {total_cleared} cache keys for academic year {academic_year}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error clearing cache for year {academic_year}: {str(e)}")
+            return False
 
     @classmethod
     def get_non_student_user_ids_for_academic_year(cls, academic_year: int) -> List[str]:
@@ -664,125 +685,6 @@ class PastYearCourseCategory(models.Model):
                 'efficiency_reason': 'Fallback to standard IN approach due to error'
             }
 
-    @classmethod
-    def test_student_filtering_effectiveness(cls, academic_year: int) -> Dict[str, Any]:
-        """
-        Test method to show the effectiveness of student filtering.
-        This helps verify that the filtering is working correctly by comparing
-        filtered vs unfiltered results.
-
-        Args:
-            academic_year (int): The academic year to test
-
-        Returns:
-            Dict containing comparison of filtered vs unfiltered data
-        """
-        logger.info(f"Testing student filtering effectiveness for academic year {academic_year}")
-
-        try:
-            # Get the student user IDs for this academic year
-            student_user_ids = PastYearCourseCategory.get_student_user_ids_for_academic_year(academic_year)
-
-            # Calculate date range
-            start_date = f"{academic_year}-04-01"
-            end_date = f"{academic_year + 1}-03-31"
-
-            # Get unfiltered grade data (for comparison)
-            with connections['analysis_db'].cursor() as cursor:
-                unfiltered_query = """
-                    SELECT
-                        COUNT(DISTINCT student_id) as total_students,
-                        COUNT(DISTINCT course_id) as total_courses,
-                        COUNT(*) as total_grades
-                    FROM course_student_scores
-                    WHERE created_at >= %s
-                    AND created_at <= %s
-                    AND quiz IS NOT NULL
-                """
-                cursor.execute(unfiltered_query, [start_date, end_date])
-                unfiltered_stats = cursor.fetchone()
-
-            # Get filtered grade data using our method
-            filtered_analytics = cls._get_grade_analytics(academic_year, start_date, end_date)
-            filtered_stats = filtered_analytics.get('overall_stats', {})
-
-            # Get ClickHouse activity data comparison
-            with connections['clickhouse_db_pre_2025'].cursor() as cursor:
-                # Unfiltered ClickHouse data
-                unfiltered_ch_query = """
-                    SELECT
-                        COUNT(DISTINCT actor_account_name) as total_accounts,
-                        COUNT(DISTINCT _id) as total_activities
-                    FROM statements_mv
-                    WHERE timestamp >= toDate(%s)
-                    AND timestamp <= toDate(%s)
-                    AND context_id != ''
-                    AND context_id IS NOT NULL
-                """
-                cursor.execute(unfiltered_ch_query, [start_date, end_date])
-                unfiltered_ch_stats = cursor.fetchone()
-
-            # Get filtered ClickHouse data using our method
-            filtered_ch_analytics = cls._get_course_access_analytics(academic_year, start_date, end_date)
-            filtered_ch_stats = filtered_ch_analytics.get('overall_stats', {})
-
-            result = {
-                'academic_year': academic_year,
-                'student_filter_info': {
-                    'total_student_ids_for_year': len(student_user_ids),
-                    'sample_student_ids': student_user_ids[:10],  # First 10 for reference
-                },
-                'grade_data_comparison': {
-                    'unfiltered': {
-                        'total_students': unfiltered_stats[0] if unfiltered_stats else 0,
-                        'total_courses': unfiltered_stats[1] if unfiltered_stats else 0,
-                        'total_grades': unfiltered_stats[2] if unfiltered_stats else 0,
-                    },
-                    'filtered': {
-                        'total_students': filtered_stats.get('total_students', 0),
-                        'total_courses': filtered_stats.get('total_courses', 0),
-                        'total_grades': filtered_stats.get('total_grades', 0),
-                    },
-                    'filtering_effect': {
-                        'students_removed': (unfiltered_stats[0] if unfiltered_stats else 0) - filtered_stats.get('total_students', 0),
-                        'grades_removed': (unfiltered_stats[2] if unfiltered_stats else 0) - filtered_stats.get('total_grades', 0),
-                    }
-                },
-                'activity_data_comparison': {
-                    'unfiltered': {
-                        'total_accounts': unfiltered_ch_stats[0] if unfiltered_ch_stats else 0,
-                        'total_activities': unfiltered_ch_stats[1] if unfiltered_ch_stats else 0,
-                    },
-                    'filtered': {
-                        'total_accounts': filtered_ch_stats.get('total_unique_accounts', 0),
-                        'total_students': filtered_ch_stats.get('total_unique_students', 0),
-                        'total_activities': filtered_ch_stats.get('total_activities', 0),
-                    },
-                    'filtering_effect': {
-                        'accounts_removed': (unfiltered_ch_stats[0] if unfiltered_ch_stats else 0) - filtered_ch_stats.get('total_unique_accounts', 0),
-                        'activities_removed': (unfiltered_ch_stats[1] if unfiltered_ch_stats else 0) - filtered_ch_stats.get('total_activities', 0),
-                    }
-                }
-            }
-
-            # Log the results
-            logger.info(f"STUDENT FILTERING TEST RESULTS for {academic_year}:")
-            logger.info(f"  Student IDs for filtering: {len(student_user_ids)}")
-            logger.info(f"  Grade data - Unfiltered: {result['grade_data_comparison']['unfiltered']}")
-            logger.info(f"  Grade data - Filtered: {result['grade_data_comparison']['filtered']}")
-            logger.info(f"  Grade filtering effect: {result['grade_data_comparison']['filtering_effect']}")
-            logger.info(f"  Activity data - Unfiltered: {result['activity_data_comparison']['unfiltered']}")
-            logger.info(f"  Activity data - Filtered: {result['activity_data_comparison']['filtered']}")
-            logger.info(f"  Activity filtering effect: {result['activity_data_comparison']['filtering_effect']}")
-
-            return result
-
-        except Exception as e:
-            logger.error(f"Error testing student filtering effectiveness: {str(e)}")
-            return {
-                'academic_year': academic_year,
-                'error': str(e)
-            }
 
     @classmethod
     def get_course_grade_distribution(cls, course_id: str, academic_year: int) -> Dict[str, Any]:
@@ -816,12 +718,8 @@ class PastYearCourseCategory(models.Model):
                 }
 
             # Calculate date range for academic year
-            if academic_year == 2023:
-                start_date = f"{academic_year}-04-01"
-                end_date = f"{academic_year + 2}-03-31"
-            else:
-                start_date = f"{academic_year}-04-01"
-                end_date = f"{academic_year + 1}-03-31"
+            start_date = f"{academic_year}-04-01"
+            end_date = f"{academic_year + 1}-03-31"
 
             with connections['analysis_db'].cursor() as cursor:
                 # Build student filter clause
@@ -842,7 +740,8 @@ class PastYearCourseCategory(models.Model):
                     WHERE course_id = %s
                     AND created_at >= %s
                     AND created_at <= %s
-                    AND quiz IS NOT NULL{student_filter}
+                    AND quiz IS NOT NULL
+                    AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%') {student_filter}
                     ORDER BY quiz DESC
                 """
 
@@ -1256,7 +1155,33 @@ class PastYearCourseActivity(models.Model):
 
 
 class PastYearStudentGrades(models.Model):
-    """Model to access student grades from analysis_db"""
+    """
+    Model to access student grades from analysis_db
+
+    IMPORTANT: GRADE CATEGORIZATION METHOD
+    =====================================
+
+    ✅ NEW APPROACH (Course name-based year matching):
+    - Courses are categorized by academic year based on course name patterns (e.g., "2022年度1年B組英語")
+    - Extracts academic year from course names using "{year}年度" pattern matching
+    - Students are filtered by academic year using PastYearCourseCategory.get_student_user_ids_for_academic_year()
+    - Ensures proper course-year alignment for transparency and accuracy
+    - NO date filtering on created_at for academic year categorization
+
+    ❌ OLD APPROACH (All courses approach):
+    - Previously used ALL courses that had grade data regardless of academic year
+    - Led to wrong course transparency (2022 courses showing up in 2025 data)
+    - Students from one year could see courses from any other year if they had grades
+
+    ❌ ORIGINAL APPROACH (Date-based categorization):
+    - Initially filtered grades by created_at date range (April 1 - March 31)
+    - Incorrect because grades are manually uploaded, so created_at represents upload date, not academic year
+
+    This change affects:
+    - _get_yearly_performance_data()
+    - _fetch_grade_performance_summary_stats()
+    - Course transparency data in templates
+    """
     id = models.IntegerField(primary_key=True)
     course_student_id = models.CharField(max_length=255)
     quiz = models.FloatField()  # Grade out of 100
@@ -1287,6 +1212,9 @@ class PastYearStudentGrades(models.Model):
         Get comprehensive student analytics for a specific academic year.
         Combines grade data with course access patterns.
 
+        Grade data: Uses course-based categorization (grades are categorized by course_id, not upload date)
+        Activity data: Uses date-based filtering (activities are time-based)
+
         Args:
             academic_year (int): The academic year to analyze
             course_ids (List[str], optional): List of course IDs to filter analysis to specific courses
@@ -1296,26 +1224,21 @@ class PastYearStudentGrades(models.Model):
 
         try:
             # Calculate date range for academic year (April to March)
-            if academic_year == 2023:
-                # Based on diagnostic findings, 2023 courses actually have activity data
-                # from 2024-01 onwards, so we need to extend the range
-                start_date = f"{academic_year}-04-01"  # April 1, 2023
-                end_date = f"{academic_year + 2}-03-31"  # March 31, 2025 (extended to capture actual activity)
-                logger.debug(f"STUDENT ANALYTICS: Extended date range for 2023: {start_date} to {end_date}")
-            else:
-                start_date = f"{academic_year}-04-01"  # April 1 of academic year
-                end_date = f"{academic_year + 1}-03-31"  # March 31 of following year
-            logger.debug(f"STUDENT ANALYTICS: Date range: {start_date} to {end_date}")
+            # NOTE: This is ONLY used for ClickHouse activity data, NOT for grade categorization
+            start_date = f"{academic_year}-04-01"  # April 1 of academic year
+            end_date = f"{academic_year + 1}-03-31"  # March 31 of following year
+            logger.debug(f"STUDENT ANALYTICS: Date range for activity data: {start_date} to {end_date}")
 
-            # Get grade analytics from analysis_db
-            logger.debug(f"STUDENT ANALYTICS: Starting grade analytics...")
+            # Get grade analytics from analysis_db using COURSE-BASED categorization
+            # (date parameters are ignored in grade analytics now)
+            logger.debug(f"STUDENT ANALYTICS: Starting grade analytics (course-based categorization)...")
             grade_analytics = cls._get_grade_analytics(academic_year, start_date, end_date, course_ids)
-            logger.debug(f"STUDENT ANALYTICS: Grade analytics completed")
+            logger.debug(f"STUDENT ANALYTICS: Grade analytics completed (categorized by course_id)")
 
-            # Get course access analytics from clickhouse_db_pre_2025 - NOW WITH COURSE FILTERING
-            logger.debug(f"STUDENT ANALYTICS: Starting access analytics...")
+            # Get course access analytics from clickhouse_db_pre_2025 using DATE-BASED filtering
+            logger.debug(f"STUDENT ANALYTICS: Starting access analytics (date-based filtering)...")
             access_analytics = cls._get_course_access_analytics(academic_year, start_date, end_date, course_ids)
-            logger.debug(f"STUDENT ANALYTICS: Access analytics completed")
+            logger.debug(f"STUDENT ANALYTICS: Access analytics completed (filtered by date range)")
 
             # Combine and analyze the data
             logger.debug(f"STUDENT ANALYTICS: Starting combined analytics...")
@@ -1331,12 +1254,17 @@ class PastYearStudentGrades(models.Model):
                 'academic_year': academic_year,
                 'date_range': {
                     'start': start_date,
-                    'end': end_date
+                    'end': end_date,
+                    'note': 'Date range used for activity data only. Grades categorized by course_id.'
                 },
                 'grade_analytics': grade_analytics,
                 'access_analytics': access_analytics,
                 'combined_analytics': combined_analytics,
-                'summary_stats': summary_stats
+                'summary_stats': summary_stats,
+                'categorization_methods': {
+                    'grades': 'course_based',
+                    'activities': 'date_based'
+                }
             }
 
             logger.info(f"Student analytics completed for year {academic_year}")
@@ -1351,12 +1279,16 @@ class PastYearStudentGrades(models.Model):
                 'access_analytics': {},
                 'combined_analytics': {},
                 'summary_stats': {},
+                'categorization_methods': {
+                    'grades': 'course_based',
+                    'activities': 'date_based'
+                },
                 'error': str(e)
             }
 
     @classmethod
     def _get_grade_analytics(cls, academic_year: int, start_date: str, end_date: str, course_ids: List[str] = None) -> Dict[str, Any]:
-        """Get grade analytics from analysis_db (MySQL)"""
+        """Get grade analytics from analysis_db (MySQL) using course-based categorization only"""
         try:
             # Get optimal student filtering approach (IN vs NOT IN)
             filter_config = PastYearCourseCategory.get_optimal_student_filter_for_academic_year(academic_year)
@@ -1370,22 +1302,44 @@ class PastYearStudentGrades(models.Model):
                     'overall_stats': {},
                     'grade_distribution': [],
                     'course_stats': [],
-                    'monthly_trends': []
+                    'monthly_trends': [],
+                    'categorization_method': 'course_based'
                 }
 
-            logger.debug(f"GRADE ANALYTICS: Using {filter_type} filtering with {filter_count} IDs")
+            # Get course IDs for this academic year if not provided
+            if course_ids is None:
+                courses_data = PastYearCourseCategory.get_courses_by_academic_year(academic_year)
+                course_ids = []
+
+                if courses_data and courses_data.get('categories'):
+                    for category in courses_data.get('categories', {}).values():
+                        for child_category in category.get('children', {}).values():
+                            course_ids.extend([str(course['id']) for course in child_category.get('courses', [])])
+
+                logger.debug(f"GRADE ANALYTICS: Auto-detected {len(course_ids)} courses for academic year {academic_year}")
+            else:
+                logger.debug(f"GRADE ANALYTICS: Using provided {len(course_ids)} course IDs")
+
+            if not course_ids:
+                logger.warning(f"No courses found for academic year {academic_year}")
+                return {
+                    'overall_stats': {},
+                    'grade_distribution': [],
+                    'course_stats': [],
+                    'monthly_trends': [],
+                    'categorization_method': 'course_based'
+                }
+
+            logger.debug(f"GRADE ANALYTICS: Using {filter_type} filtering with {filter_count} student IDs and {len(course_ids)} course IDs")
             logger.debug(f"GRADE ANALYTICS: {filter_config['efficiency_reason']}")
+            logger.debug(f"GRADE ANALYTICS: ✅ USING COURSE-BASED CATEGORIZATION - NO DATE FILTERING")
 
             with connections['analysis_db'].cursor() as cursor:
-                # Build course filter clause
-                course_filter = ""
-                course_params = []
-                if course_ids:
-                    course_filter = " AND course_id IN (" + ",".join(["%s"] * len(course_ids)) + ")"
-                    course_params = course_ids
-                    logger.debug(f"GRADE ANALYTICS: Filtering by {len(course_ids)} course IDs: {course_ids[:10]}...")
-                else:
-                    logger.debug(f"GRADE ANALYTICS: No course filtering applied")
+                # Build course filter clause - ALWAYS APPLIED
+                course_filter_placeholders = ",".join(["%s"] * len(course_ids))
+                course_filter = f" AND course_id IN ({course_filter_placeholders})"
+                course_params = course_ids
+                logger.debug(f"GRADE ANALYTICS: Filtering by {len(course_ids)} course IDs from academic year {academic_year}")
 
                 # Build student filter clause based on optimal approach
                 filter_placeholders = ",".join(["%s"] * len(filter_ids))
@@ -1398,7 +1352,7 @@ class PastYearStudentGrades(models.Model):
 
                 filter_params = filter_ids
 
-                # Overall grade statistics - MySQL compatible with optimized student filtering
+                # Overall grade statistics - ONLY course and student filtering (NO DATE FILTERING)
                 overall_stats_query = f"""
                     SELECT
                         COUNT(DISTINCT student_id) as total_students,
@@ -1408,38 +1362,37 @@ class PastYearStudentGrades(models.Model):
                         MIN(quiz) as min_grade,
                         MAX(quiz) as max_grade
                     FROM course_student_scores
-                    WHERE created_at >= %s
-                    AND created_at <= %s
-                    AND quiz IS NOT NULL{student_filter}{course_filter}
+                    WHERE quiz IS NOT NULL
+                    AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%') {student_filter}{course_filter}
+                    {PastYearGradeAnalytics._get_valid_grade_filter_clause()}
                 """
-                logger.debug(f"GRADE ANALYTICS: Overall stats query: {overall_stats_query}")
-                logger.debug(f"GRADE ANALYTICS: Query params: [{start_date}, {end_date}] + {len(filter_params)} filter IDs + {len(course_params)} course IDs")
-                cursor.execute(overall_stats_query, [start_date, end_date] + filter_params + course_params)
+                logger.debug(f"GRADE ANALYTICS: Overall stats query with ONLY course and student filtering (no date filtering)")
+                cursor.execute(overall_stats_query, filter_params + course_params)
                 overall_stats = cursor.fetchone()
                 logger.debug(f"GRADE ANALYTICS: Overall stats result: {overall_stats}")
 
-                # Let's also check what courses actually have grades (with student filtering)
+                # Check what courses actually have grades (with student and course filtering only)
                 courses_with_grades_query = f"""
                     SELECT DISTINCT course_id, course_name, COUNT(*) as grade_count
                     FROM course_student_scores
-                    WHERE created_at >= %s
-                    AND created_at <= %s
-                    AND quiz IS NOT NULL{student_filter}{course_filter}
+                    WHERE quiz IS NOT NULL
+                    AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%') {student_filter}{course_filter}
+                    {PastYearGradeAnalytics._get_valid_grade_filter_clause()}
                     GROUP BY course_id, course_name
                     ORDER BY grade_count DESC
                 """
-                logger.debug(f"GRADE ANALYTICS: Courses with grades query: {courses_with_grades_query}")
-                cursor.execute(courses_with_grades_query, [start_date, end_date] + filter_params + course_params)
+                logger.debug(f"GRADE ANALYTICS: Courses with grades query (course-based categorization)")
+                cursor.execute(courses_with_grades_query, filter_params + course_params)
                 courses_with_grades = cursor.fetchall()
-                logger.debug(f"GRADE ANALYTICS: Found {len(courses_with_grades)} courses with grades (student-filtered using {filter_type})")
-                for i, course in enumerate(courses_with_grades[:10]):  # Log first 10
+                logger.debug(f"GRADE ANALYTICS: Found {len(courses_with_grades)} courses with grades (course-based categorization)")
+                for i, course in enumerate(courses_with_grades[:5]):  # Log first 5
                     logger.debug(f"GRADE ANALYTICS: Course {i+1}: ID={course[0]}, Name={course[1]}, Grades={course[2]}")
 
                 # Simplified median calculation - just use average as approximation for now
                 # MySQL median calculation is complex and not critical for analytics
                 median_grade = overall_stats[3] if overall_stats and overall_stats[3] else 0
 
-                # Grade distribution by ranges - MySQL compatible with student filtering
+                # Grade distribution by ranges - ONLY course and student filtering
                 grade_distribution_query = f"""
                     SELECT
                         CASE
@@ -1452,18 +1405,17 @@ class PastYearStudentGrades(models.Model):
                         COUNT(*) as count,
                         COUNT(DISTINCT student_id) as unique_students
                     FROM course_student_scores
-                    WHERE created_at >= %s
-                    AND created_at <= %s
-                    AND quiz IS NOT NULL{student_filter}{course_filter}
+                    WHERE quiz IS NOT NULL
+                    AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%') {student_filter}{course_filter}
                     GROUP BY grade_range
                     ORDER BY grade_range
                 """
-                logger.debug(f"GRADE ANALYTICS: Grade distribution query: {grade_distribution_query}")
-                cursor.execute(grade_distribution_query, [start_date, end_date] + filter_params + course_params)
+                logger.debug(f"GRADE ANALYTICS: Grade distribution query (course-based categorization)")
+                cursor.execute(grade_distribution_query, filter_params + course_params)
                 grade_distribution = cursor.fetchall()
                 logger.debug(f"GRADE ANALYTICS: Grade distribution result: {grade_distribution}")
 
-                # Course-level grade statistics - MySQL compatible with student filtering
+                # Course-level grade statistics - ONLY course and student filtering
                 course_stats_query = f"""
                     SELECT
                         course_id,
@@ -1474,18 +1426,18 @@ class PastYearStudentGrades(models.Model):
                         MIN(quiz) as min_grade,
                         MAX(quiz) as max_grade
                     FROM course_student_scores
-                    WHERE created_at >= %s
-                    AND created_at <= %s
-                    AND quiz IS NOT NULL{student_filter}{course_filter}
+                    WHERE quiz IS NOT NULL
+                    AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%') {student_filter}{course_filter}
                     GROUP BY course_id, course_name
                     ORDER BY student_count DESC
                 """
-                logger.debug(f"GRADE ANALYTICS: Course stats query: {course_stats_query}")
-                cursor.execute(course_stats_query, [start_date, end_date] + filter_params + course_params)
+                logger.debug(f"GRADE ANALYTICS: Course stats query (course-based categorization)")
+                cursor.execute(course_stats_query, filter_params + course_params)
                 course_stats = cursor.fetchall()
-                logger.debug(f"GRADE ANALYTICS: Found {len(course_stats)} courses with detailed stats (student-filtered using {filter_type})")
+                logger.debug(f"GRADE ANALYTICS: Found {len(course_stats)} courses with detailed stats (course-based categorization)")
 
-                # Monthly grade trends - MySQL compatible with student filtering
+                # Monthly grade trends based on created_at (for reference only, not for academic year categorization)
+                # This shows when grades were uploaded, not when they belong to academic years
                 monthly_trends_query = f"""
                     SELECT
                         DATE_FORMAT(created_at, '%%Y%%m') as month,
@@ -1493,16 +1445,15 @@ class PastYearStudentGrades(models.Model):
                         COUNT(*) as total_grades,
                         AVG(quiz) as avg_grade
                     FROM course_student_scores
-                    WHERE created_at >= %s
-                    AND created_at <= %s
-                    AND quiz IS NOT NULL{student_filter}{course_filter}
+                    WHERE quiz IS NOT NULL
+                    AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%') {student_filter}{course_filter}
                     GROUP BY month
                     ORDER BY month
                 """
-                logger.debug(f"GRADE ANALYTICS: Monthly trends query: {monthly_trends_query}")
-                cursor.execute(monthly_trends_query, [start_date, end_date] + filter_params + course_params)
+                logger.debug(f"GRADE ANALYTICS: Monthly trends query (upload dates for reference only)")
+                cursor.execute(monthly_trends_query, filter_params + course_params)
                 monthly_trends = cursor.fetchall()
-                logger.debug(f"GRADE ANALYTICS: Monthly trends result: {len(monthly_trends)} months (student-filtered using {filter_type})")
+                logger.debug(f"GRADE ANALYTICS: Monthly trends result: {len(monthly_trends)} months (showing upload dates, not academic year categorization)")
 
                 # Simplified course stats without complex median calculation
                 course_stats_with_median = []
@@ -1548,15 +1499,20 @@ class PastYearStudentGrades(models.Model):
                         }
                         for row in monthly_trends
                     ],
-                    'filter_info': filter_config  # Include filter info for debugging
+                    'filter_info': filter_config,  # Include filter info for debugging
+                    'academic_year_courses': len(course_ids),  # Add course count for debugging
+                    'categorization_method': 'course_based'  # Indicate that we use course-based categorization
                 }
 
-                logger.debug(f"GRADE ANALYTICS: Final result summary (student-filtered using {filter_type}) - Students: {result['overall_stats']['total_students']}, Courses: {result['overall_stats']['total_courses']}, Grades: {result['overall_stats']['total_grades']}")
+                logger.debug(f"GRADE ANALYTICS: Final result summary (COURSE-BASED categorization) - Students: {result['overall_stats']['total_students']}, Courses: {result['overall_stats']['total_courses']}, Grades: {result['overall_stats']['total_grades']}")
                 return result
 
         except Exception as e:
             logger.error(f"Error fetching grade analytics: {str(e)}")
-            return {}
+            return {
+                'categorization_method': 'course_based',
+                'error': str(e)
+            }
 
     @classmethod
     def _get_course_access_analytics(cls, academic_year: int, start_date: str, end_date: str, course_ids: List[str] = None) -> Dict[str, Any]:
@@ -1590,7 +1546,8 @@ class PastYearStudentGrades(models.Model):
                 else:
                     logger.debug("ACCESS ANALYTICS: No course filtering applied to ClickHouse queries")
 
-                # STEP 1: First get all activity types and their counts to find the top 5
+                # STEP 1: Get ALL activity types from the database (not just top 10)
+                # This ensures the chart considers all activities, while still showing top 10 as UI controls
                 top_activity_types_query = f"""
                     SELECT
                         operation_name,
@@ -1608,24 +1565,23 @@ class PastYearStudentGrades(models.Model):
                     AND actor_account_name IS NOT NULL{course_filter}
                     GROUP BY operation_name
                     ORDER BY activity_count DESC
-                    LIMIT 10
                 """
-                logger.debug(f"ACCESS ANALYTICS: Getting top activity types: {top_activity_types_query}")
+                logger.debug(f"ACCESS ANALYTICS: Getting ALL activity types: {top_activity_types_query}")
                 cursor.execute(top_activity_types_query, [start_date, end_date])
-                top_activity_types_raw = cursor.fetchall()
+                all_activity_types_raw = cursor.fetchall()
 
-                # Build dynamic top activity types list
-                top_activity_types = []
+                # Build dynamic ALL activity types list for correlation data
+                all_activity_types = []
                 dynamic_activity_fields = []
 
-                for i, row in enumerate(top_activity_types_raw):
+                for i, row in enumerate(all_activity_types_raw):
                     operation_name = row[0]
                     activity_count = row[1]
 
                     # Create dynamic field name (use operation_name as-is per user request)
                     field_name = operation_name.lower().replace(' ', '_').replace('-', '_')
 
-                    top_activity_types.append({
+                    all_activity_types.append({
                         'key': field_name,
                         'name': operation_name,  # Use operation_name as-is
                         'description': f'Activity type: {operation_name}',
@@ -1638,10 +1594,14 @@ class PastYearStudentGrades(models.Model):
                         'operation_name': operation_name
                     })
 
-                logger.info(f"ACCESS ANALYTICS: Found top 10 activity types: {[at['name'] for at in top_activity_types]}")
+                logger.info(f"ACCESS ANALYTICS: Found {len(all_activity_types)} total activity types: {[at['name'] for at in all_activity_types[:10]]}...")
+
+                # Calculate top 10 activity types for UI controls (from all activity types)
+                top_activity_types = all_activity_types[:10]  # Take top 10 for UI controls
+                logger.info(f"ACCESS ANALYTICS: Top 10 activity types for UI controls: {[at['name'] for at in top_activity_types]}")
 
                 # If no activity types found, return empty result
-                if not top_activity_types:
+                if not all_activity_types:
                     logger.warning(f"ACCESS ANALYTICS: No activity types found for academic year {academic_year}")
                     return {
                         'overall_stats': {},
@@ -1652,7 +1612,7 @@ class PastYearStudentGrades(models.Model):
                         'student_id_mapping_debug': {}
                     }
 
-                # STEP 2: Build dynamic SQL query with the top activity types
+                # STEP 2: Build dynamic SQL query with ALL activity types (not just top 10)
                 dynamic_activity_selects = []
                 for field in dynamic_activity_fields:
                     field_name = field['field_name']
@@ -1906,6 +1866,7 @@ class PastYearStudentGrades(models.Model):
                                 WHERE quiz IS NOT NULL
                                 AND student_id IS NOT NULL
                                 AND course_id IS NOT NULL
+                                AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%')
                                 {student_filter}
                                 GROUP BY student_id, course_id, course_name
                                 ORDER BY student_id, course_id
@@ -1962,6 +1923,7 @@ class PastYearStudentGrades(models.Model):
                             WHERE quiz IS NOT NULL
                             AND student_id IS NOT NULL
                             AND course_id IS NOT NULL
+                            AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%')
                             GROUP BY student_id, course_id, course_name
                             ORDER BY student_id, course_id
                         """
@@ -2576,3 +2538,1346 @@ def extract_student_id_from_actor_account_name(actor_account_name: str) -> Optio
     # Log unrecognized format for debugging
     logger.debug(f"Unrecognized actor_account_name format: '{actor_account_name}'")
     return None
+
+
+class PastYearLogAnalytics(CachedModelMixin, models.Model):
+    """Model to get log analytics from ClickHouse databases with academic year support."""
+
+    class Meta:
+        managed = False
+        app_label = 'clickhouse_app'
+
+    @classmethod
+    def get_log_counts_by_period(cls, view_type: str = 'month') -> Dict[str, Any]:
+        """
+        Get unique log counts by month or year from both ClickHouse databases with Redis caching.
+        """
+        cache_key = generate_cache_key('log_counts_by_period', view_type)
+
+        def fetch_log_counts():
+            return cls._fetch_log_counts_by_period(view_type)
+
+        return cls.get_cached_data(
+            cache_key,
+            fetch_log_counts,
+            ttl=CACHE_CONFIG['LOG_ANALYTICS_TTL']
+        )
+
+    @classmethod
+    def _fetch_log_counts_by_period(cls, view_type: str = 'month') -> Dict[str, Any]:
+        """Original implementation for fetching log counts"""
+        logger.info(f"Fetching log counts by {view_type} from both ClickHouse databases")
+
+        try:
+            # Get current year to determine which databases to query
+            current_year = datetime.datetime.now().year
+
+            # Prepare result structure
+            result = {
+                'view_type': view_type,
+                'data': [],
+                'total_logs': 0,
+                'date_range': {
+                    'earliest': None,
+                    'latest': None
+                },
+                'database_info': {
+                    'pre_2025_logs': 0,
+                    'post_2025_logs': 0
+                }
+            }
+
+            # Query pre-2025 database
+            pre_2025_data = cls._query_clickhouse_logs('clickhouse_db_pre_2025', view_type)
+
+            # Query 2025+ database (only if current year >= 2025)
+            post_2025_data = []
+            if current_year >= 2025:
+                post_2025_data = cls._query_clickhouse_logs('clickhouse_db', view_type)
+
+            # Combine and process data
+            all_data = pre_2025_data + post_2025_data
+
+            if view_type == 'month':
+                result['data'] = cls._process_monthly_data(all_data)
+            else:  # year
+                result['data'] = cls._process_yearly_data(all_data)
+
+            # Calculate totals
+            result['total_logs'] = sum(item['count'] for item in result['data'])
+            result['database_info']['pre_2025_logs'] = sum(item['count'] for item in pre_2025_data)
+            result['database_info']['post_2025_logs'] = sum(item['count'] for item in post_2025_data)
+
+            # Set date range
+            if result['data']:
+                result['date_range']['earliest'] = result['data'][0]['period']
+                result['date_range']['latest'] = result['data'][-1]['period']
+
+            logger.info(f"Log counts by {view_type} completed: {result['total_logs']} total logs, {len(result['data'])} periods")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Error fetching log counts by {view_type}: {str(e)}")
+            return {
+                'view_type': view_type,
+                'data': [],
+                'total_logs': 0,
+                'date_range': {'earliest': None, 'latest': None},
+                'database_info': {'pre_2025_logs': 0, 'post_2025_logs': 0},
+                'error': str(e)
+            }
+
+    @classmethod
+    def get_log_summary_stats(cls) -> Dict[str, Any]:
+        """
+        Get summary statistics for logs across both databases with Redis caching.
+        """
+        cache_key = generate_cache_key('log_summary_stats')
+
+        def fetch_summary_stats():
+            return cls._fetch_log_summary_stats()
+
+        return cls.get_cached_data(
+            cache_key,
+            fetch_summary_stats,
+            ttl=CACHE_CONFIG['LOG_ANALYTICS_TTL']
+        )
+
+    @classmethod
+    def _fetch_log_summary_stats(cls) -> Dict[str, Any]:
+        """Original implementation for fetching log summary stats"""
+        logger.info("Fetching log summary statistics")
+
+        try:
+            stats = {
+                'total_unique_logs': 0,
+                'databases': {
+                    'pre_2025': {'logs': 0, 'available': False},
+                    'post_2025': {'logs': 0, 'available': False}
+                },
+                'date_ranges': {
+                    'pre_2025': {'earliest': None, 'latest': None},
+                    'post_2025': {'earliest': None, 'latest': None}
+                }
+            }
+
+            # Query pre-2025 database
+            try:
+                with connections['clickhouse_db_pre_2025'].cursor() as cursor:
+                    cursor.execute("""
+                        SELECT
+                            COUNT(DISTINCT _id) as total_logs,
+                            MIN(timestamp) as earliest_date,
+                            MAX(timestamp) as latest_date
+                        FROM statements_mv
+                        WHERE _id IS NOT NULL AND _id != ''
+                        AND timestamp >= toDate('2018-01-01')
+                    """)
+                    row = cursor.fetchone()
+                    if row:
+                        stats['databases']['pre_2025']['logs'] = row[0]
+                        stats['databases']['pre_2025']['available'] = True
+                        stats['date_ranges']['pre_2025']['earliest'] = row[1]
+                        stats['date_ranges']['pre_2025']['latest'] = row[2]
+
+            except Exception as e:
+                logger.warning(f"Could not query pre-2025 database: {str(e)}")
+
+            # Query 2025+ database (only if current year >= 2025)
+            current_year = datetime.datetime.now().year
+            if current_year >= 2025:
+                try:
+                    with connections['clickhouse_db'].cursor() as cursor:
+                        cursor.execute("""
+                            SELECT
+                                COUNT(DISTINCT _id) as total_logs,
+                                MIN(timestamp) as earliest_date,
+                                MAX(timestamp) as latest_date
+                            FROM statements_mv
+                            WHERE _id IS NOT NULL AND _id != ''
+                            AND timestamp >= toDate('2018-01-01')
+                        """)
+                        row = cursor.fetchone()
+                        if row:
+                            stats['databases']['post_2025']['logs'] = row[0]
+                            stats['databases']['post_2025']['available'] = True
+                            stats['date_ranges']['post_2025']['earliest'] = row[1]
+                            stats['date_ranges']['post_2025']['latest'] = row[2]
+
+                except Exception as e:
+                    logger.warning(f"Could not query 2025+ database: {str(e)}")
+
+            # Calculate total
+            stats['total_unique_logs'] = (
+                stats['databases']['pre_2025']['logs'] +
+                stats['databases']['post_2025']['logs']
+            )
+
+            logger.info(f"Log summary completed: {stats['total_unique_logs']} total unique logs")
+
+            return stats
+
+        except Exception as e:
+            logger.error(f"Error fetching log summary stats: {str(e)}")
+            return {
+                'total_unique_logs': 0,
+                'databases': {
+                    'pre_2025': {'logs': 0, 'available': False},
+                    'post_2025': {'logs': 0, 'available': False}
+                },
+                'date_ranges': {
+                    'pre_2025': {'earliest': None, 'latest': None},
+                    'post_2025': {'earliest': None, 'latest': None}
+                },
+                'error': str(e)
+            }
+
+    @classmethod
+    def _query_clickhouse_logs(cls, db_alias: str, view_type: str) -> List[Dict[str, Any]]:
+        """
+        Query a specific ClickHouse database for log counts.
+
+        Args:
+            db_alias (str): Database alias ('clickhouse_db' or 'clickhouse_db_pre_2025')
+            view_type (str): 'month' or 'year'
+
+        Returns:
+            List of dictionaries with period and count data
+        """
+        try:
+            with connections[db_alias].cursor() as cursor:
+                if view_type == 'month':
+                    # Group by year-month with academic year consideration
+                    query = """
+                        SELECT
+                            toYYYYMM(timestamp) as period,
+                            COUNT(DISTINCT _id) as log_count
+                        FROM statements_mv
+                        WHERE _id IS NOT NULL
+                        AND _id != ''
+                        AND timestamp >= toDate('2018-01-01')
+                        GROUP BY period
+                        ORDER BY period
+                    """
+                else:  # year
+                    # Group by academic year (April 1 - March 31)
+                    query = """
+                        SELECT
+                            CASE
+                                WHEN toMonth(timestamp) >= 4 THEN toYear(timestamp)
+                                ELSE toYear(timestamp) - 1
+                            END as academic_year,
+                            COUNT(DISTINCT _id) as log_count
+                        FROM statements_mv
+                        WHERE _id IS NOT NULL
+                        AND _id != ''
+                        AND timestamp >= toDate('2018-01-01')
+                        GROUP BY academic_year
+                        HAVING academic_year >= 2018
+                        ORDER BY academic_year
+                    """
+
+                logger.debug(f"Executing query on {db_alias}: {query}")
+                cursor.execute(query)
+                rows = cursor.fetchall()
+
+                result = []
+                for row in rows:
+                    result.append({
+                        'period': str(row[0]),
+                        'count': row[1],
+                        'database': db_alias
+                    })
+
+                logger.info(f"Retrieved {len(result)} records from {db_alias}")
+                return result
+
+        except Exception as e:
+            logger.error(f"Error querying {db_alias} for {view_type} data: {str(e)}")
+            return []
+
+    @classmethod
+    def _process_monthly_data(cls, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Process monthly data and combine counts from both databases.
+
+        Args:
+            data: Raw data from both databases
+
+        Returns:
+            Processed monthly data with academic year context
+        """
+        # Group by period (YYYYMM format)
+        monthly_counts = {}
+
+        for item in data:
+            period = item['period']
+            count = item['count']
+
+            if period in monthly_counts:
+                monthly_counts[period] += count
+            else:
+                monthly_counts[period] = count
+
+        # Convert to list and add academic year information
+        result = []
+        for period, count in sorted(monthly_counts.items()):
+            # Convert YYYYMM to year and month
+            year = int(period[:4])
+            month = int(period[4:])
+
+            # Calculate academic year (April 1 - March 31)
+            if month >= 4:
+                academic_year = year
+            else:
+                academic_year = year - 1
+
+            # Format period for display
+            period_display = f"{year}-{month:02d}"
+
+            result.append({
+                'period': period_display,
+                'count': count,
+                'academic_year': academic_year,
+                'year': year,
+                'month': month
+            })
+
+        return result
+
+    @classmethod
+    def _process_yearly_data(cls, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Process yearly data (academic years) and combine counts from both databases.
+
+        Args:
+            data: Raw data from both databases
+
+        Returns:
+            Processed yearly data
+        """
+        # Group by academic year
+        yearly_counts = {}
+
+        for item in data:
+            academic_year = int(item['period'])
+            count = item['count']
+
+            if academic_year in yearly_counts:
+                yearly_counts[academic_year] += count
+            else:
+                yearly_counts[academic_year] = count
+
+        # Convert to list
+        result = []
+        for academic_year, count in sorted(yearly_counts.items()):
+            result.append({
+                'period': str(academic_year),
+                'count': count,
+                'academic_year': academic_year,
+                'period_display': f"{academic_year}年度"
+            })
+
+        return result
+
+    @classmethod
+    def get_log_summary_stats(cls) -> Dict[str, Any]:
+        """
+        Get summary statistics for logs across both databases with Redis caching.
+        """
+        cache_key = generate_cache_key('log_summary_stats')
+
+        def fetch_summary_stats():
+            return cls._fetch_log_summary_stats()
+
+        return cls.get_cached_data(
+            cache_key,
+            fetch_summary_stats,
+            ttl=CACHE_CONFIG['LOG_ANALYTICS_TTL']
+        )
+
+    @classmethod
+    def _fetch_log_summary_stats(cls) -> Dict[str, Any]:
+        """Original implementation for fetching log summary stats"""
+        logger.info("Fetching log summary statistics")
+
+        try:
+            stats = {
+                'total_unique_logs': 0,
+                'databases': {
+                    'pre_2025': {'logs': 0, 'available': False},
+                    'post_2025': {'logs': 0, 'available': False}
+                },
+                'date_ranges': {
+                    'pre_2025': {'earliest': None, 'latest': None},
+                    'post_2025': {'earliest': None, 'latest': None}
+                }
+            }
+
+            # Query pre-2025 database
+            try:
+                with connections['clickhouse_db_pre_2025'].cursor() as cursor:
+                    cursor.execute("""
+                        SELECT
+                            COUNT(DISTINCT _id) as total_logs,
+                            MIN(timestamp) as earliest_date,
+                            MAX(timestamp) as latest_date
+                        FROM statements_mv
+                        WHERE _id IS NOT NULL AND _id != ''
+                        AND timestamp >= toDate('2018-01-01')
+                    """)
+                    row = cursor.fetchone()
+                    if row:
+                        stats['databases']['pre_2025']['logs'] = row[0]
+                        stats['databases']['pre_2025']['available'] = True
+                        stats['date_ranges']['pre_2025']['earliest'] = row[1]
+                        stats['date_ranges']['pre_2025']['latest'] = row[2]
+
+            except Exception as e:
+                logger.warning(f"Could not query pre-2025 database: {str(e)}")
+
+            # Query 2025+ database (only if current year >= 2025)
+            current_year = datetime.datetime.now().year
+            if current_year >= 2025:
+                try:
+                    with connections['clickhouse_db'].cursor() as cursor:
+                        cursor.execute("""
+                            SELECT
+                                COUNT(DISTINCT _id) as total_logs,
+                                MIN(timestamp) as earliest_date,
+                                MAX(timestamp) as latest_date
+                            FROM statements_mv
+                            WHERE _id IS NOT NULL AND _id != ''
+                            AND timestamp >= toDate('2018-01-01')
+                        """)
+                        row = cursor.fetchone()
+                        if row:
+                            stats['databases']['post_2025']['logs'] = row[0]
+                            stats['databases']['post_2025']['available'] = True
+                            stats['date_ranges']['post_2025']['earliest'] = row[1]
+                            stats['date_ranges']['post_2025']['latest'] = row[2]
+
+                except Exception as e:
+                    logger.warning(f"Could not query 2025+ database: {str(e)}")
+
+            # Calculate total
+            stats['total_unique_logs'] = (
+                stats['databases']['pre_2025']['logs'] +
+                stats['databases']['post_2025']['logs']
+            )
+
+            logger.info(f"Log summary completed: {stats['total_unique_logs']} total unique logs")
+
+            return stats
+
+        except Exception as e:
+            logger.error(f"Error fetching log summary stats: {str(e)}")
+            return {
+                'total_unique_logs': 0,
+                'databases': {
+                    'pre_2025': {'logs': 0, 'available': False},
+                    'post_2025': {'logs': 0, 'available': False}
+                },
+                'date_ranges': {
+                    'pre_2025': {'earliest': None, 'latest': None},
+                    'post_2025': {'earliest': None, 'latest': None}
+                },
+                'error': str(e)
+            }
+
+
+class PastYearGradeAnalytics(CachedModelMixin, models.Model):
+    """Model to get grade performance analytics for top and bottom performing students."""
+
+    class Meta:
+        managed = False
+        app_label = 'analysis_app'
+
+    @classmethod
+    def _get_valid_grade_filter_clause(cls) -> str:
+        """
+        Get reusable SQL clause for filtering valid grades (0-100).
+        This method ensures consistency across all grade queries.
+
+        Returns:
+            str: SQL WHERE clause for valid grade filtering
+        """
+        return "AND quiz >= 0 AND quiz <= 100"
+
+    @classmethod
+    def _build_student_grade_query(cls, student_filter_placeholders: str, additional_where: str = "",
+                                 group_by: str = "", having_clause: str = "", order_by: str = "") -> str:
+        """
+        Build a reusable student grade query with consistent filtering.
+
+        Args:
+            student_filter_placeholders (str): Placeholder string for student ID filtering
+            additional_where (str): Additional WHERE conditions
+            group_by (str): GROUP BY clause
+            having_clause (str): HAVING clause
+            order_by (str): ORDER BY clause
+
+        Returns:
+            str: Complete SQL query
+        """
+        base_query = f"""
+            SELECT
+                {{select_fields}}
+            FROM course_student_scores
+            WHERE quiz IS NOT NULL
+            AND student_id IS NOT NULL
+            AND student_id IN ({student_filter_placeholders})
+            {cls._get_valid_grade_filter_clause()}
+            AND created_at >= '2018-01-01'
+            AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%')
+            {additional_where}
+            {group_by}
+            {having_clause}
+            {order_by}
+        """
+
+        # DEBUG LOGGING
+        logger.debug(f"🔍 GRADE QUERY DEBUG - _build_student_grade_query base template:")
+        logger.debug(f"    Student filter placeholders count: {student_filter_placeholders.count('%s')}")
+        logger.debug(f"    Additional WHERE: '{additional_where}'")
+        logger.debug(f"    GROUP BY: '{group_by}'")
+        logger.debug(f"    HAVING: '{having_clause}'")
+        logger.debug(f"    ORDER BY: '{order_by}'")
+        logger.debug(f"    Base query template: {base_query}")
+
+        return base_query
+
+    @classmethod
+    def get_grade_performance_by_period(cls) -> Dict[str, Any]:
+        """
+        Get grade performance trends for top 25% and bottom 25% students by academic year with Redis caching.
+        Only supports yearly academic year-based analysis.
+
+        Returns:
+            Dict containing performance data for both groups
+        """
+        cache_key = generate_cache_key('grade_performance_yearly')
+
+        def fetch_grade_performance():
+            return cls._fetch_grade_performance_yearly()
+
+        return cls.get_cached_data(
+            cache_key,
+            fetch_grade_performance,
+            ttl=CACHE_CONFIG['LOG_ANALYTICS_TTL']
+        )
+
+    @classmethod
+    def get_grade_performance_normal_distribution(cls) -> Dict[str, Any]:
+        """
+        Get grade performance trends using normal distribution analysis (mean ± standard deviation).
+        Provides statistical insights into grade distribution patterns by academic year.
+
+        Returns:
+            Dict containing normal distribution performance data
+        """
+        cache_key = generate_cache_key('grade_performance_normal_distribution')
+
+        def fetch_normal_distribution_performance():
+            return cls._fetch_grade_performance_normal_distribution()
+
+        return cls.get_cached_data(
+            cache_key,
+            fetch_normal_distribution_performance,
+            ttl=CACHE_CONFIG['LOG_ANALYTICS_TTL']
+        )
+
+    @classmethod
+    def _fetch_grade_performance_yearly(cls) -> Dict[str, Any]:
+        """Fetch yearly grade performance data for academic years only"""
+        logger.info(f"🔍 STARTING YEARLY GRADE PERFORMANCE FETCH - Academic year-based analysis only")
+
+        try:
+            result = {
+                'view_type': 'year',
+                'top_25_data': [],
+                'bottom_25_data': [],
+                'total_students_analyzed': 0,
+                'date_range': {
+                    'earliest': None,
+                    'latest': None
+                },
+                'performance_summary': {
+                    'top_25_avg_grade': 0,
+                    'bottom_25_avg_grade': 0,
+                    'performance_gap': 0
+                }
+            }
+
+            # Get all available academic years to determine student filtering
+            available_years = PastYearCourseCategory.get_available_academic_years()
+            logger.debug(f"🔍 AVAILABLE YEARS: {available_years}")
+
+            if not available_years:
+                logger.warning("❌ No academic years available for grade performance analysis")
+                return result
+
+            # Get performance data for each academic year
+            logger.debug(f"🔍 CALLING yearly_performance_data with years: {available_years}")
+            result['top_25_data'], result['bottom_25_data'] = cls._get_yearly_performance_data(available_years)
+
+            logger.debug(f"🔍 PERFORMANCE DATA RECEIVED:")
+            logger.debug(f"    Top 25% records: {len(result['top_25_data'])}")
+            logger.debug(f"    Bottom 25% records: {len(result['bottom_25_data'])}")
+
+            # Calculate summary statistics
+            if result['top_25_data'] and result['bottom_25_data']:
+                top_grades = [item['avg_grade'] for item in result['top_25_data'] if item['avg_grade'] > 0]
+                bottom_grades = [item['avg_grade'] for item in result['bottom_25_data'] if item['avg_grade'] > 0]
+
+                logger.debug(f"🔍 SUMMARY CALCULATION:")
+                logger.debug(f"    Valid top grades: {len(top_grades)}")
+                logger.debug(f"    Valid bottom grades: {len(bottom_grades)}")
+
+                if top_grades and bottom_grades:
+                    result['performance_summary']['top_25_avg_grade'] = round(sum(top_grades) / len(top_grades), 2)
+                    result['performance_summary']['bottom_25_avg_grade'] = round(sum(bottom_grades) / len(bottom_grades), 2)
+                    result['performance_summary']['performance_gap'] = round(
+                        result['performance_summary']['top_25_avg_grade'] - result['performance_summary']['bottom_25_avg_grade'], 2
+                    )
+
+                # Set date range
+                all_periods = [item['period'] for item in result['top_25_data'] + result['bottom_25_data']]
+                if all_periods:
+                    result['date_range']['earliest'] = min(all_periods)
+                    result['date_range']['latest'] = max(all_periods)
+
+                logger.debug(f"🔍 FINAL SUMMARY:")
+                logger.debug(f"    Top 25% avg: {result['performance_summary']['top_25_avg_grade']}")
+                logger.debug(f"    Bottom 25% avg: {result['performance_summary']['bottom_25_avg_grade']}")
+                logger.debug(f"    Performance gap: {result['performance_summary']['performance_gap']}")
+                logger.debug(f"    Date range: {result['date_range']['earliest']} to {result['date_range']['latest']}")
+            else:
+                logger.warning(f"❌ NO DATA FOUND for grade performance analysis:")
+                logger.warning(f"    Top 25% data empty: {len(result['top_25_data']) == 0}")
+                logger.warning(f"    Bottom 25% data empty: {len(result['bottom_25_data']) == 0}")
+
+            logger.info(f"✅ Grade performance by year completed: {len(result['top_25_data'])} years analyzed")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"❌ Error fetching grade performance by year: {str(e)}")
+            logger.error(f"Exception details:", exc_info=True)
+            return {
+                'view_type': 'year',
+                'top_25_data': [],
+                'bottom_25_data': [],
+                'total_students_analyzed': 0,
+                'date_range': {'earliest': None, 'latest': None},
+                'performance_summary': {'top_25_avg_grade': 0, 'bottom_25_avg_grade': 0, 'performance_gap': 0},
+                'error': str(e)
+            }
+
+    @classmethod
+    def _get_yearly_performance_data(cls, available_years: List[int]) -> tuple:
+        """Get yearly performance data using course name-based academic year detection - completely dynamic approach"""
+        top_25_data = []
+        bottom_25_data = []
+
+        try:
+            with connections['analysis_db'].cursor() as cursor:
+                # STEP 1: Dynamically get academic years that have grade data
+                logger.debug("🔍 DYNAMICALLY GETTING ACADEMIC YEARS FROM GRADE DATA...")
+
+                cursor.execute("""
+                    SELECT DISTINCT
+                        SUBSTRING(course_name, 1, 4) as year_str,
+                        COUNT(DISTINCT course_id) as course_count,
+                        COUNT(DISTINCT student_id) as student_count,
+                        COUNT(*) as grade_count
+                    FROM course_student_scores
+                    WHERE quiz IS NOT NULL
+                    AND quiz >= 0 AND quiz <= 100
+                    AND course_name LIKE '%年度%'
+                    AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%')
+                    GROUP BY year_str
+                    HAVING grade_count >= 50
+                    ORDER BY year_str DESC
+                """)
+
+                grade_data_years = cursor.fetchall()
+
+                # Convert to list of academic years that have data
+                years_with_data = []
+                for year_row in grade_data_years:
+                    try:
+                        year_int = int(year_row[0])
+                        years_with_data.append({
+                            'year': year_int,
+                            'courses': year_row[1],
+                            'students': year_row[2],
+                            'grades': year_row[3]
+                        })
+                        logger.info(f"📊 Found academic year {year_int}: {year_row[1]} courses, {year_row[2]} students, {year_row[3]} grades")
+                    except (ValueError, TypeError):
+                        continue
+
+                if not years_with_data:
+                    logger.warning("❌ No academic years found with grade data")
+                    return top_25_data, bottom_25_data
+
+                logger.info(f"✅ Processing {len(years_with_data)} academic years with data: {[y['year'] for y in years_with_data]}")
+
+                # STEP 2: Process each academic year that has grade data
+                for year_info in years_with_data:
+                    academic_year = year_info['year']
+                    year_pattern = f"{academic_year}年度"
+
+                    logger.debug(f"📈 Processing academic year {academic_year}...")
+
+                    # Get ALL students who have grades in courses from this academic year
+                    # NO student filtering by Moodle - use all students with grades in year-pattern courses
+                    yearly_query = """
+                        SELECT
+                            student_id,
+                            AVG(quiz) as avg_grade,
+                            COUNT(*) as grade_count
+                        FROM course_student_scores
+                        WHERE quiz IS NOT NULL
+                        AND quiz >= 0 AND quiz <= 100
+                        AND course_name LIKE %s
+                        AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%')
+                        GROUP BY student_id
+                        ORDER BY avg_grade DESC
+                    """
+
+                    # Get course details for transparency
+                    course_details_query = """
+                        SELECT
+                            course_id,
+                            course_name,
+                            COUNT(DISTINCT student_id) as students_count,
+                            COUNT(*) as grades_count,
+                            AVG(quiz) as avg_grade,
+                            GROUP_CONCAT(DISTINCT name SEPARATOR ', ') as grade_file_names
+                        FROM course_student_scores
+                        WHERE quiz IS NOT NULL
+                        AND quiz >= 0 AND quiz <= 100
+                        AND course_name LIKE %s
+                        AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%')
+                        GROUP BY course_id, course_name
+                        HAVING students_count >= 3
+                        ORDER BY students_count DESC
+                    """
+
+                    logger.debug(f"🔍 Getting all students with grades in {year_pattern} courses...")
+                    cursor.execute(yearly_query, [f'%{year_pattern}%'])
+                    student_results = cursor.fetchall()
+
+                    # Get course details for transparency
+                    cursor.execute(course_details_query, [f'%{year_pattern}%'])
+                    course_results = cursor.fetchall()
+
+                    logger.debug(f"Found {len(student_results)} students with grades in {year_pattern} courses")
+                    logger.debug(f"Found {len(course_results)} courses for {year_pattern}")
+
+                    if len(student_results) < 4:  # Need at least 4 students for percentiles
+                        logger.debug(f"Insufficient students ({len(student_results)}) for {academic_year}")
+                        continue
+
+                    # Process course details for transparency
+                    year_course_details = []
+                    for course_row in course_results:
+                        year_course_details.append({
+                            'id': str(course_row[0]),
+                            'name': course_row[1] if course_row[1] else f"Course {course_row[0]}",
+                            'students_in_year': course_row[2],
+                            'grades_in_year': course_row[3],
+                            'avg_grade_in_year': round(float(course_row[4]), 2) if course_row[4] else 0,
+                            'grade_file_names': course_row[5] if course_row[5] else 'No grade file name'
+                        })
+
+                    # Calculate top 25% and bottom 25%
+                    total_students = len(student_results)
+                    top_25_count = max(1, total_students // 4)
+                    bottom_25_count = max(1, total_students // 4)
+
+                    # Get top 25% students (already sorted by avg_grade DESC)
+                    top_25_students = student_results[:top_25_count]
+                    top_25_avg = sum(float(s[1]) for s in top_25_students) / len(top_25_students)
+
+                    # Get bottom 25% students
+                    bottom_25_students = student_results[-bottom_25_count:]
+                    bottom_25_avg = sum(float(s[1]) for s in bottom_25_students) / len(bottom_25_students)
+
+                    # Add to results
+                    top_25_data.append({
+                        'period': str(academic_year),
+                        'avg_grade': round(top_25_avg, 2),
+                        'student_count': len(top_25_students),
+                        'academic_year': academic_year,
+                        'period_display': f"{academic_year}年度",
+                        'course_count': len(year_course_details),
+                        'courses_used': year_course_details,
+                        'total_students_analyzed': total_students,
+                        'categorization_method': 'course_name_pattern_matching'
+                    })
+
+                    bottom_25_data.append({
+                        'period': str(academic_year),
+                        'avg_grade': round(bottom_25_avg, 2),
+                        'student_count': len(bottom_25_students),
+                        'academic_year': academic_year,
+                        'period_display': f"{academic_year}年度",
+                        'course_count': len(year_course_details),
+                        'courses_used': year_course_details,
+                        'total_students_analyzed': total_students,
+                        'categorization_method': 'course_name_pattern_matching'
+                    })
+
+                    logger.info(f"✅ {academic_year}: Top 25% = {round(top_25_avg, 2)} ({len(top_25_students)} students), Bottom 25% = {round(bottom_25_avg, 2)} ({len(bottom_25_students)} students), Courses = {len(year_course_details)}")
+
+                # Sort by academic year
+                top_25_data.sort(key=lambda x: x['academic_year'])
+                bottom_25_data.sort(key=lambda x: x['academic_year'])
+
+                logger.info(f"🎉 Generated performance data for {len(top_25_data)} academic years")
+
+        except Exception as e:
+            logger.error(f"Error in yearly performance data generation: {str(e)}")
+            logger.error(f"Exception details:", exc_info=True)
+
+        return top_25_data, bottom_25_data
+
+    @classmethod
+    def get_grade_performance_summary_stats(cls) -> Dict[str, Any]:
+        """
+        Get summary statistics for grade performance across all periods with Redis caching.
+        """
+        cache_key = generate_cache_key('grade_performance_summary_stats')
+
+        def fetch_summary_stats():
+            return cls._fetch_grade_performance_summary_stats()
+
+        return cls.get_cached_data(
+            cache_key,
+            fetch_summary_stats,
+            ttl=CACHE_CONFIG['LOG_ANALYTICS_TTL']
+        )
+
+    @classmethod
+    def _fetch_grade_performance_summary_stats(cls) -> Dict[str, Any]:
+        """Fetch grade performance summary stats using dynamic course name-based year matching"""
+        logger.info("Fetching grade performance summary statistics using dynamic course name-based year matching")
+
+        try:
+            stats = {
+                'total_students_analyzed': 0,
+                'total_grade_records': 0,
+                'performance_metrics': {
+                    'overall_avg_grade': 0,
+                    'top_25_avg_grade': 0,
+                    'bottom_25_avg_grade': 0,
+                    'performance_gap': 0
+                },
+                'date_ranges': {
+                    'earliest': None,
+                    'latest': None
+                },
+                'academic_years_covered': [],
+                'categorization_method': 'dynamic_course_name_pattern_matching'
+            }
+
+            with connections['analysis_db'].cursor() as cursor:
+                # STEP 1: Dynamically get academic years that have grade data
+                logger.debug("🔍 DYNAMICALLY GETTING ACADEMIC YEARS FOR SUMMARY STATS...")
+
+                cursor.execute("""
+                    SELECT DISTINCT
+                        SUBSTRING(course_name, 1, 4) as year_str,
+                        COUNT(DISTINCT course_id) as course_count,
+                        COUNT(DISTINCT student_id) as student_count,
+                        COUNT(*) as grade_count
+                    FROM course_student_scores
+                    WHERE quiz IS NOT NULL
+                    AND quiz >= 0 AND quiz <= 100
+                    AND course_name LIKE '%年度%'
+                    AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%')
+                    GROUP BY year_str
+                    HAVING grade_count >= 50
+                    ORDER BY year_str DESC
+                """)
+
+                grade_data_years = cursor.fetchall()
+
+                # Convert to list of academic years that have data
+                years_with_data = []
+                for year_row in grade_data_years:
+                    try:
+                        year_int = int(year_row[0])
+                        years_with_data.append(year_int)
+                        logger.debug(f"📊 Summary stats - found academic year {year_int}: {year_row[1]} courses, {year_row[2]} students, {year_row[3]} grades")
+                    except (ValueError, TypeError):
+                        continue
+
+                if not years_with_data:
+                    logger.warning("❌ No academic years found with grade data for summary stats")
+                    return stats
+
+                stats['academic_years_covered'] = years_with_data
+                logger.info(f"✅ Summary stats processing {len(years_with_data)} academic years: {years_with_data}")
+
+                # STEP 2: Get all grade data from courses with academic year patterns
+                # Build pattern for all available years: "2022年度" OR "2023年度" OR "2024年度" etc.
+                year_patterns = []
+                for year in years_with_data:
+                    year_patterns.append(f"%{year}年度%")
+
+                # Create OR conditions for all year patterns
+                pattern_conditions = " OR ".join(["course_name LIKE %s"] * len(year_patterns))
+
+                # Get overall statistics using ALL students who have grades in courses with year patterns
+                overall_query = f"""
+                    SELECT
+                        COUNT(DISTINCT student_id) as total_students,
+                        COUNT(*) as total_records,
+                        AVG(quiz) as overall_avg,
+                        MIN(created_at) as earliest_date,
+                        MAX(created_at) as latest_date
+                    FROM course_student_scores
+                    WHERE quiz IS NOT NULL
+                    AND quiz >= 0 AND quiz <= 100
+                    AND course_id IS NOT NULL
+                    AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%')
+                    AND ({pattern_conditions})
+                """
+
+                logger.debug(f"🔍 SUMMARY STATS: Getting overall stats from all students with grades in year-pattern courses")
+                cursor.execute(overall_query, year_patterns)
+                overall_result = cursor.fetchone()
+
+                if overall_result:
+                    stats['total_students_analyzed'] = overall_result[0]
+                    stats['total_grade_records'] = overall_result[1]
+                    stats['performance_metrics']['overall_avg_grade'] = round(float(overall_result[2]), 2) if overall_result[2] else 0
+                    stats['date_ranges']['earliest'] = overall_result[3]
+                    stats['date_ranges']['latest'] = overall_result[4]
+
+                # Get student averages for percentile calculation using ALL students in year-pattern courses
+                student_avg_query = f"""
+                    SELECT
+                        student_id,
+                        AVG(quiz) as avg_grade
+                    FROM course_student_scores
+                    WHERE quiz IS NOT NULL
+                    AND quiz >= 0 AND quiz <= 100
+                    AND course_id IS NOT NULL
+                    AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%')
+                    AND ({pattern_conditions})
+                    GROUP BY student_id
+                    ORDER BY avg_grade DESC
+                """
+
+                # Debug logging: show both template and complete query
+                logger.debug(f"🔍 SUMMARY STATS: Student average query template: {student_avg_query}")
+                logger.debug(f"🔍 SUMMARY STATS: Query parameters: {year_patterns}")
+
+                # Create complete query for debugging (substitute parameters)
+                complete_query = student_avg_query
+                for i, pattern in enumerate(year_patterns):
+                    complete_query = complete_query.replace("%s", f"'{pattern}'", 1)
+                logger.debug(f"🔍 SUMMARY STATS: Complete substituted query: {complete_query}")
+
+                logger.debug(f"🔍 SUMMARY STATS: Getting student averages from all students in year-pattern courses")
+                # Execute the original parameterized query for safety (avoid SQL injection)
+                cursor.execute(student_avg_query, year_patterns)
+                student_averages = cursor.fetchall()
+
+                if len(student_averages) >= 4:
+                    # Calculate top 25% and bottom 25%
+                    total_students = len(student_averages)
+                    top_25_count = max(1, total_students // 4)
+                    bottom_25_count = max(1, total_students // 4)
+
+                    top_25_students = student_averages[:top_25_count]
+                    bottom_25_students = student_averages[-bottom_25_count:]
+
+                    top_25_avg = sum(float(s[1]) for s in top_25_students) / len(top_25_students)
+                    bottom_25_avg = sum(float(s[1]) for s in bottom_25_students) / len(bottom_25_students)
+
+                    stats['performance_metrics']['top_25_avg_grade'] = round(top_25_avg, 2)
+                    stats['performance_metrics']['bottom_25_avg_grade'] = round(bottom_25_avg, 2)
+                    stats['performance_metrics']['performance_gap'] = round(top_25_avg - bottom_25_avg, 2)
+
+                    logger.debug(f"SUMMARY STATS: Performance metrics calculated from {len(student_averages)} students using dynamic year patterns")
+
+            logger.info(f"Grade performance summary completed using DYNAMIC YEAR PATTERNS: {stats['total_students_analyzed']} students, {stats['total_grade_records']} grade records across {len(years_with_data)} academic years")
+
+            return stats
+
+        except Exception as e:
+            logger.error(f"Error fetching grade performance summary stats: {str(e)}")
+            return {
+                'total_students_analyzed': 0,
+                'total_grade_records': 0,
+                'performance_metrics': {'overall_avg_grade': 0, 'top_25_avg_grade': 0, 'bottom_25_avg_grade': 0, 'performance_gap': 0},
+                'date_ranges': {'earliest': None, 'latest': None},
+                'academic_years_covered': [],
+                'categorization_method': 'dynamic_course_name_pattern_matching',
+                'error': str(e)
+            }
+
+    @classmethod
+    def _fetch_grade_performance_normal_distribution(cls) -> Dict[str, Any]:
+        """Fetch normal distribution grade performance data for academic years"""
+        logger.info(f"🔍 STARTING NORMAL DISTRIBUTION GRADE PERFORMANCE FETCH - Statistical analysis")
+
+        try:
+            result = {
+                'view_type': 'normal_distribution',
+                'high_performers_data': [],
+                'low_performers_data': [],
+                'distribution_stats': [],
+                'total_students_analyzed': 0,
+                'date_range': {
+                    'earliest': None,
+                    'latest': None
+                },
+                'performance_summary': {
+                    'avg_mean_grade': 0,
+                    'avg_std_deviation': 0,
+                    'high_performers_avg_grade': 0,
+                    'low_performers_avg_grade': 0,
+                    'statistical_gap': 0
+                }
+            }
+
+            # Get all available academic years to determine student filtering
+            available_years = PastYearCourseCategory.get_available_academic_years()
+            logger.debug(f"🔍 AVAILABLE YEARS FOR NORMAL DISTRIBUTION: {available_years}")
+
+            if not available_years:
+                logger.warning("❌ No academic years available for normal distribution analysis")
+                return result
+
+            # Get normal distribution performance data for each academic year
+            logger.debug(f"🔍 CALLING normal distribution analysis with years: {available_years}")
+            (result['high_performers_data'],
+             result['low_performers_data'],
+             result['distribution_stats']) = cls._get_normal_distribution_performance_data(available_years)
+
+            logger.debug(f"🔍 NORMAL DISTRIBUTION DATA RECEIVED:")
+            logger.debug(f"    High performers records: {len(result['high_performers_data'])}")
+            logger.debug(f"    Low performers records: {len(result['low_performers_data'])}")
+            logger.debug(f"    Distribution stats records: {len(result['distribution_stats'])}")
+
+            # Calculate summary statistics
+            if result['high_performers_data'] and result['low_performers_data'] and result['distribution_stats']:
+                high_grades = [item['avg_grade'] for item in result['high_performers_data'] if item['avg_grade'] > 0]
+                low_grades = [item['avg_grade'] for item in result['low_performers_data'] if item['avg_grade'] > 0]
+                mean_grades = [item['mean_grade'] for item in result['distribution_stats'] if item['mean_grade'] > 0]
+                std_deviations = [item['std_deviation'] for item in result['distribution_stats'] if item['std_deviation'] > 0]
+
+                logger.debug(f"🔍 NORMAL DISTRIBUTION SUMMARY CALCULATION:")
+                logger.debug(f"    Valid high performer grades: {len(high_grades)}")
+                logger.debug(f"    Valid low performer grades: {len(low_grades)}")
+                logger.debug(f"    Valid mean grades: {len(mean_grades)}")
+                logger.debug(f"    Valid std deviations: {len(std_deviations)}")
+
+                if high_grades and low_grades and mean_grades and std_deviations:
+                    result['performance_summary']['high_performers_avg_grade'] = round(sum(high_grades) / len(high_grades), 2)
+                    result['performance_summary']['low_performers_avg_grade'] = round(sum(low_grades) / len(low_grades), 2)
+                    result['performance_summary']['avg_mean_grade'] = round(sum(mean_grades) / len(mean_grades), 2)
+                    result['performance_summary']['avg_std_deviation'] = round(sum(std_deviations) / len(std_deviations), 2)
+                    result['performance_summary']['statistical_gap'] = round(
+                        result['performance_summary']['high_performers_avg_grade'] - result['performance_summary']['low_performers_avg_grade'], 2
+                    )
+
+                # Set date range
+                all_periods = [item['period'] for item in result['high_performers_data'] + result['low_performers_data']]
+                if all_periods:
+                    result['date_range']['earliest'] = min(all_periods)
+                    result['date_range']['latest'] = max(all_periods)
+
+                logger.debug(f"🔍 NORMAL DISTRIBUTION FINAL SUMMARY:")
+                logger.debug(f"    High performers avg: {result['performance_summary']['high_performers_avg_grade']}")
+                logger.debug(f"    Low performers avg: {result['performance_summary']['low_performers_avg_grade']}")
+                logger.debug(f"    Average mean grade: {result['performance_summary']['avg_mean_grade']}")
+                logger.debug(f"    Average std deviation: {result['performance_summary']['avg_std_deviation']}")
+                logger.debug(f"    Statistical gap: {result['performance_summary']['statistical_gap']}")
+            else:
+                logger.warning(f"❌ NO DATA FOUND for normal distribution analysis:")
+                logger.warning(f"    High performers data empty: {len(result['high_performers_data']) == 0}")
+                logger.warning(f"    Low performers data empty: {len(result['low_performers_data']) == 0}")
+                logger.warning(f"    Distribution stats empty: {len(result['distribution_stats']) == 0}")
+
+            logger.info(f"✅ Normal distribution analysis completed: {len(result['high_performers_data'])} years analyzed")
+
+            return result
+
+        except Exception as e:
+            logger.error(f"❌ Error fetching normal distribution performance: {str(e)}")
+            logger.error(f"Exception details:", exc_info=True)
+            return {
+                'view_type': 'normal_distribution',
+                'high_performers_data': [],
+                'low_performers_data': [],
+                'distribution_stats': [],
+                'total_students_analyzed': 0,
+                'date_range': {'earliest': None, 'latest': None},
+                'performance_summary': {
+                    'avg_mean_grade': 0, 'avg_std_deviation': 0,
+                    'high_performers_avg_grade': 0, 'low_performers_avg_grade': 0, 'statistical_gap': 0
+                },
+                'error': str(e)
+            }
+
+    @classmethod
+    def _get_normal_distribution_performance_data(cls, available_years: List[int]) -> tuple:
+        """Get normal distribution performance data using statistical thresholds (mean ± 0.5 * std_dev)"""
+        high_performers_data = []
+        low_performers_data = []
+        distribution_stats_data = []
+
+        try:
+            with connections['analysis_db'].cursor() as cursor:
+                # STEP 1: Dynamically get academic years that have grade data
+                logger.debug("🔍 NORMAL DISTRIBUTION: Getting academic years from grade data...")
+
+                cursor.execute("""
+                    SELECT DISTINCT
+                        SUBSTRING(course_name, 1, 4) as year_str,
+                        COUNT(DISTINCT course_id) as course_count,
+                        COUNT(DISTINCT student_id) as student_count,
+                        COUNT(*) as grade_count
+                    FROM course_student_scores
+                    WHERE quiz IS NOT NULL
+                    AND quiz >= 0 AND quiz <= 100
+                    AND course_name LIKE '%年度%'
+                    AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%')
+                    GROUP BY year_str
+                    HAVING grade_count >= 50
+                    ORDER BY year_str DESC
+                """)
+
+                grade_data_years = cursor.fetchall()
+
+                # Convert to list of academic years that have data
+                years_with_data = []
+                for year_row in grade_data_years:
+                    try:
+                        year_int = int(year_row[0])
+                        years_with_data.append({
+                            'year': year_int,
+                            'courses': year_row[1],
+                            'students': year_row[2],
+                            'grades': year_row[3]
+                        })
+                        logger.info(f"📊 NORMAL DISTRIBUTION: Found academic year {year_int}: {year_row[1]} courses, {year_row[2]} students, {year_row[3]} grades")
+                    except (ValueError, TypeError):
+                        continue
+
+                if not years_with_data:
+                    logger.warning("❌ NORMAL DISTRIBUTION: No academic years found with grade data")
+                    return high_performers_data, low_performers_data, distribution_stats_data
+
+                logger.info(f"✅ NORMAL DISTRIBUTION: Processing {len(years_with_data)} academic years: {[y['year'] for y in years_with_data]}")
+
+                # STEP 2: Process each academic year with normal distribution analysis
+                for year_info in years_with_data:
+                    academic_year = year_info['year']
+                    year_pattern = f"{academic_year}年度"
+
+                    logger.debug(f"📈 NORMAL DISTRIBUTION: Processing academic year {academic_year}...")
+
+                    # Get ALL students who have grades in courses from this academic year
+                    yearly_query = """
+                        SELECT
+                            student_id,
+                            AVG(quiz) as avg_grade,
+                            COUNT(*) as grade_count
+                        FROM course_student_scores
+                        WHERE quiz IS NOT NULL
+                        AND quiz >= 0 AND quiz <= 100
+                        AND course_name LIKE %s
+                        AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%')
+                        GROUP BY student_id
+                        ORDER BY avg_grade DESC
+                    """
+
+                    # Get course details for transparency
+                    course_details_query = """
+                        SELECT
+                            course_id,
+                            course_name,
+                            COUNT(DISTINCT student_id) as students_count,
+                            COUNT(*) as grades_count,
+                            AVG(quiz) as avg_grade
+                        FROM course_student_scores
+                        WHERE quiz IS NOT NULL
+                        AND quiz >= 0 AND quiz <= 100
+                        AND course_name LIKE %s
+                        AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%')
+                        GROUP BY course_id, course_name
+                        HAVING students_count >= 3
+                        ORDER BY students_count DESC
+                    """
+
+                    logger.debug(f"🔍 NORMAL DISTRIBUTION: Getting all students with grades in {year_pattern} courses...")
+                    cursor.execute(yearly_query, [f'%{year_pattern}%'])
+                    student_results = cursor.fetchall()
+
+                    # Get course details for transparency
+                    cursor.execute(course_details_query, [f'%{year_pattern}%'])
+                    course_results = cursor.fetchall()
+
+                    logger.debug(f"NORMAL DISTRIBUTION: Found {len(student_results)} students with grades in {year_pattern} courses")
+                    logger.debug(f"NORMAL DISTRIBUTION: Found {len(course_results)} courses for {year_pattern}")
+
+                    if len(student_results) < 10:  # Need at least 10 students for meaningful statistical analysis
+                        logger.debug(f"NORMAL DISTRIBUTION: Insufficient students ({len(student_results)}) for {academic_year}")
+                        continue
+
+                    # Process course details for transparency
+                    year_course_details = []
+                    for course_row in course_results:
+                        year_course_details.append({
+                            'id': str(course_row[0]),
+                            'name': course_row[1] if course_row[1] else f"Course {course_row[0]}",
+                            'students_in_year': course_row[2],
+                            'grades_in_year': course_row[3],
+                            'avg_grade_in_year': round(float(course_row[4]), 2) if course_row[4] else 0
+                        })
+
+                    # NORMAL DISTRIBUTION CALCULATION
+                    grades = [float(s[1]) for s in student_results]
+                    total_students = len(student_results)
+
+                    # Calculate mean and standard deviation
+                    import statistics
+                    mean_grade = statistics.mean(grades)
+                    std_deviation = statistics.stdev(grades) if len(grades) > 1 else 0
+
+                    # Define thresholds: mean ± 0.5 * standard deviation
+                    high_threshold = mean_grade + 0.5 * std_deviation
+                    low_threshold = mean_grade - 0.5 * std_deviation
+
+                    # Categorize students based on statistical thresholds
+                    high_performers = [s for s in student_results if float(s[1]) >= high_threshold]
+                    low_performers = [s for s in student_results if float(s[1]) <= low_threshold]
+                    middle_performers = [s for s in student_results if low_threshold < float(s[1]) < high_threshold]
+
+                    # Calculate averages for each group
+                    high_performers_avg = statistics.mean([float(s[1]) for s in high_performers]) if high_performers else mean_grade
+                    low_performers_avg = statistics.mean([float(s[1]) for s in low_performers]) if low_performers else mean_grade
+
+                    # Calculate percentages
+                    high_performers_percentage = (len(high_performers) / total_students) * 100 if total_students > 0 else 0
+                    low_performers_percentage = (len(low_performers) / total_students) * 100 if total_students > 0 else 0
+                    middle_performers_percentage = (len(middle_performers) / total_students) * 100 if total_students > 0 else 0
+
+                    # Add to results
+                    high_performers_data.append({
+                        'period': str(academic_year),
+                        'avg_grade': round(high_performers_avg, 2),
+                        'student_count': len(high_performers),
+                        'percentage_of_total': round(high_performers_percentage, 1),
+                        'threshold_used': round(high_threshold, 2),
+                        'academic_year': academic_year,
+                        'period_display': f"{academic_year}年度",
+                        'course_count': len(year_course_details),
+                        'courses_used': year_course_details,
+                        'total_students_analyzed': total_students,
+                        'categorization_method': 'normal_distribution_statistical'
+                    })
+
+                    low_performers_data.append({
+                        'period': str(academic_year),
+                        'avg_grade': round(low_performers_avg, 2),
+                        'student_count': len(low_performers),
+                        'percentage_of_total': round(low_performers_percentage, 1),
+                        'threshold_used': round(low_threshold, 2),
+                        'academic_year': academic_year,
+                        'period_display': f"{academic_year}年度",
+                        'course_count': len(year_course_details),
+                        'courses_used': year_course_details,
+                        'total_students_analyzed': total_students,
+                        'categorization_method': 'normal_distribution_statistical'
+                    })
+
+                    # Distribution statistics for this year
+                    distribution_stats_data.append({
+                        'period': str(academic_year),
+                        'academic_year': academic_year,
+                        'period_display': f"{academic_year}年度",
+                        'mean_grade': round(mean_grade, 2),
+                        'std_deviation': round(std_deviation, 2),
+                        'high_threshold': round(high_threshold, 2),
+                        'low_threshold': round(low_threshold, 2),
+                        'high_performers_count': len(high_performers),
+                        'low_performers_count': len(low_performers),
+                        'middle_performers_count': len(middle_performers),
+                        'high_performers_percentage': round(high_performers_percentage, 1),
+                        'low_performers_percentage': round(low_performers_percentage, 1),
+                        'middle_performers_percentage': round(middle_performers_percentage, 1),
+                        'total_students': total_students,
+                        'coefficient_of_variation': round((std_deviation / mean_grade) * 100, 2) if mean_grade > 0 else 0
+                    })
+
+                    logger.info(f"✅ NORMAL DISTRIBUTION {academic_year}: High performers = {round(high_performers_avg, 2)} ({len(high_performers)} students, {round(high_performers_percentage, 1)}%), Low performers = {round(low_performers_avg, 2)} ({len(low_performers)} students, {round(low_performers_percentage, 1)}%), Mean = {round(mean_grade, 2)}, SD = {round(std_deviation, 2)}")
+
+                # Sort by academic year
+                high_performers_data.sort(key=lambda x: x['academic_year'])
+                low_performers_data.sort(key=lambda x: x['academic_year'])
+                distribution_stats_data.sort(key=lambda x: x['academic_year'])
+
+                logger.info(f"🎉 NORMAL DISTRIBUTION: Generated data for {len(high_performers_data)} academic years")
+
+        except Exception as e:
+            logger.error(f"NORMAL DISTRIBUTION: Error in yearly performance data generation: {str(e)}")
+            logger.error(f"Exception details:", exc_info=True)
+
+        return high_performers_data, low_performers_data, distribution_stats_data
+
+    @classmethod
+    def debug_check_name_column_values(cls) -> Dict[str, Any]:
+        """
+        Debug method to check what values are in the name column
+        """
+        try:
+            with connections['analysis_db'].cursor() as cursor:
+                # Check what values exist in the name column
+                debug_query = """
+                    SELECT DISTINCT name, COUNT(*) as count
+                    FROM course_student_scores
+                    WHERE name IS NOT NULL AND name != ''
+                    GROUP BY name
+                    ORDER BY count DESC
+                    LIMIT 20
+                """
+                logger.debug(f"🔍 DEBUG NAME COLUMN QUERY: {debug_query}")
+                cursor.execute(debug_query)
+                results = cursor.fetchall()
+                logger.debug(f"🔍 NAME COLUMN VALUES FOUND: {len(results)} distinct values")
+                for row in results:
+                    logger.debug(f"🔍   Name: '{row[0]}' - Count: {row[1]}")
+                # Also check for any Benesse-like values
+                benesse_query = """
+                    SELECT DISTINCT name, COUNT(*) as count
+                    FROM course_student_scores
+                    WHERE name IS NOT NULL
+                    AND (name LIKE '%benesse%' OR name LIKE '%Benesse%' OR name LIKE '%BENESSE%' OR name LIKE '%ベネッセ%')
+                    GROUP BY name
+                    ORDER BY count DESC
+                """
+                logger.debug(f"🔍 BENESSE SEARCH QUERY: {benesse_query}")
+                cursor.execute(benesse_query)
+                benesse_results = cursor.fetchall()
+                logger.debug(f"🔍 BENESSE-LIKE VALUES FOUND: {len(benesse_results)} values")
+                for row in benesse_results:
+                    logger.debug(f"🔍   Benesse Name: '{row[0]}' - Count: {row[1]}")
+                return {
+                    'all_names': results,
+                    'benesse_names': benesse_results,
+                    'total_distinct_names': len(results)
+                }
+        except Exception as e:
+            logger.error(f"Error in debug_check_name_column_values: {str(e)}")
+            return {'error': str(e)}

@@ -58,6 +58,8 @@
                     <button type="submit"
                             class="btn b-solid btn-secondary-solid btn-sm flex items-center gap-2 hover:bg-secondary-600 transition-colors duration-200"
                             id="clear-cache-btn"
+                            data-year="{{ year }}"
+                            data-show-all="{% if show_all_activities %}true{% else %}false{% endif %}"
                             title="{% trans 'Clear all cached data for this academic year including student analytics, charts, and course distributions' %}">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" class="text-white">
                             <path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
@@ -189,21 +191,6 @@
         </div>
         {% endif %}
 
-        <!-- Monthly Grade Trends -->
-        {% if student_analytics.grade_analytics.monthly_trends %}
-        <div class="col-span-full lg:col-span-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">{% trans "Monthly Grade Trends" %}</h5>
-                    <p class="text-gray-500 dark:text-dark-text-two">{% trans "Average grades and student activity by month" %}</p>
-                </div>
-                <div class="card-body">
-                    <div id="monthly-trends-chart" style="height: 350px;"></div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
         <!-- Activity Types Distribution -->
         {% if student_analytics.access_analytics.activity_types %}
         <div class="col-span-full lg:col-span-6">
@@ -228,24 +215,47 @@
                     <p class="text-gray-500 dark:text-dark-text-two">{% trans "Toggle activity types to see how different types of student engagement relate to academic performance" %}</p>
                 </div>
                 <div class="card-body">
-                    <!-- Activity Type Legend Controls -->
+                    <!-- Chart Controls Header -->
                     <div class="mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                         <div class="flex items-center justify-between mb-3">
-                            <h6 class="font-semibold text-gray-800 dark:text-gray-200">{% trans "Activity Types" %}</h6>
-                            <div class="flex items-center gap-2">
-                                <button id="select-all-activities" class="btn btn-xs btn-primary-solid">
-                                    {% trans "Select All" %}
-                                </button>
-                                <button id="deselect-all-activities" class="btn btn-xs btn-secondary-solid">
-                                    {% trans "Deselect All" %}
-                                </button>
+                            <h6 class="font-semibold text-gray-800 dark:text-gray-200">{% trans "Chart Controls" %}</h6>
+                            <div class="flex items-center gap-3">
+                                <!-- Scale Toggle -->
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">{% trans "Scale:" %}</span>
+                                    <button id="toggle-scale" class="btn btn-xs btn-primary-solid flex items-center gap-2 transition-all duration-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" class="text-white">
+                                            <path fill="currentColor" d="M3 19h18v2H3v-2zm0-4h18v2H3v-2zm0-4h18v2H3v-2zm0-4h18v2H3v-2zm0-4h18v2H3v-2z"/>
+                                        </svg>
+                                        <span id="scale-mode-text">{% trans "Logarithmic" %}</span>
+                                    </button>
+                                </div>
+                                <!-- Activity Type Controls -->
+                                <div class="flex items-center gap-2">
+                                    <button id="select-all-activities" class="btn btn-xs btn-primary-solid">
+                                        {% trans "Select All" %}
+                                    </button>
+                                    <button id="deselect-all-activities" class="btn btn-xs btn-secondary-solid">
+                                        {% trans "Deselect All" %}
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div id="activity-type-controls" class="flex flex-wrap gap-3">
-                            <!-- Activity type checkboxes will be populated by JavaScript -->
+
+                        <!-- Scale Information -->
+                        <div id="scale-info" class="mb-3 text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-800 rounded px-2 py-1">
+                            <strong>{% trans "Logarithmic Scale Active:" %}</strong> {% trans "This view compresses large values to better show data distribution. Extreme outliers are scaled down to reveal patterns in the majority of data points." %}
                         </div>
-                        <div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                            {% trans "Select which activity types to include in the analysis. The chart will update automatically to show only the selected activities." %}
+
+                        <!-- Activity Type Legend Controls -->
+                        <div class="mb-3">
+                            <h6 class="font-medium text-gray-700 dark:text-gray-300 mb-2">{% trans "Activity Types" %}</h6>
+                            <div id="activity-type-controls" class="flex flex-wrap gap-3">
+                                <!-- Activity type checkboxes will be populated by JavaScript -->
+                            </div>
+                            <div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                                {% trans "Select which activity types to include in the analysis. The chart will update automatically to show only the selected activities." %}
+                            </div>
                         </div>
                     </div>
 
@@ -432,6 +442,9 @@
                             <p class="text-sm text-blue-700 dark:text-blue-300">
                                 {% trans "Students are categorized based on median activity and grade thresholds. Each point in the scatter plot represents one student's performance in one course." %}
                             </p>
+                            <div class="mt-2 text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-800 rounded px-2 py-1">
+                                <strong>{% trans "Important:" %}</strong> {% trans "The counts below represent student-course combinations, not unique students. A single student may appear in multiple categories if they take multiple courses with different performance patterns." %}
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
@@ -439,24 +452,28 @@
                                 <div class="text-xl lg:text-2xl font-bold text-green-600 dark:text-green-400" id="supporting-count">--</div>
                                 <div class="text-xs lg:text-sm text-green-700 dark:text-green-300 font-medium">{% trans "Supporting Evidence" %}</div>
                                 <div class="text-xs text-green-600 dark:text-green-400 mt-1">{% trans "High Activity + High Grade" %}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{% trans "Student-course records" %}</div>
                             </div>
 
                             <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 lg:p-4 text-center">
                                 <div class="text-xl lg:text-2xl font-bold text-yellow-600 dark:text-yellow-400" id="contradicting-count">--</div>
                                 <div class="text-xs lg:text-sm text-yellow-700 dark:text-yellow-300 font-medium">{% trans "Contradicting Evidence" %}</div>
                                 <div class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">{% trans "High Activity + Low Grade" %}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{% trans "Student-course records" %}</div>
                             </div>
 
                             <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 lg:p-4 text-center">
                                 <div class="text-xl lg:text-2xl font-bold text-blue-600 dark:text-blue-400" id="efficient-count">--</div>
-                                <div class="text-xs lg:text-sm text-blue-700 dark:text-blue-300 font-medium">{% trans "Efficient Learners" %}</div>
+                                <div class="text-xs lg:text-sm text-blue-700 dark:text-blue-300 font-medium">{% trans "Efficient Learning" %}</div>
                                 <div class="text-xs text-blue-600 dark:text-blue-400 mt-1">{% trans "Low Activity + High Grade" %}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{% trans "Student-course records" %}</div>
                             </div>
 
                             <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 lg:p-4 text-center">
                                 <div class="text-xl lg:text-2xl font-bold text-red-600 dark:text-red-400" id="struggling-count">--</div>
-                                <div class="text-xs lg:text-sm text-red-700 dark:text-red-300 font-medium">{% trans "Struggling Students" %}</div>
+                                <div class="text-xs lg:text-sm text-red-700 dark:text-red-300 font-medium">{% trans "Low Performance" %}</div>
                                 <div class="text-xs text-red-600 dark:text-red-400 mt-1">{% trans "Low Activity + Low Grade" %}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{% trans "Student-course records" %}</div>
                             </div>
                         </div>
 
@@ -768,7 +785,6 @@
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <script type="application/json" id="grade-distribution-data">{{ grade_distribution_json|safe }}</script>
-<script type="application/json" id="monthly-trends-data">{{ monthly_trends_json|safe }}</script>
 <script type="application/json" id="activity-types-data">{{ activity_types_json|safe }}</script>
 <script type="application/json" id="correlation-data">{{ correlation_data_json|safe }}</script>
 <script type="application/json" id="top-activity-types-data">{{ top_activity_types_json|safe }}</script>
@@ -780,7 +796,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Parse data from Django
     const gradeDistribution = JSON.parse(document.getElementById('grade-distribution-data').textContent);
-    const monthlyTrends = JSON.parse(document.getElementById('monthly-trends-data').textContent);
     const activityTypes = JSON.parse(document.getElementById('activity-types-data').textContent);
     const correlationData = JSON.parse(document.getElementById('correlation-data').textContent);
     const topActivityTypes = JSON.parse(document.getElementById('top-activity-types-data').textContent);
@@ -788,7 +803,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Debug all data
     console.log('🔍 Parsed data:');
     console.log('  - gradeDistribution length:', gradeDistribution.length);
-    console.log('  - monthlyTrends length:', monthlyTrends.length);
     console.log('  - activityTypes length:', activityTypes.length);
     console.log('  - correlationData length:', correlationData.length);
     console.log('  - topActivityTypes:', topActivityTypes);
@@ -810,6 +824,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Store original correlation data for filtering
     window.originalCorrelationData = correlationData;
     window.currentChart = null; // Store chart instance for updates
+    window.isLogarithmicScale = true; // Default to logarithmic scale
 
     // Check if correlation chart element exists
     const correlationChartElement = document.querySelector("#student-correlation-chart");
@@ -819,6 +834,9 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.log('❌ Chart element #student-correlation-chart not found in DOM!');
     }
+
+    // Initialize scale toggle functionality
+    initializeScaleToggle();
 
     // Grade Distribution Chart
     if (gradeDistribution.length > 0) {
@@ -836,43 +854,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
         new ApexCharts(document.querySelector("#grade-distribution-chart"), gradeDistributionOptions).render();
-    }
-
-    // Monthly Trends Chart
-    if (monthlyTrends.length > 0) {
-        const monthlyTrendsOptions = {
-            series: [{
-                name: '{% trans "Average Grade" %}',
-                data: monthlyTrends.map(item => item.avg_grade),
-                yAxisIndex: 0
-            }, {
-                name: '{% trans "Active Students" %}',
-                data: monthlyTrends.map(item => item.active_students),
-                yAxisIndex: 1
-            }],
-            chart: {
-                type: 'line',
-                height: 350,
-                toolbar: { show: false }
-            },
-            xaxis: {
-                categories: monthlyTrends.map(item => {
-                    const month = item.month;
-                    return month.substring(0, 4) + '-' + month.substring(4, 6);
-                }),
-                title: { text: '{% trans "Month" %}' }
-            },
-            yaxis: [{
-                title: { text: '{% trans "Average Grade (%)" %}' },
-                seriesName: '{% trans "Average Grade" %}'
-            }, {
-                opposite: true,
-                title: { text: '{% trans "Number of Students" %}' },
-                seriesName: '{% trans "Active Students" %}'
-            }],
-            colors: ['#3B82F6', '#10B981']
-        };
-        new ApexCharts(document.querySelector("#monthly-trends-chart"), monthlyTrendsOptions).render();
     }
 
     // Activity Types Chart
@@ -1092,16 +1073,62 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Handle axis title and scaling based on selection
         let xAxisTitle = '{% trans "Number of Selected Activities" %}';
-        let xAxisMin = Math.max(0, minActivities - Math.max(5, Math.floor((maxActivities || 10) * 0.1)));
-        let xAxisMax = (maxActivities || 10) + Math.max(5, Math.floor((maxActivities || 10) * 0.1));
+        let xAxisMin, xAxisMax, xAxisType = 'numeric';
 
         if (selectedActivityTypes.length === 0) {
             xAxisTitle = '{% trans "Total Activities (All Types)" %}';
-            // Use normal scaling since we have real activity data
-            xAxisMin = Math.max(0, minActivities - Math.max(5, Math.floor((maxActivities || 10) * 0.1)));
-            xAxisMax = (maxActivities || 10) + Math.max(5, Math.floor((maxActivities || 10) * 0.1));
         } else {
             xAxisTitle += ` (${selectedActivityTypes.length} type${selectedActivityTypes.length !== 1 ? 's' : ''})`;
+        }
+
+        // Configure axis based on scale mode
+        if (window.isLogarithmicScale) {
+            xAxisType = 'numeric'; // Keep as numeric since ApexCharts doesn't support log on x-axis
+            xAxisTitle += ' {% trans "(Log Scale)" %}';
+
+            // Transform data to logarithmic scale manually
+            validData.forEach(item => {
+                // Apply log transformation to x values (add 1 to avoid log(0))
+                item.custom_total_activities_display = Math.log10(item.custom_total_activities + 1);
+            });
+
+            // Calculate transformed axis range
+            const logActivities = validData.map(item => item.custom_total_activities_display);
+            const minLogActivities = Math.min(...logActivities);
+            const maxLogActivities = Math.max(...logActivities);
+
+            xAxisMin = Math.max(0, minLogActivities - 0.1);
+            xAxisMax = maxLogActivities + 0.1;
+
+            // Update scale info
+            const scaleInfo = document.getElementById('scale-info');
+            if (scaleInfo) {
+                scaleInfo.style.display = 'block';
+                scaleInfo.innerHTML = '<strong>{% trans "Logarithmic Scale Active:" %}</strong> {% trans "X-axis values are transformed using log₁₀(activity + 1) to compress large values and reveal data patterns. Hover over points to see original values." %}';
+            }
+        } else {
+            xAxisType = 'numeric';
+            xAxisTitle += ' {% trans "(Linear Scale)" %}';
+
+            // Use original data for linear scale
+            validData.forEach(item => {
+                item.custom_total_activities_display = item.custom_total_activities;
+            });
+
+            // For linear scale, use padding for better visualization
+            const activities = validData.map(item => item.custom_total_activities);
+            const minActivities = Math.min(...activities);
+            const maxActivities = Math.max(...activities);
+
+            xAxisMin = Math.max(0, minActivities - Math.max(5, Math.floor(maxActivities * 0.05)));
+            xAxisMax = maxActivities + Math.max(5, Math.floor(maxActivities * 0.05));
+
+            // Update scale info
+            const scaleInfo = document.getElementById('scale-info');
+            if (scaleInfo) {
+                scaleInfo.style.display = 'block';
+                scaleInfo.innerHTML = '<strong>{% trans "Linear Scale Active:" %}</strong> {% trans "X-axis shows actual activity counts without transformation. May be difficult to see patterns due to extreme outliers." %}';
+            }
         }
 
         // Categorize each student-course record and assign colors
@@ -1114,16 +1141,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         validData.forEach(item => {
             const point = {
-                x: item.custom_total_activities,
+                x: item.custom_total_activities_display, // Use transformed value for display
                 y: item.avg_grade,
                 z: item.student_id, // For custom tooltip
                 course: item.course_name || item.course_id,
+                originalX: item.custom_total_activities, // Store original value for tooltip
                 // Add activity breakdown for tooltip
                 activityBreakdown: selectedActivityTypes.length > 0
                     ? selectedActivityTypes.map(type => `${type}: ${item[type] || 0}`).join(', ')
                     : `Total activities: ${item.total_activities || 0} (all types)`
             };
 
+            // Use original values for threshold comparison (not transformed values)
             if (item.custom_total_activities >= activityThreshold && item.avg_grade >= gradeThreshold) {
                 categorizedData.highActivityHighGrade.push(point);
             } else if (item.custom_total_activities >= activityThreshold && item.avg_grade < gradeThreshold) {
@@ -1186,17 +1215,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             },
             xaxis: {
-                type: 'numeric',
+                type: xAxisType,
                 title: {
                     text: xAxisTitle,
                     style: { fontSize: '14px', fontWeight: 600 }
                 },
-                min: xAxisMin,
-                max: xAxisMax,
-                tickAmount: 10,
+                ...(xAxisMin !== undefined && { min: xAxisMin }),
+                ...(xAxisMax !== undefined && { max: xAxisMax }),
+                tickAmount: window.isLogarithmicScale ? 6 : 10,
                 labels: {
                     formatter: function(val) {
-                        return Math.round(val);
+                        if (window.isLogarithmicScale) {
+                            // Convert log value back to original scale for display
+                            const originalVal = Math.pow(10, val) - 1;
+                            return originalVal >= 1000000 ? (originalVal/1000000).toFixed(1) + 'M' :
+                                   originalVal >= 1000 ? (originalVal/1000).toFixed(1) + 'K' :
+                                   Math.round(originalVal);
+                        } else {
+                            // For linear scale, show regular numbers
+                            return Math.round(val);
+                        }
                     }
                 },
                 axisBorder: {
@@ -1235,12 +1273,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 custom: function({series, seriesIndex, dataPointIndex, w}) {
                     const data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
                     const category = w.globals.seriesNames[seriesIndex];
+                    const activityCount = data.originalX || data.x; // Use original value if available
                     return '<div class="p-3 bg-white dark:bg-gray-800 rounded shadow-lg border max-w-sm">' +
                            '<div class="font-semibold text-gray-900 dark:text-white mb-2">' + category + '</div>' +
                            '<div class="space-y-1 text-sm">' +
                            '<div class="text-gray-600 dark:text-gray-400"><strong>Student:</strong> ' + data.z + '</div>' +
                            '<div class="text-gray-600 dark:text-gray-400"><strong>Course:</strong> ' + data.course + '</div>' +
-                           '<div class="text-gray-600 dark:text-gray-400"><strong>Selected Activities:</strong> ' + data.x.toLocaleString() + '</div>' +
+                           '<div class="text-gray-600 dark:text-gray-400"><strong>Selected Activities:</strong> ' + activityCount.toLocaleString() + '</div>' +
                            '<div class="text-gray-600 dark:text-gray-400"><strong>Grade:</strong> ' + data.y.toFixed(1) + '%</div>' +
                            (data.activityBreakdown ? '<div class="text-gray-600 dark:text-gray-400 mt-2 text-xs"><strong>Breakdown:</strong><br>' + data.activityBreakdown + '</div>' : '') +
                            '</div>' +
@@ -1277,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             annotations: {
                 xaxis: [{
-                    x: activityThreshold,
+                    x: window.isLogarithmicScale ? Math.log10(activityThreshold + 1) : activityThreshold,
                     borderColor: '#999',
                     strokeDashArray: 5,
                     opacity: 0.8,
@@ -1507,6 +1546,21 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
+    // Initialize scale toggle functionality
+    function initializeScaleToggle() {
+        const scaleToggle = document.getElementById('toggle-scale');
+        const scaleModeText = document.getElementById('scale-mode-text');
+
+        if (scaleToggle && scaleModeText) {
+            scaleToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.isLogarithmicScale = !window.isLogarithmicScale;
+                scaleModeText.textContent = window.isLogarithmicScale ? '{% trans "Logarithmic" %}' : '{% trans "Linear" %}';
+                updateChartBasedOnSelection();
+            });
+        }
+    }
 });
 </script>
 
@@ -1516,8 +1570,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearCacheBtn = document.getElementById('clear-cache-btn');
     if (clearCacheBtn) {
         clearCacheBtn.addEventListener('click', function(e) {
-            const year = {{ year }};
-            const showAllActivities = {% if show_all_activities %}true{% else %}false{% endif %};
+            // Get values from the button's data attributes to avoid template syntax in JS
+            const year = parseInt(clearCacheBtn.getAttribute('data-year') || '{{ year }}');
+            const showAllActivities = clearCacheBtn.getAttribute('data-show-all') === 'true';
             const activityMode = showAllActivities ? 'All Activities' : 'Graded Courses Only';
 
             const confirmMessage = 'Are you sure you want to clear all cached data for academic year ' + year + '?\n\n' +

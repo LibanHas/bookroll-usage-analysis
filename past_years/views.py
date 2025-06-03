@@ -13,8 +13,9 @@ from typing import Dict, Any
 import json
 import logging
 from django.core.cache import cache
-
-from .models import PastYearCourseCategory, PastYearCourseActivity, PastYearStudentGrades
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from .models import PastYearCourseCategory, PastYearCourseActivity, PastYearStudentGrades, PastYearLogAnalytics, PastYearGradeAnalytics, clear_all_past_years_cache
 
 logger = logging.getLogger(__name__)
 
@@ -32,16 +33,89 @@ class PastYearsOverviewView(LoginRequiredMixin, TemplateView):
         # If no years found in categories, fall back to default range
         if not available_years:
             current_year = datetime.now().year
-            start_year = 2021
+            start_year = 2019
             end_year = current_year - 1
             available_years = list(range(start_year, end_year + 1))
             available_years.reverse()
             logger.info(f"No years found in categories, using fallback years: {available_years}")
 
+        # Get log analytics data
+        try:
+            # Get monthly log counts
+            monthly_log_data = PastYearLogAnalytics.get_log_counts_by_period('month')
+
+            # Get yearly log counts
+            yearly_log_data = PastYearLogAnalytics.get_log_counts_by_period('year')
+
+            # Get summary statistics
+            log_summary = PastYearLogAnalytics.get_log_summary_stats()
+
+            # Prepare chart data for JavaScript
+            monthly_chart_data = json.dumps(monthly_log_data.get('data', []))
+            yearly_chart_data = json.dumps(yearly_log_data.get('data', []))
+
+        except Exception as e:
+            logger.error(f"Error fetching log analytics: {str(e)}")
+            monthly_log_data = {'data': [], 'total_logs': 0}
+            yearly_log_data = {'data': [], 'total_logs': 0}
+            log_summary = {'total_unique_logs': 0}
+            monthly_chart_data = '[]'
+            yearly_chart_data = '[]'
+
+        # Get grade performance analytics data
+        try:
+            # Get yearly grade performance data only (academic year-based)
+            yearly_grade_data = PastYearGradeAnalytics.get_grade_performance_by_period()
+
+            # Get normal distribution grade performance data (new statistical approach)
+            normal_distribution_data = PastYearGradeAnalytics.get_grade_performance_normal_distribution()
+
+            # Get grade performance summary statistics
+            grade_summary = PastYearGradeAnalytics.get_grade_performance_summary_stats()
+
+            # Prepare chart data for JavaScript (yearly only) with course transparency
+            yearly_grade_chart_data = json.dumps({
+                'top_25': yearly_grade_data.get('top_25_data', []),
+                'bottom_25': yearly_grade_data.get('bottom_25_data', []),
+                'course_transparency': {
+                    'enabled': True,
+                    'message': 'Course details available for each academic year'
+                }
+            })
+
+            # Prepare normal distribution chart data for JavaScript
+            normal_distribution_chart_data = json.dumps({
+                'high_performers': normal_distribution_data.get('high_performers_data', []),
+                'low_performers': normal_distribution_data.get('low_performers_data', []),
+                'distribution_stats': normal_distribution_data.get('distribution_stats', []),
+                'course_transparency': {
+                    'enabled': True,
+                    'message': 'Statistical analysis with course details available'
+                }
+            })
+
+        except Exception as e:
+            logger.error(f"Error fetching grade performance analytics: {str(e)}")
+            yearly_grade_data = {'top_25_data': [], 'bottom_25_data': [], 'performance_summary': {}}
+            normal_distribution_data = {'high_performers_data': [], 'low_performers_data': [], 'distribution_stats': [], 'performance_summary': {}}
+            grade_summary = {'total_students_analyzed': 0, 'performance_metrics': {}}
+            yearly_grade_chart_data = '{"top_25": [], "bottom_25": [], "course_transparency": {"enabled": false}}'
+            normal_distribution_chart_data = '{"high_performers": [], "low_performers": [], "distribution_stats": [], "course_transparency": {"enabled": false}}'
+
         context.update({
             'available_years': available_years,
             'page_title': _('Past Years Analysis'),
             'page_description': _('Historical data analysis from previous academic years'),
+            'monthly_log_data': monthly_log_data,
+            'yearly_log_data': yearly_log_data,
+            'log_summary': log_summary,
+            'monthly_chart_data': monthly_chart_data,
+            'yearly_chart_data': yearly_chart_data,
+            'yearly_grade_chart_data': yearly_grade_chart_data,
+            'normal_distribution_chart_data': normal_distribution_chart_data,
+            'yearly_grade_data': yearly_grade_data,
+            'normal_distribution_data': normal_distribution_data,
+            'grade_summary': grade_summary,
         })
         return context
 
@@ -290,9 +364,6 @@ class YearStudentsView(LoginRequiredMixin, TemplateView):
                 'grade_distribution_json': json.dumps(
                     grade_analytics.get('grade_distribution', [])
                 ),
-                'monthly_trends_json': json.dumps(
-                    grade_analytics.get('monthly_trends', [])
-                ),
                 'activity_types_json': json.dumps(
                     access_analytics.get('activity_types', [])
                 ),
@@ -361,7 +432,6 @@ class YearStudentsView(LoginRequiredMixin, TemplateView):
             'show_all_activities': show_all_activities,
             'total_courses_in_year': courses_context['total_courses_in_year'],
             'grade_distribution_json': chart_data['grade_distribution_json'],
-            'monthly_trends_json': chart_data['monthly_trends_json'],
             'activity_types_json': chart_data['activity_types_json'],
             'correlation_data_json': chart_data['correlation_data_json'],
             'top_activity_types_json': chart_data['top_activity_types_json'],
@@ -413,63 +483,66 @@ class YearAnalyticsView(LoginRequiredMixin, TemplateView):
 
 
 class ClearCacheView(LoginRequiredMixin, View):
-    """View to clear cache for a specific academic year."""
+    """View to clear all past years related cache"""
 
-    def post(self, request, year):
-        """Clear cache for the specified academic year."""
+    def post(self, request):
+        """Handle cache clearing request"""
         try:
-            # Clear cache for the academic year
-            success = PastYearCourseCategory.clear_cache_for_year(year)
+            logger.info(f"Cache clear requested by user: {request.user.username}")
 
-            if success:
-                messages.success(
-                    request,
-                    _('Cache cleared successfully for academic year {year}').format(year=year)
-                )
-                logger.info(f"Cache cleared for academic year {year} by user {request.user.username}")
+            # Clear all past years cache
+            result = clear_all_past_years_cache()
+
+            if result['success']:
+                logger.info(f"Cache cleared successfully: {result['message']}")
+                return JsonResponse({
+                    'success': True,
+                    'message': result['message'],
+                    'details': {
+                        'method': result['method'],
+                        'keys_cleared': result['keys_cleared'],
+                        'patterns_cleared': result.get('patterns_cleared', [])
+                    }
+                })
             else:
-                messages.warning(
-                    request,
-                    _('Cache clear operation completed for academic year {year}').format(year=year)
-                )
+                logger.error(f"Cache clear failed: {result['message']}")
+                return JsonResponse({
+                    'success': False,
+                    'message': result['message'],
+                    'error': result.get('original_error', 'Unknown error')
+                }, status=500)
 
         except Exception as e:
-            logger.error(f"Error clearing cache for academic year {year}: {str(e)}")
-            messages.error(
-                request,
-                _('Error clearing cache for academic year {year}: {error}').format(year=year, error=str(e))
-            )
+            logger.error(f"Unexpected error during cache clear: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'message': 'An unexpected error occurred while clearing cache',
+                'error': str(e)
+            }, status=500)
 
-        # Determine where to redirect based on the referring page
-        referer = request.META.get('HTTP_REFERER', '')
+    def get(self, request):
+        """Return cache status information"""
+        try:
+            from django.core.cache import cache
+            from django.core.cache.backends.redis import RedisCache
 
-        if 'students' in referer:
-            redirect_url = f'past_years:year_{year}_students'
-        elif 'teachers' in referer:
-            redirect_url = f'past_years:year_{year}_teachers'
-        elif 'analytics' in referer:
-            redirect_url = f'past_years:year_{year}_analytics'
-        else:
-            # Default to courses page
-            redirect_url = f'past_years:year_{year}_courses'
+            cache_info = {
+                'cache_backend': type(cache).__name__,
+                'is_redis': isinstance(cache, RedisCache),
+                'cache_location': getattr(cache, '_cache', {}).get('_server', 'Unknown') if hasattr(cache, '_cache') else 'Unknown'
+            }
 
-        return redirect(redirect_url)
+            return JsonResponse({
+                'success': True,
+                'cache_info': cache_info
+            })
 
-    def get(self, request, year):
-        """Handle GET requests by redirecting based on referer or default to courses page."""
-        referer = request.META.get('HTTP_REFERER', '')
-
-        if 'students' in referer:
-            redirect_url = f'past_years:year_{year}_students'
-        elif 'teachers' in referer:
-            redirect_url = f'past_years:year_{year}_teachers'
-        elif 'analytics' in referer:
-            redirect_url = f'past_years:year_{year}_analytics'
-        else:
-            # Default to courses page
-            redirect_url = f'past_years:year_{year}_courses'
-
-        return redirect(redirect_url)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': 'Could not retrieve cache information',
+                'error': str(e)
+            }, status=500)
 
 
 class CourseGradeDistributionView(LoginRequiredMixin, View):

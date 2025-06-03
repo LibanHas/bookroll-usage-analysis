@@ -43,7 +43,7 @@ staticfiles/
 # Windows
 Thumbs.db
 desktop.ini
-
+project.md
 # IDEs
 .idea/
 *.iml

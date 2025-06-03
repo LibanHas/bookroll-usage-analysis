@@ -136,6 +136,12 @@
             <h6 class="card-title">{% trans "Student Activity Distribution" %}</h6>
             <div class="text-sm text-gray-500 dark:text-dark-text-two">
                 {% trans "Number of students by activity range" %}
+                {% if analytics.overall_stats.max_activities %}
+                <br><span class="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                    <i class="ri-information-line mr-1"></i>
+                    {% trans "Dynamic ranges based on data:" %} {{ analytics.overall_stats.min_activities|floatformat:0 }} - {{ analytics.overall_stats.max_activities|floatformat:0 }} {% trans "activities" %}
+                </span>
+                {% endif %}
             </div>
         </div>
         <div id="activity-distribution-chart" class="h-80"></div>

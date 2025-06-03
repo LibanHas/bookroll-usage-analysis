@@ -9,7 +9,7 @@ def past_years_context(request: HttpRequest) -> Dict[str, Any]:
     This is used for generating dynamic sidebar links.
     """
     current_year = datetime.now().year
-    start_year = 2021
+    start_year = 2019
     end_year = current_year - 1
 
     # Generate list of available years (most recent first)
