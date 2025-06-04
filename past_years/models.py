@@ -1752,10 +1752,10 @@ class PastYearStudentGrades(models.Model):
                     GROUP BY actor_account_name, context_id
                     ORDER BY total_activities DESC
                 """
-                logger.debug(f"ACCESS ANALYTICS: Dynamic raw activity query: {raw_activity_query}")
+                # logger.debug(f"ACCESS ANALYTICS: Dynamic raw activity query: {raw_activity_query}")
                 cursor.execute(raw_activity_query, [start_date, end_date])
                 raw_activity_data = cursor.fetchall()
-                logger.debug(f"ACCESS ANALYTICS: Retrieved {len(raw_activity_data)} raw student-course activity records with dynamic types")
+                # logger.debug(f"ACCESS ANALYTICS: Retrieved {len(raw_activity_data)} raw student-course activity records with dynamic types")
 
                 # STEP 4: Filter activity data by actual student IDs and build with dynamic fields
                 filtered_student_access = []
@@ -2660,7 +2660,7 @@ class PastYearStudentGrades(models.Model):
                 academic_year,
                 course_filter_data=course_filter_data
             )
-            logger.debug(f"TIME DATA: {time_data}")
+            # logger.debug(f"TIME DATA: {time_data}")
 
             if not time_data:
                 logger.warning(f"No time data found for students with grades in academic year {academic_year}")
@@ -3235,15 +3235,15 @@ class PastYearStudentGrades(models.Model):
                     GROUP BY actor_account_name
                     ORDER BY actor_account_name
                 """
-                logger.debug(f"Using pattern-based ID filtering for {academic_year} (pre-2025)")
+                # logger.debug(f"Using pattern-based ID filtering for {academic_year} (pre-2025)")
 
-            logger.debug(f"TIME QUERY for {db_alias}: {time_query}")
+            # logger.debug(f"TIME QUERY for {db_alias}: {time_query}")
 
             with connections[db_alias].cursor() as cursor:
                 cursor.execute(time_query)
                 time_results = cursor.fetchall()
 
-            logger.info(f"Raw query returned {len(time_results)} results from {db_alias}")
+            # logger.info(f"Raw query returned {len(time_results)} results from {db_alias}")
 
             # Convert to dictionary with proper student ID extraction
             time_data = {}

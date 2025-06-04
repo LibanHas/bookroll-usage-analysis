@@ -15,7 +15,15 @@ import logging
 from django.core.cache import cache
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from .models import PastYearCourseCategory, PastYearCourseActivity, PastYearStudentGrades, PastYearLogAnalytics, PastYearGradeAnalytics, clear_all_past_years_cache
+from .models import (
+    PastYearCourseCategory,
+    PastYearCourseActivity,
+    PastYearStudentGrades,
+    PastYearLogAnalytics,
+    PastYearGradeAnalytics,
+    clear_all_past_years_cache
+)
+from .analytics import get_time_spent_by_school_vs_home, clear_time_spent_cache
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +127,55 @@ class PastYearsOverviewView(LoginRequiredMixin, TemplateView):
             normal_distribution_chart_data = '{"high_performers": [], "low_performers": [], "distribution_stats": [], "course_transparency": {"enabled": false}}'
             time_grade_correlation_chart_data = '{}'
 
+        # Get time spent by school vs home analysis data
+        try:
+            # Get available years and limit to reasonable range for performance
+            analysis_years = available_years[:6] if len(available_years) > 6 else available_years  # Limit to 6 years max
+
+            if analysis_years:
+                start_year = min(analysis_years)
+                end_year = max(analysis_years)
+
+                logger.info(f"Fetching time spent analysis for years {start_year}-{end_year}")
+                time_spent_data = get_time_spent_by_school_vs_home(start_year, end_year)
+
+                # Prepare chart data for JavaScript
+                time_spent_yearly_chart_data = json.dumps(time_spent_data.get('yearly_data', []))
+                time_spent_monthly_chart_data = json.dumps(time_spent_data.get('monthly_data', []))
+
+                logger.info(f"Time spent analysis completed: {len(time_spent_data.get('yearly_data', []))} years, {len(time_spent_data.get('monthly_data', []))} months")
+            else:
+                logger.warning("No available years for time spent analysis")
+                time_spent_data = {
+                    'yearly_data': [],
+                    'monthly_data': [],
+                    'summary_stats': {
+                        'total_school_hours': 0,
+                        'total_home_hours': 0,
+                        'total_students_analyzed': 0,
+                        'years_analyzed': []
+                    },
+                    'metadata': {}
+                }
+                time_spent_yearly_chart_data = '[]'
+                time_spent_monthly_chart_data = '[]'
+
+        except Exception as e:
+            logger.error(f"Error fetching time spent analysis: {str(e)}")
+            time_spent_data = {
+                'yearly_data': [],
+                'monthly_data': [],
+                'summary_stats': {
+                    'total_school_hours': 0,
+                    'total_home_hours': 0,
+                    'total_students_analyzed': 0,
+                    'years_analyzed': []
+                },
+                'metadata': {}
+            }
+            time_spent_yearly_chart_data = '[]'
+            time_spent_monthly_chart_data = '[]'
+
         context.update({
             'available_years': available_years,
             'page_title': _('Past Years Analysis'),
@@ -131,6 +188,9 @@ class PastYearsOverviewView(LoginRequiredMixin, TemplateView):
             'yearly_grade_chart_data': yearly_grade_chart_data,
             'normal_distribution_chart_data': normal_distribution_chart_data,
             'time_grade_correlation_chart_data': time_grade_correlation_chart_data,
+            'time_spent_yearly_chart_data': time_spent_yearly_chart_data,
+            'time_spent_monthly_chart_data': time_spent_monthly_chart_data,
+            'time_spent_data': time_spent_data,
             'yearly_grade_data': yearly_grade_data,
             'normal_distribution_data': normal_distribution_data,
             'correlation_data_by_year': correlation_data_by_year,
@@ -512,15 +572,22 @@ class ClearCacheView(LoginRequiredMixin, View):
             # Clear all past years cache
             result = clear_all_past_years_cache()
 
+            # Also clear time spent analysis cache
+            time_spent_cache_cleared = clear_time_spent_cache()
+
             if result['success']:
                 logger.info(f"Cache cleared successfully: {result['message']}")
+                if time_spent_cache_cleared:
+                    logger.info("Time spent analysis cache also cleared successfully")
+
                 return JsonResponse({
                     'success': True,
-                    'message': result['message'],
+                    'message': result['message'] + (' (including time spent analysis cache)' if time_spent_cache_cleared else ''),
                     'details': {
                         'method': result['method'],
                         'keys_cleared': result['keys_cleared'],
-                        'patterns_cleared': result.get('patterns_cleared', [])
+                        'patterns_cleared': result.get('patterns_cleared', []),
+                        'time_spent_cache_cleared': time_spent_cache_cleared
                     }
                 })
             else:

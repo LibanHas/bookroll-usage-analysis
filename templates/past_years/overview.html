@@ -599,6 +599,163 @@
     </div>
     <!-- End Time Spent vs Grade Correlation Section -->
 
+    <!-- Start School vs Home Time Analysis Section -->
+    <div class="col-span-full">
+        <div class="card">
+            <div class="card-header">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h5 class="card-title">{% trans "School vs Home Time Analysis" %}</h5>
+                        <p class="text-gray-500 dark:text-dark-text-two">{% trans "Actual time spent analysis segmented by school hours vs home hours across academic years" %}</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <!-- View Toggle Button -->
+                        <div class="flex bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                            <button id="timeAnalysisYearlyToggle" class="px-6 py-3 text-sm font-semibold rounded-l-lg transition-all duration-200 bg-primary-500 hover:bg-primary-700 text-white shadow-md border-r border-gray-300 dark:border-gray-600">
+                                <i class="ri-calendar-2-line mr-2"></i>
+                                {% trans "Yearly" %}
+                            </button>
+                            <button id="timeAnalysisMonthlyToggle" class="px-6 py-3 text-sm font-semibold rounded-r-lg transition-all duration-200 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500">
+                                <i class="ri-calendar-line mr-2"></i>
+                                {% trans "Monthly" %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Chart Container -->
+                <div class="h-auto w-full">
+                    <div id="schoolHomeTimeChart">
+                        <!-- Loading state will be replaced by chart -->
+                    </div>
+                </div>
+
+                <!-- Summary Statistics -->
+                <div class="mt-6 grid grid-cols-12 gap-4">
+                    <!-- Total School Hours Card -->
+                    <div class="col-span-12 sm:col-span-6 lg:col-span-3">
+                        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                        <i class="ri-school-line text-white text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-green-900 dark:text-green-100">{% trans "Total School Hours" %}</p>
+                                    <p class="text-lg font-semibold text-green-900 dark:text-green-100" id="totalSchoolHours">
+                                        {{ time_spent_data.summary_stats.total_school_hours|floatformat:1 }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Home Hours Card -->
+                    <div class="col-span-12 sm:col-span-6 lg:col-span-3">
+                        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                                        <i class="ri-home-line text-white text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-orange-900 dark:text-orange-100">{% trans "Total Home Hours" %}</p>
+                                    <p class="text-lg font-semibold text-orange-900 dark:text-orange-100" id="totalHomeHours">
+                                        {{ time_spent_data.summary_stats.total_home_hours|floatformat:1 }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Students Analyzed Card -->
+                    <div class="col-span-12 sm:col-span-6 lg:col-span-3">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                        <i class="ri-user-line text-white text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-blue-900 dark:text-blue-100">{% trans "Students Analyzed" %}</p>
+                                    <p class="text-lg font-semibold text-blue-900 dark:text-blue-100" id="totalStudents">
+                                        {{ time_spent_data.summary_stats.total_students_analyzed|floatformat:0 }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analysis Period Card -->
+                    <div class="col-span-12 sm:col-span-6 lg:col-span-3">
+                        <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                                        <i class="ri-calendar-check-line text-white text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-purple-900 dark:text-purple-100">{% trans "Years Analyzed" %}</p>
+                                    <p class="text-lg font-semibold text-purple-900 dark:text-purple-100" id="yearsAnalyzed">
+                                        {{ time_spent_data.summary_stats.years_analyzed|length }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Configuration Info (Collapsible) -->
+                <div class="mt-6 border-t border-gray-200 dark:border-gray-600 pt-4">
+                    <div class="mb-3 bg-gray-200 dark:bg-gray-800 rounded-lg p-3">
+                        <button id="toggleTimeAnalysisConfig" class="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span>{% trans "Time Analysis" %}</span>
+                            <svg id="timeAnalysisConfigToggleIcon" class="w-3 h-3 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Configuration Content (Initially Hidden) -->
+                    <div id="timeAnalysisConfigContent" class="hidden">
+                        <div class="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0">
+                                    <i class="ri-information-line text-gray-500 dark:text-gray-400 text-lg"></i>
+                                </div>
+                                <div class="text-sm text-gray-600 dark:text-gray-300">
+                                    <h6 class="font-semibold mb-2">{% trans "Analysis Configuration:" %}</h6>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <p><strong>{% trans "School Hours" %}:</strong> {{ time_spent_data.metadata.school_hours }}</p>
+                                            <p><strong>{% trans "Max Session Duration" %}:</strong> {{ time_spent_data.metadata.max_session_duration_hours }}h</p>
+                                            <p><strong>{% trans "Max Activity Duration" %}:</strong> {{ time_spent_data.metadata.max_activity_duration_minutes }} min</p>
+                                        </div>
+                                        <div>
+                                            <p><strong>{% trans "Holidays Considered" %}:</strong> {{ time_spent_data.metadata.holidays_count }} days</p>
+                                            <p><strong>{% trans "Analysis Period" %}:</strong> {{ time_spent_data.metadata.date_range.start }} - {{ time_spent_data.metadata.date_range.end }}</p>
+                                            <p><strong>{% trans "Cache Duration" %}:</strong> {{ time_spent_data.metadata.cache_timeout }}s</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End School vs Home Time Analysis Section -->
+
     <!-- Start Course Transparency Section -->
     <div class="col-span-full mt-6">
         <div class="card">
@@ -2089,6 +2246,443 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }, 100); // Small delay to ensure DOM is fully ready
+});
+</script>
+
+<!-- School vs Home Time Analysis Chart Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Time spent data from Django context
+    const yearlyData = {{ time_spent_yearly_chart_data|safe }};
+    const monthlyData = {{ time_spent_monthly_chart_data|safe }};
+
+    console.log('School vs Home Time Analysis Data:', { yearlyData, monthlyData });
+
+    // Chart variables
+    let timeAnalysisChart;
+    let currentTimeView = 'yearly'; // Start with yearly view
+
+    // Toggle buttons
+    const yearlyToggle = document.getElementById('timeAnalysisYearlyToggle');
+    const monthlyToggle = document.getElementById('timeAnalysisMonthlyToggle');
+
+    // Translations for time analysis chart
+    const timeAnalysisTranslations = {
+        schoolHours: "{% trans 'School Hours' %}",
+        homeHours: "{% trans 'Home Hours' %}",
+        hours: "{% trans 'hours' %}",
+        students: "{% trans 'students' %}",
+        academicYear: "{% trans 'Academic Year' %}",
+        month: "{% trans 'Month' %}",
+        schoolVsHomeTime: "{% trans 'School vs Home Time Analysis' %}",
+        totalHours: "{% trans 'Total Hours' %}",
+        percentage: "{% trans 'Percentage' %}"
+    };
+
+    function createTimeAnalysisChart(data, viewType) {
+        console.log('Creating time analysis chart:', { viewType, dataLength: data.length });
+
+        // Clear any existing content first
+        const chartContainer = document.getElementById('schoolHomeTimeChart');
+
+        if (!data || data.length === 0) {
+            chartContainer.innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-bar-chart-box-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "No Time Data Available" %}</p>
+                    <p class="text-sm">{% trans "No time spent data found for the selected period" %}</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Show loading state while preparing chart
+        chartContainer.innerHTML = `
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <i class="ri-loader-4-line text-2xl animate-spin mb-2"></i>
+                <p class="text-sm">{% trans "Rendering chart..." %}</p>
+            </div>
+        `;
+
+        // Prepare labels and data based on view type
+        let labels, schoolHoursData, homeHoursData;
+
+        if (viewType === 'yearly') {
+            // For yearly view: show academic years on x-axis
+            labels = data.map(item => item.year_display || `${item.academic_year}年度`);
+
+            schoolHoursData = data.map((item, index) => ({
+                x: labels[index],
+                y: parseFloat(item.school_hours) || 0,
+                percentage: parseFloat(item.school_percentage) || 0,
+                studentCount: item.student_count || 0,
+                totalHours: parseFloat(item.total_hours) || 0,
+                academicYear: item.academic_year
+            }));
+
+            homeHoursData = data.map((item, index) => ({
+                x: labels[index],
+                y: parseFloat(item.home_hours) || 0,
+                percentage: parseFloat(item.home_percentage) || 0,
+                studentCount: item.student_count || 0,
+                totalHours: parseFloat(item.total_hours) || 0,
+                academicYear: item.academic_year
+            }));
+        } else {
+            // For monthly view: show year-month on x-axis
+            labels = data.map(item => item.month_display || `${item.academic_year}-${item.month.toString().padStart(2, '0')}`);
+
+            schoolHoursData = data.map((item, index) => ({
+                x: labels[index],
+                y: parseFloat(item.school_hours) || 0,
+                percentage: parseFloat(item.school_percentage) || 0,
+                studentCount: item.student_count || 0,
+                totalHours: parseFloat(item.total_hours) || 0,
+                academicYear: item.academic_year,
+                month: item.month
+            }));
+
+            homeHoursData = data.map((item, index) => ({
+                x: labels[index],
+                y: parseFloat(item.home_hours) || 0,
+                percentage: parseFloat(item.home_percentage) || 0,
+                studentCount: item.student_count || 0,
+                totalHours: parseFloat(item.total_hours) || 0,
+                academicYear: item.academic_year,
+                month: item.month
+            }));
+        }
+
+        const chartOptions = {
+            series: [
+                {
+                    name: timeAnalysisTranslations.schoolHours,
+                    data: schoolHoursData,
+                    color: '#10B981' // Green for school time
+                },
+                {
+                    name: timeAnalysisTranslations.homeHours,
+                    data: homeHoursData,
+                    color: '#F59E0B' // Orange for home time
+                }
+            ],
+            chart: {
+                type: 'bar',
+                height: 500,
+                stacked: true,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: false,
+                        zoomin: false,
+                        zoomout: false,
+                        pan: false,
+                        reset: true
+                    }
+                },
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800
+                },
+                events: {
+                    mounted: function() {
+                        console.log('Time analysis chart mounted successfully');
+                    },
+                    animationEnd: function() {
+                        console.log('Time analysis chart animation completed');
+                    }
+                }
+            },
+            plotOptions: {
+                bar: {
+                    horizontal: false,
+                    columnWidth: viewType === 'yearly' ? '70%' : '50%',
+                    borderRadius: 4,
+                    dataLabels: {
+                        total: {
+                            enabled: true,
+                            style: {
+                                fontSize: '12px',
+                                fontWeight: 600
+                            },
+                            formatter: function(val) {
+                                return parseFloat(val).toFixed(1) + 'h';
+                            }
+                        }
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                style: {
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    colors: ['#ffffff']
+                },
+                formatter: function(val, opts) {
+                    return val > 50 ? `${val.toFixed(0)}h` : ''; // Only show label if value is significant
+                }
+            },
+            title: {
+                text: `${timeAnalysisTranslations.schoolVsHomeTime} (${viewType === 'yearly' ? timeAnalysisTranslations.academicYear : timeAnalysisTranslations.month})`,
+                align: 'left',
+                style: {
+                    fontSize: '18px',
+                    fontWeight: 'bold'
+                }
+            },
+            subtitle: {
+                text: viewType === 'yearly' ?
+                    '{% trans "Actual time spent during school hours vs home hours by academic year" %}' :
+                    '{% trans "Monthly breakdown of time spent during school hours vs home hours" %}',
+                align: 'left',
+                style: {
+                    fontSize: '14px',
+                    color: '#6B7280'
+                }
+            },
+            xaxis: {
+                categories: labels,
+                title: {
+                    text: viewType === 'yearly' ? timeAnalysisTranslations.academicYear : timeAnalysisTranslations.month,
+                    style: {
+                        fontSize: '14px',
+                        fontWeight: 600
+                    }
+                },
+                labels: {
+                    style: {
+                        fontSize: '12px'
+                    },
+                    rotate: viewType === 'monthly' ? -45 : 0
+                }
+            },
+            yaxis: {
+                title: {
+                    text: timeAnalysisTranslations.hours,
+                    style: {
+                        fontSize: '14px',
+                        fontWeight: 600
+                    }
+                },
+                labels: {
+                    style: {
+                        fontSize: '12px'
+                    },
+                    formatter: function(val) {
+                        return val.toFixed(0) + 'h';
+                    }
+                }
+            },
+            colors: ['#10B981', '#F59E0B'],
+            legend: {
+                position: 'top',
+                horizontalAlign: 'right',
+                fontSize: '14px',
+                markers: {
+                    size: 6
+                }
+            },
+            tooltip: {
+                shared: true,
+                intersect: false,
+                custom: function({series, seriesIndex, dataPointIndex, w}) {
+                    const schoolData = w.config.series[0].data[dataPointIndex];
+                    const homeData = w.config.series[1].data[dataPointIndex];
+
+                    const period = labels[dataPointIndex];
+                    const schoolHours = schoolData.y.toFixed(1);
+                    const homeHours = homeData.y.toFixed(1);
+                    const totalHours = (schoolData.y + homeData.y).toFixed(1);
+                    const schoolPercentage = schoolData.percentage.toFixed(1);
+                    const homePercentage = homeData.percentage.toFixed(1);
+                    const students = schoolData.studentCount || homeData.studentCount;
+
+                    // Additional info for tooltip
+                    const academicYear = schoolData.academicYear || homeData.academicYear;
+                    const monthInfo = viewType === 'monthly' && schoolData.month ?
+                        `<div><strong>{% trans "Month" %}:</strong> ${schoolData.month}</div>` : '';
+
+                    return `
+                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 min-w-[250px]">
+                            <div class="font-semibold text-gray-900 dark:text-white mb-3 text-center border-b pb-2">
+                                ${period}
+                            </div>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                                        <span class="text-gray-700 dark:text-gray-300">${timeAnalysisTranslations.schoolHours}:</span>
+                                    </div>
+                                    <span class="font-medium text-gray-900 dark:text-white">${schoolHours}h (${schoolPercentage}%)</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 rounded-full bg-orange-500"></div>
+                                        <span class="text-gray-700 dark:text-gray-300">${timeAnalysisTranslations.homeHours}:</span>
+                                    </div>
+                                    <span class="font-medium text-gray-900 dark:text-white">${homeHours}h (${homePercentage}%)</span>
+                                </div>
+                                <div class="border-t pt-2 mt-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-700 dark:text-gray-300">${timeAnalysisTranslations.totalHours}:</span>
+                                        <span class="font-semibold text-gray-900 dark:text-white">${totalHours}h</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-700 dark:text-gray-300">${timeAnalysisTranslations.students}:</span>
+                                        <span class="font-medium text-gray-900 dark:text-white">${students.toLocaleString()}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-700 dark:text-gray-300">{% trans "Academic Year" %}:</span>
+                                        <span class="font-medium text-gray-900 dark:text-white">${academicYear}年度</span>
+                                    </div>
+                                    ${monthInfo}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            grid: {
+                borderColor: '#E5E7EB',
+                strokeDashArray: 3
+            },
+            responsive: [
+                {
+                    breakpoint: 768,
+                    options: {
+                        plotOptions: {
+                            bar: {
+                                columnWidth: '80%'
+                            }
+                        },
+                        dataLabels: {
+                            enabled: false
+                        }
+                    }
+                }
+            ]
+        };
+
+        // Destroy existing chart if it exists
+        if (timeAnalysisChart) {
+            timeAnalysisChart.destroy();
+        }
+
+        try {
+            // Clear the container before creating new chart
+            chartContainer.innerHTML = '';
+
+            timeAnalysisChart = new ApexCharts(chartContainer, chartOptions);
+
+            // Render the chart and handle any errors
+            timeAnalysisChart.render().then(() => {
+                console.log('Time analysis chart rendered successfully');
+            }).catch((error) => {
+                console.error('Error rendering time analysis chart:', error);
+                chartContainer.innerHTML = `
+                    <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <i class="ri-error-warning-line text-4xl mb-4"></i>
+                        <p class="text-lg font-medium mb-2">{% trans "Chart Rendering Error" %}</p>
+                        <p class="text-sm">{% trans "Unable to display the time analysis chart. Please try refreshing the page." %}</p>
+                    </div>
+                `;
+            });
+        } catch (error) {
+            console.error('Error creating time analysis chart:', error);
+            chartContainer.innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-error-warning-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "Chart Creation Error" %}</p>
+                    <p class="text-sm">{% trans "Unable to create the time analysis chart. Please try refreshing the page." %}</p>
+                </div>
+            `;
+        }
+    }
+
+    function switchTimeView(newView) {
+        if (newView === currentTimeView) return;
+
+        currentTimeView = newView;
+
+        // Update button states
+        if (newView === 'yearly') {
+            yearlyToggle.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+            yearlyToggle.classList.add('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+
+            monthlyToggle.classList.remove('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            monthlyToggle.classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+
+            createTimeAnalysisChart(yearlyData, 'yearly');
+        } else {
+            monthlyToggle.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+            monthlyToggle.classList.add('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+
+            yearlyToggle.classList.remove('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            yearlyToggle.classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+
+            createTimeAnalysisChart(monthlyData, 'monthly');
+        }
+    }
+
+    // Event listeners for toggle buttons
+    yearlyToggle.addEventListener('click', () => switchTimeView('yearly'));
+    monthlyToggle.addEventListener('click', () => switchTimeView('monthly'));
+
+    // Analysis Configuration Toggle Functionality
+    const timeAnalysisConfigToggleBtn = document.getElementById('toggleTimeAnalysisConfig');
+    const timeAnalysisConfigContent = document.getElementById('timeAnalysisConfigContent');
+    const timeAnalysisConfigToggleIcon = document.getElementById('timeAnalysisConfigToggleIcon');
+
+    if (timeAnalysisConfigToggleBtn && timeAnalysisConfigContent) {
+        timeAnalysisConfigToggleBtn.addEventListener('click', function() {
+            const isHidden = timeAnalysisConfigContent.classList.contains('hidden');
+
+            if (isHidden) {
+                // Show configuration
+                timeAnalysisConfigContent.classList.remove('hidden');
+                timeAnalysisConfigToggleIcon.style.transform = 'rotate(180deg)';
+            } else {
+                // Hide configuration
+                timeAnalysisConfigContent.classList.add('hidden');
+                timeAnalysisConfigToggleIcon.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+
+    // Show loading state initially
+    const initialChartContainer = document.getElementById('schoolHomeTimeChart');
+    if (initialChartContainer) {
+        initialChartContainer.innerHTML = `
+            <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                <i class="ri-loader-4-line text-4xl animate-spin mb-4"></i>
+                <p class="text-lg font-medium mb-2">{% trans "Loading Time Analysis..." %}</p>
+                <p class="text-sm">{% trans "Calculating actual time spent during school hours vs home hours" %}</p>
+            </div>
+        `;
+    }
+
+    // Initialize chart with yearly view after a short delay to show loading state
+    setTimeout(() => {
+        try {
+            console.log('Initializing time analysis chart with data:', { yearlyData, monthlyData });
+            createTimeAnalysisChart(yearlyData, 'yearly');
+        } catch (error) {
+            console.error('Error during initial chart creation:', error);
+            if (initialChartContainer) {
+                initialChartContainer.innerHTML = `
+                    <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <i class="ri-error-warning-line text-4xl mb-4"></i>
+                        <p class="text-lg font-medium mb-2">{% trans "Initialization Error" %}</p>
+                        <p class="text-sm">{% trans "Unable to initialize the time analysis chart. Please refresh the page." %}</p>
+                    </div>
+                `;
+            }
+        }
+    }, 100);
 });
 </script>
 
