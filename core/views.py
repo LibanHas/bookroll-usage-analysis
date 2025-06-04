@@ -283,90 +283,98 @@ class MostMemoedContentView(LoginRequiredMixin, TemplateView):
 
 class MostActiveStudentsView(LoginRequiredMixin, TemplateView):
     """
-    Display a detail page showing all active students with pagination.
+    Display comprehensive student activity analytics without exposing personal information.
+    Shows aggregated statistics, learning patterns, and engagement insights.
     """
     template_name = 'most_active_students.html'
     login_url = settings.LOGIN_URL
 
     def get_context_data(self, **kwargs):
         """
-        Add active students data to the context with database-level pagination.
+        Add comprehensive student activity analytics to the context.
         """
         context = super().get_context_data(**kwargs)
 
-        # Get search term
-        search_term = self.request.GET.get('search', '')
-        context['search_term'] = search_term
+        # Get time frame parameter from request
+        time_frame = self.request.GET.get('time_frame', 'last_3_months')
+        context['selected_time_frame'] = time_frame
 
-        # Get page number from request
-        page = self.request.GET.get('page', 1)
         try:
-            page = int(page)
-        except ValueError:
-            page = 1
+            # Get comprehensive analytics with time frame
+            logger.info(f"Fetching student activity analytics for time frame: {time_frame}")
+            analytics = MostActiveStudents.get_student_activity_analytics(time_frame=time_frame)
+            logger.info(f"Analytics data: {analytics}")
+            context['analytics'] = analytics
 
-        # Calculate offset and get paginated data directly from database
-        page_size = 50
-        offset = (page - 1) * page_size
+            # Get operation engagement patterns with time frame
+            logger.info("Fetching operation engagement patterns...")
+            engagement_patterns = MostActiveStudents.get_operation_engagement_patterns(time_frame=time_frame)
+            logger.info(f"Engagement patterns data: {len(engagement_patterns)} operations")
+            context['engagement_patterns'] = engagement_patterns
 
-        # For students, we need a different approach to get total count with search
-        # because search is applied after fetching from ClickHouse
-        if not search_term:
-            total_count = MostActiveStudents.get_most_active_students_count()
-        else:
-            # We need to get all students and filter them after getting Moodle data
-            # This is less efficient but necessary for searching by student name
-            all_students = MostActiveStudents.get_most_active_students_with_details(
-                limit=None,
-                offset=0,
-                search=search_term
-            )
-            total_count = len(all_students)
+            # Get learning insights with time frame
+            logger.info("Fetching learning insights...")
+            learning_insights = MostActiveStudents.get_learning_insights(time_frame=time_frame)
+            logger.info(f"Learning insights data: {learning_insights}")
+            context['learning_insights'] = learning_insights
 
-            # If we have a small number of results, we can paginate in memory
-            if total_count <= page_size * 2:
-                # Calculate slice indices for the current page
-                start_idx = (page - 1) * page_size
-                end_idx = min(start_idx + page_size, total_count)
+            # Get hourly activity heatmap data with time frame
+            logger.info("Fetching hourly activity heatmap...")
+            hourly_heatmap = MostActiveStudents.get_hourly_activity_heatmap(time_frame=time_frame)
+            logger.info(f"Hourly heatmap data: combined series count={len(hourly_heatmap.get('combined_series', []))}, school max={hourly_heatmap['stats']['max_school_activity']}, non-school max={hourly_heatmap['stats']['max_non_school_activity']}")
+            context['hourly_heatmap'] = hourly_heatmap
 
-                # Get the slice for the current page
-                students = all_students[start_idx:end_idx] if total_count > 0 else []
+            # Get time spent distribution data with time frame
+            logger.info("Fetching time spent distribution...")
+            time_spent_distribution = MostActiveStudents.get_time_spent_distribution(time_frame=time_frame)
+            logger.info(f"Time spent distribution data: {time_spent_distribution['statistics']['count']} data points, mean={time_spent_distribution['statistics']['mean']}h, std={time_spent_distribution['statistics']['std_dev']}h")
+            context['time_spent_distribution'] = time_spent_distribution
 
-                # Create paginator and page object
-                paginator = Paginator(range(total_count), page_size)
-                try:
-                    page_obj = paginator.page(page)
-                except (PageNotAnInteger, EmptyPage):
-                    page_obj = paginator.page(1)
+            # Convert data to JSON for charts
+            context['analytics_json'] = json.dumps(analytics)
+            context['engagement_patterns_json'] = json.dumps(engagement_patterns)
+            context['learning_insights_json'] = json.dumps(learning_insights)
+            context['hourly_heatmap_json'] = json.dumps(hourly_heatmap)
+            context['time_spent_distribution_json'] = json.dumps(time_spent_distribution)
 
-                context['most_active_students'] = students
-                context['is_paginated'] = (total_count > page_size)
-                context['page_obj'] = page_obj
-                return context
+            # Add school time settings to context for display
+            context['school_start_time'] = getattr(settings, 'SCHOOL_START_TIME', '09:00')
+            context['school_end_time'] = getattr(settings, 'SCHOOL_END_TIME', '16:00')
 
-        # Create a custom Page object
-        paginator = Paginator(range(total_count), page_size)
-        try:
-            page_obj = paginator.page(page)
-        except (PageNotAnInteger, EmptyPage):
-            page_obj = paginator.page(1)
+        except Exception as e:
+            logger.error(f"Error in MostActiveStudentsView.get_context_data: {str(e)}")
+            # Provide default empty data structure
+            default_analytics = {
+                'overall_stats': {
+                    'total_students': 0,
+                    'total_activities': 0,
+                    'avg_activities': 0,
+                    'median_activities': 0,
+                    'std_dev_activities': 0,
+                    'min_activities': 0,
+                    'max_activities': 0
+                },
+                'activity_distribution': [],
+                'top_operations': [],
+                'daily_trends': []
+            }
+            default_learning_insights = {
+                'content_interactions': [],
+                'engagement_levels': []
+            }
 
-        # Get only the necessary records for this page
-        students = MostActiveStudents.get_most_active_students_with_details(
-            limit=page_size if not search_term else None,  # When searching, we need all records
-            offset=offset if not search_term else 0,
-            search=search_term or None
-        )
+            context['analytics'] = default_analytics
+            context['engagement_patterns'] = {}
+            context['learning_insights'] = default_learning_insights
+            context['analytics_json'] = json.dumps(default_analytics)
+            context['engagement_patterns_json'] = json.dumps({})
+            context['learning_insights_json'] = json.dumps(default_learning_insights)
+            context['hourly_heatmap'] = {}
+            context['hourly_heatmap_json'] = json.dumps({})
+            context['time_spent_distribution'] = {}
+            context['time_spent_distribution_json'] = json.dumps({})
+            context['error_message'] = "Unable to load analytics data. Please check the database connection."
 
-        # If searching, we need to manually paginate the results
-        if search_term and len(students) > page_size:
-            start_idx = (page - 1) * page_size
-            end_idx = min(start_idx + page_size, len(students))
-            students = students[start_idx:end_idx]
-
-        context['most_active_students'] = students
-        context['is_paginated'] = (total_count > page_size)
-        context['page_obj'] = page_obj
         return context
 
 
@@ -383,9 +391,14 @@ class MostActiveContentsView(LoginRequiredMixin, TemplateView):
         """
         context = super().get_context_data(**kwargs)
 
-        # Get search term
+        # Get search term and activity type
         search_term = self.request.GET.get('search', '')
+        activity_type = self.request.GET.get('activity_type', '')
         context['search_term'] = search_term
+        context['activity_type'] = activity_type
+
+        # Get available activity types from model
+        context['activity_types'] = MostActiveContents.get_activity_types()
 
         # Get page number from request
         page = self.request.GET.get('page', 1)
@@ -399,7 +412,10 @@ class MostActiveContentsView(LoginRequiredMixin, TemplateView):
         offset = (page - 1) * page_size
 
         # Get total count for pagination
-        total_count = MostActiveContents.get_most_active_contents_count(search=search_term or None)
+        total_count = MostActiveContents.get_most_active_contents_count(
+            search=search_term or None,
+            activity_type=activity_type or None
+        )
 
         # Create a custom Page object
         paginator = Paginator(range(total_count), page_size)
@@ -408,11 +424,12 @@ class MostActiveContentsView(LoginRequiredMixin, TemplateView):
         except (PageNotAnInteger, EmptyPage):
             page_obj = paginator.page(1)
 
-        # Get only the necessary records for this page
-        contents = MostActiveContents.get_most_active_contents(
+        # Get only the necessary records for this page with activity breakdown
+        contents = MostActiveContents.get_most_active_contents_with_breakdown(
             limit=page_size,
             offset=offset,
-            search=search_term or None
+            search=search_term or None,
+            activity_type=activity_type or None
         )
 
         context['most_active_contents'] = contents
@@ -508,6 +525,14 @@ class CourseDetailView(LoginRequiredMixin, TemplateView):
         # Get student highlights data with date filtering and convert to JSON for the chart
         student_highlights = CourseDetail.get_student_highlights(course_id, start_date, end_date)
         context['student_highlights_data'] = json.dumps(student_highlights)
+
+        # Get time-categorized student highlights data
+        student_highlights_by_time = CourseDetail.get_student_highlights_by_time_category(course_id, start_date, end_date)
+        context['student_highlights_by_time_data'] = json.dumps(student_highlights_by_time)
+
+        # Add school time settings to context for display
+        context['school_start_time'] = getattr(settings, 'SCHOOL_START_TIME', '09:00')
+        context['school_end_time'] = getattr(settings, 'SCHOOL_END_TIME', '16:00')
 
         return context
 

@@ -152,9 +152,9 @@
         <div class="card">
         <div class="flex-center-between">
             <h6 class="card-title">{% trans "Daily Active Students" %}</h6>
-            <select class="form-input form-select">
-                <option value="this-month">{% trans "This Year" %}</option>
-                <option value="last-month">{% trans "This Month" %}</option>
+            <select id="daily-active-users-period-select" class="form-input form-select">
+                <option value="this-year">{% trans "This Year" %}</option>
+                <option value="this-month" selected>{% trans "This Month" %}</option>
             </select>
         </div>
         <script id="dailyActiveUsersData" type="application/json">
@@ -165,9 +165,9 @@
         <div class="card">
         <div class="flex-center-between">
             <h6 class="card-title">{% trans "Daily Activities" %}</h6>
-            <select class="form-input form-select">
-                <option value="this-month">{% trans "This Year" %}</option>
-                <option value="last-month">{% trans "This Month" %}</option>
+            <select id="daily-activities-period-select" class="form-input form-select">
+                <option value="this-year">{% trans "This Year" %}</option>
+                <option value="this-month" selected>{% trans "This Month" %}</option>
             </select>
         </div>
         <script id="dailyActivitiesData" type="application/json">
@@ -305,35 +305,29 @@
     <!-- Start Recent Support Tickets Section -->
     <div class="col-span-full lg:col-span-6 3xl:col-span-4 card">
         <div class="flex-center-between">
-            <h6 class="card-title">{% trans "Most Active Students" %}</h6>
-            <a href="{% url 'most_active_students' %}" class="btn b-solid btn-primary-solid btn-sm">{% trans "See all" %}</a>
+            <h6 class="card-title">{% trans "Student Learning Analytics" %}</h6>
+            <a href="{% url 'most_active_students' %}" class="btn b-solid btn-primary-solid btn-sm">{% trans "View Analytics" %}</a>
         </div>
-        <div class="overflow-x-auto scrollbar-table">
-            <table class="table-auto w-full whitespace-nowrap text-left text-xs text-gray-500 dark:text-dark-text font-semibold leading-none">
-                <thead class="border-b border-dashed border-gray-900/40 dark:border-dark-border-three">
-                    <tr>
-                        <th class="px-5 py-4">{% trans "Student Name" %}</th>
-                        <th class="px-5 py-4">{% trans "Activities" %}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-dashed divide-gray-900/40 dark:divide-dark-border-three">
-                    {% if most_active_students %}
-                    {% for student in most_active_students %}
-                    <tr>
-                        <td class="flex items-center gap-2 px-5 py-2">
-                            <div>
-                                <h6 class="text-heading font-semibold mb-1.5 line-clamp-1">
-                                    <a href="{% url 'student_detail' student.moodle_id %}">{{student.name}}</a>
-                                </h6>
+        <div class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ active_students }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">{% trans "Active Students" %}</div>
+                </div>
+                <div class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ students_count }}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300">{% trans "Total Students" %}</div>
+                </div>
+            </div>
+            <div class="text-center">
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                    {% trans "Comprehensive learning analytics available" %}
+                </p>
+                <a href="{% url 'most_active_students' %}" class="inline-flex items-center px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors">
+                    <i class="ri-bar-chart-line mr-2"></i>
+                    {% trans "View Full Analytics" %}
+                </a>
                             </div>
-                        </td>
-                        <td class="px-3.5 py-4">{{student.total_activities}}</td>
-                    </tr>
-                    {% endfor %}
-                    {% endif %}
-
-                </tbody>
-            </table>
         </div>
     </div>
     <!-- End Recent Support Tickets Section -->

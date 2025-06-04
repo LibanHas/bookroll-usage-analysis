@@ -1,0 +1,2689 @@
+{% extends 'main.html' %}
+{% load static %}
+{% load i18n %}
+{% load past_years_tags %}
+
+{% block main_content %}
+<div class="grid grid-cols-12 gap-x-4">
+    <!-- Start Bread Crumb Section -->
+    <div class="col-span-full card">
+        <div class="flex items-center justify-between p-4">
+            <!-- Left side: Title and breadcrumbs -->
+            <div>
+                <h5 class="card-title">{{ page_title }}</h5>
+                <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
+                    <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&.current-page]:text-gray-500 dark:[&.current-page]:text-dark-text-two">
+                        <a href="{% url 'index' %}">{% trans "Home" %}</a>
+                    </li>
+                    <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden [&.current-page]:text-gray-500 dark:[&.current-page]:text-dark-text-two current-page">
+                        <a href="#">{% trans "Past Years" %}</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Right side: Cache clear button -->
+            <div class="flex items-center gap-3">
+                <!-- Cache Clear Button -->
+                <button
+                    id="clear-cache-btn"
+                    type="button"
+                    class="btn btn-secondary-solid btn-sm flex items-center gap-2 hover:bg-secondary-600 transition-colors duration-200"
+                    title="{% trans 'Clear all cached data and reload page' %}"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" class="text-white">
+                        <path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                    </svg>
+                    <span>{% trans "Clear Cache" %}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- End Bread Crumb Section -->
+
+    <!-- Start Log Analytics Section -->
+    <div class="col-span-full">
+        <div class="card">
+            <div class="card-header">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h5 class="card-title">{% trans "Log Analytics" %}</h5>
+                        <p class="text-gray-500 dark:text-dark-text-two">{% trans "Total unique log counts across all academic years" %}</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <!-- Toggle Button -->
+                        <div class="flex bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                            <button id="monthlyToggle" class="px-6 py-3 text-sm font-semibold rounded-l-lg transition-all duration-200 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500 border-r border-gray-300 dark:border-gray-600">
+                                <i class="ri-calendar-line mr-2"></i>
+                                {% trans "Monthly" %}
+                            </button>
+                            <button id="yearlyToggle" class="px-6 py-3 text-sm font-semibold rounded-r-lg transition-all duration-200 bg-primary-500 hover:bg-primary-700 text-white shadow-md">
+                                <i class="ri-calendar-2-line mr-2"></i>
+                                {% trans "Yearly" %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Chart Container -->
+                <div class="h-auto w-full">
+                    <div id="logAnalyticsChart"></div>
+                </div>
+
+                <!-- Database Info -->
+                <div class="mt-6 grid grid-cols-12 gap-4">
+                    <!-- Total Logs Summary -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-primary-50 dark:bg-primary-900/20 h-full">
+                        <div class="flex items-center justify-between">
+                            <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "Total Unique Logs" %}</h6>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">{% trans "Summary" %}</div>
+                        </div>
+                        <div class="pt-3 bg-gradient-to-r from-transparent to-primary-50 dark:to-primary-900/10 flex gap-4 mt-3">
+                            <div class="pb-8 flex-shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="text-2xl font-bold text-primary-500" data-value="{{ log_summary.total_unique_logs|default:0 }}">{{ log_summary.total_unique_logs|floatformat:0 }}</div>
+                                </div>
+                            </div>
+                            <div class="flex-grow self-center pb-3">
+                                <div class="w-12 h-12 flex items-center justify-center bg-primary-100 dark:bg-primary-900 rounded-lg ml-auto">
+                                    <i class="ri-database-2-line text-primary-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pre-2025 Database -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-blue-50 dark:bg-blue-900/20 h-full">
+                        <div class="flex items-center justify-between">
+                            <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "Pre-2025 Database" %}</h6>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">{% trans "Legacy" %}</div>
+                        </div>
+                        <div class="pt-3 bg-gradient-to-r from-transparent to-blue-50 dark:to-blue-900/10 flex gap-4 mt-3">
+                            <div class="pb-8 flex-shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="text-2xl font-bold text-blue-500" data-value="{{ log_summary.databases.pre_2025.logs|default:0 }}">{{ log_summary.databases.pre_2025.logs|floatformat:0 }}</div>
+                                </div>
+                                <div class="text-xs mt-1">
+                                    {% if log_summary.databases.pre_2025.available %}
+                                        <span class="text-green-600 dark:text-green-400">{% trans "Available" %}</span>
+                                    {% else %}
+                                        <span class="text-red-600 dark:text-red-400">{% trans "Unavailable" %}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="flex-grow self-center pb-3">
+                                <div class="w-12 h-12 flex items-center justify-center bg-blue-100 dark:bg-blue-900 rounded-lg ml-auto">
+                                    <i class="ri-archive-line text-blue-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2025+ Database -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-green-50 dark:bg-green-900/20 h-full">
+                        <div class="flex items-center justify-between">
+                            <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "2025+ Database" %}</h6>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">{% trans "Current" %}</div>
+                        </div>
+                        <div class="pt-3 bg-gradient-to-r from-transparent to-green-50 dark:to-green-900/10 flex gap-4 mt-3">
+                            <div class="pb-8 flex-shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="text-2xl font-bold text-green-500" data-value="{{ log_summary.databases.post_2025.logs|default:0 }}">{{ log_summary.databases.post_2025.logs|floatformat:0 }}</div>
+                                </div>
+                                <div class="text-xs mt-1">
+                                    {% if log_summary.databases.post_2025.available %}
+                                        <span class="text-green-600 dark:text-green-400">{% trans "Available" %}</span>
+                                    {% else %}
+                                        <span class="text-gray-600 dark:text-gray-400">{% trans "Not applicable" %}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="flex-grow self-center pb-3">
+                                <div class="w-12 h-12 flex items-center justify-center bg-green-100 dark:bg-green-900 rounded-lg ml-auto">
+                                    <i class="ri-server-line text-green-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Log Analytics Section -->
+
+    <!-- Start Grade Performance Analytics Section -->
+    <div class="col-span-full">
+        <div class="card">
+            <div class="card-header">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h5 class="card-title">{% trans "Grade Performance Analytics" %}</h5>
+                        <p class="text-gray-500 dark:text-dark-text-two">{% trans "Compare percentile-based analysis (top/bottom 25%) with statistical distribution analysis (mean ± standard deviation)" %}</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <!-- Analysis Method Toggle -->
+                        <div class="flex bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                            <button id="percentileToggle" class="px-4 py-2 text-sm font-semibold rounded-l-lg transition-all duration-200 bg-primary-500 hover:bg-primary-700 text-white shadow-md border-r border-gray-300 dark:border-gray-600">
+                                <i class="ri-percent-line mr-2"></i>
+                                {% trans "Percentile" %}
+                            </button>
+                            <button id="normalDistToggle" class="px-4 py-2 text-sm font-semibold rounded-r-lg transition-all duration-200 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500">
+                                <i class="ri-bar-chart-grouped-line mr-2"></i>
+                                {% trans "Statistical" %}
+                            </button>
+                        </div>
+
+                        <!-- Academic Year Badge -->
+                        <div class="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700 rounded-lg px-4 py-2">
+                            <span class="text-sm font-semibold text-primary-700 dark:text-primary-300">
+                                <i class="ri-calendar-2-line mr-2"></i>
+                                {% trans "Academic Year Analysis" %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Chart Container -->
+                <div class="h-auto w-full">
+                    <div id="gradePerformanceChart"></div>
+                </div>
+
+                <!-- Chart Explanation Toggle Section -->
+                <div class="mt-6 border-t border-gray-200 dark:border-gray-600 pt-4">
+                    <div class="mb-3 bg-gray-200 dark:bg-gray-800 rounded-lg p-3">
+                        <button id="toggleGradeExplanation" class="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>{% trans "How is this calculated?" %}</span>
+                            <svg id="explanationToggleIcon" class="w-3 h-3 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Explanation Content (Initially Hidden) -->
+                    <div id="gradeExplanationContent" class="hidden space-y-4">
+
+                        <!-- Percentile Method Explanation -->
+                        <div id="percentileExplanation" class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                            <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2 pr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h4a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 00-2-2z"></path>
+                                </svg>
+                                {% trans "Percentile-Based Analysis" %}
+                            </h4>
+                            <div class="space-y-3 text-sm text-blue-700 dark:text-blue-300">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h5 class="font-medium mb-2">{% trans "How it works:" %}</h5>
+                                        <ul class="space-y-1 text-xs">
+                                            <li>• {% trans "All students in each academic year are ranked by their individual average grade" %}</li>
+                                            <li>• {% trans "Top 25% = 25% of students with highest individual grades" %}</li>
+                                            <li>• {% trans "Bottom 25% = 25% of students with lowest individual grades" %}</li>
+                                            <li>• {% trans "Y-axis shows the average grade of each student group" %}</li>
+                                            <li>• {% trans "Fixed group sizes (always 25% of total students per year)" %}</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-medium mb-2">{% trans "Example calculation:" %}</h5>
+                                        <div class="bg-white dark:bg-gray-800 rounded p-3 text-xs">
+                                            <div class="mb-2"><strong>{% trans "355 students total in 2020年度" %}</strong></div>
+                                            <div>{% trans "Top 25% = 88 highest-scoring students" %}</div>
+                                            <div>{% trans "Their individual grades: 95, 94, 92, 90, 89..." %}</div>
+                                            <div class="text-blue-600 dark:text-blue-400 mt-1">{% trans "→ Average: 84.11 points" %}</div>
+                                            <div class="mt-2">{% trans "Bottom 25% = 88 lowest-scoring students" %}</div>
+                                            <div>{% trans "Their individual grades: 65, 63, 60, 58, 55..." %}</div>
+                                            <div class="text-orange-600 dark:text-orange-400 mt-1">{% trans "→ Average: 57.85 points" %}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-blue-100 dark:bg-blue-800/30 rounded">
+                                    <strong>{% trans "Key insight:" %}</strong> {% trans "The chart shows the average performance level of the highest and lowest performing student groups, allowing you to track how the academic gap changes over years." %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Normal Distribution Method Explanation -->
+                        <div id="normalDistributionExplanation" class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                            <h4 class="font-semibold text-green-800 dark:text-green-200 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2 pr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                </svg>
+                                {% trans "Statistical Distribution Analysis" %}
+                            </h4>
+                            <div class="space-y-3 text-sm text-green-700 dark:text-green-300">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h5 class="font-medium mb-2">{% trans "How it works:" %}</h5>
+                                        <ul class="space-y-1 text-xs">
+                                            <li>• {% trans "Calculate statistical mean (μ) and standard deviation (σ) for all student grades in each academic year" %}</li>
+                                            <li>• {% trans "High Performers: Grades ≥ μ + 0.5σ (above statistical threshold)" %}</li>
+                                            <li>• {% trans "Low Performers: Grades ≤ μ - 0.5σ (below statistical threshold)" %}</li>
+                                            <li>• {% trans "Middle Performers: Between low and high thresholds" %}</li>
+                                            <li>• {% trans "Group sizes vary naturally based on actual grade distribution patterns" %}</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-medium mb-2">{% trans "Calculation example:" %}</h5>
+                                        <div class="bg-white dark:bg-gray-800 rounded p-3 text-xs">
+                                            <div class="mb-2"><strong>{% trans "Year with 300 students:" %}</strong></div>
+                                            <div>{% trans "Mean (μ): 75 points, Std Dev (σ): 12 points" %}</div>
+                                            <div class="text-green-600 dark:text-green-400 mt-1">{% trans "High threshold: 75 + (0.5 × 12) = 81 points" %}</div>
+                                            <div class="text-red-600 dark:text-red-400">{% trans "Low threshold: 75 - (0.5 × 12) = 69 points" %}</div>
+                                            <div class="mt-2 text-gray-600 dark:text-gray-400">
+                                                <div>{% trans "High performers: 45 students (15%)" %}</div>
+                                                <div>{% trans "Low performers: 38 students (13%)" %}</div>
+                                                <div>{% trans "Middle performers: 217 students (72%)" %}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="bg-green-100 dark:bg-green-800/30 rounded p-3">
+                                    <strong>{% trans "Key insights:" %}</strong> {% trans "Variable group sizes reveal true distribution characteristics. Years with tight clustering show smaller performer groups, while years with wide grade spreads show larger groups. Provides coefficient of variation for comparing distribution consistency across academic years." %}
+                                </div>
+                                <div class="border-t border-green-200 dark:border-green-700 pt-3">
+                                    <h5 class="font-medium mb-2">{% trans "Statistical advantages:" %}</h5>
+                                    <div class="grid md:grid-cols-2 gap-3 text-xs">
+                                        <div>
+                                            <strong>{% trans "Sensitivity to outliers:" %}</strong>
+                                            <div>{% trans "Detects years with unusually high or low performers affecting distribution shape" %}</div>
+                                        </div>
+                                        <div>
+                                            <strong>{% trans "Distribution patterns:" %}</strong>
+                                            <div>{% trans "Reveals whether grades cluster around mean or spread across full range" %}</div>
+                                        </div>
+                                        <div>
+                                            <strong>{% trans "Comparative analysis:" %}</strong>
+                                            <div>{% trans "Coefficient of variation enables year-to-year consistency comparison" %}</div>
+                                        </div>
+                                        <div>
+                                            <strong>{% trans "Threshold transparency:" %}</strong>
+                                            <div>{% trans "Shows exact grade thresholds used for each academic year" %}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Source Information -->
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-2 flex items-center">
+                                <svg class="w-5 h-5 mr-2 pr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                {% trans "Data Source & Methodology" %}
+                            </h4>
+                            <div class="text-xs text-gray-600 dark:text-gray-400 space-y-2">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <strong>{% trans "Grade Data:" %}</strong>
+                                        <ul class="mt-1 space-y-1">
+                                            <li>• {% trans "Source: Benesse course assessment results" %}</li>
+                                            <li>• {% trans "Categorization: By academic year in course names (e.g., '2024年度')" %}</li>
+                                            <li>• {% trans "Filtering: Valid grades only (0-100 scale)" %}</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <strong>{% trans "Academic Year:" %}</strong>
+                                        <ul class="mt-1 space-y-1">
+                                            <li>• {% trans "Period: April 1st to March 31st (Japanese academic calendar)" %}</li>
+                                            <li>• {% trans "Students: Enrolled in courses matching the academic year pattern" %}</li>
+                                            <li>• {% trans "Minimum: 50+ grade records required for analysis" %}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Key Differences Summary -->
+                        <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+                            <h4 class="font-semibold text-yellow-800 dark:text-yellow-200 mb-2 flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-5L9 11V9a2 2 0 012-2h4"></path>
+                                </svg>
+                                {% trans "Key Differences Summary" %}
+                            </h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-xs">
+                                    <thead>
+                                        <tr class="border-b border-yellow-200 dark:border-yellow-700">
+                                            <th class="text-left py-2">{% trans "Aspect" %}</th>
+                                            <th class="text-left py-2 text-blue-700 dark:text-blue-300">{% trans "Percentile Method" %}</th>
+                                            <th class="text-left py-2 text-green-700 dark:text-green-300">{% trans "Statistical Method" %}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-yellow-700 dark:text-yellow-300">
+                                        <tr class="border-b border-yellow-100 dark:border-yellow-800">
+                                            <td class="py-2 font-medium">{% trans "Y-axis Shows" %}</td>
+                                            <td class="py-2">{% trans "Average grade of top/bottom 25% students" %}</td>
+                                            <td class="py-2">{% trans "Average grade of high/low performers (σ-based)" %}</td>
+                                        </tr>
+                                        <tr class="border-b border-yellow-100 dark:border-yellow-800">
+                                            <td class="py-2 font-medium">{% trans "Group Size" %}</td>
+                                            <td class="py-2">{% trans "Fixed (25% each)" %}</td>
+                                            <td class="py-2">{% trans "Variable (depends on distribution)" %}</td>
+                                        </tr>
+                                        <tr class="border-b border-yellow-100 dark:border-yellow-800">
+                                            <td class="py-2 font-medium">{% trans "Threshold" %}</td>
+                                            <td class="py-2">{% trans "Rank-based" %}</td>
+                                            <td class="py-2">{% trans "Statistical (mean ± 0.5σ)" %}</td>
+                                        </tr>
+                                        <tr class="border-b border-yellow-100 dark:border-yellow-800">
+                                            <td class="py-2 font-medium">{% trans "Best Use" %}</td>
+                                            <td class="py-2">{% trans "Consistent comparison" %}</td>
+                                            <td class="py-2">{% trans "Distribution analysis" %}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-2 font-medium">{% trans "Sensitivity" %}</td>
+                                            <td class="py-2">{% trans "Less sensitive to outliers" %}</td>
+                                            <td class="py-2">{% trans "More sensitive to distribution shape" %}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Grade Performance Analytics Section -->
+
+    <!-- Start Time Spent vs Grade Correlation Section -->
+    <div class="col-span-full">
+        <div class="card">
+            <div class="card-header">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h5 class="card-title">{% trans "Time Spent vs Grade Correlation" %}</h5>
+                        <p class="text-gray-500 dark:text-dark-text-two">{% trans "Correlation analysis between student time spent on platform and their academic performance" %}</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <!-- Academic Year Selector -->
+                        <div class="flex bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                            <select id="correlationYearSelector" class="px-4 py-2 text-sm font-medium rounded-lg border-0 bg-transparent focus:ring-2 focus:ring-primary-500 text-gray-700 dark:text-gray-300">
+                                <option value="">{% trans "Select Academic Year" %}</option>
+                                {% for year in available_years %}
+                                <option value="{{ year }}">{{ year }}年度</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Correlation Info Badge -->
+                        <div id="correlationInfoBadge" class="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2" style="display: none;">
+                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                <i class="ri-line-chart-line mr-2"></i>
+                                <span id="correlationStrength">-</span> Correlation
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Chart Container -->
+                <div class="h-auto w-full">
+                    <div id="timeGradeCorrelationChart">
+                        <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                            <i class="ri-scatter-chart-line text-4xl mb-4"></i>
+                            <p class="text-lg font-medium mb-2">{% trans "Select an Academic Year" %}</p>
+                            <p class="text-sm">{% trans "Choose an academic year from the dropdown above to view the correlation between time spent and grades" %}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Correlation Statistics -->
+                <div id="correlationStats" class="mt-6 grid grid-cols-12 gap-4" style="display: none;">
+                    <!-- Correlation Coefficient Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-blue-50 dark:bg-blue-900/20 h-full">
+                        <div class="flex items-center justify-between">
+                            <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "Correlation Coefficient" %}</h6>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">r</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-transparent to-blue-50 dark:to-blue-900/10 flex gap-4 mt-3">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div id="correlationCoefficient" class="text-2xl font-bold text-blue-500">-</div>
+                                </div>
+                                <div class="text-xs mt-1">
+                                    <span id="correlationDirection" class="text-blue-600 dark:text-blue-400">-</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow self-center">
+                                <div class="w-12 h-12 flex items-center justify-center bg-blue-100 dark:bg-blue-900 rounded-lg ml-auto">
+                                    <i class="ri-line-chart-line text-blue-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- R-Squared Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-green-50 dark:bg-green-900/20 h-full">
+                        <div class="flex items-center justify-between">
+                            <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "R-Squared" %}</h6>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">r²</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-transparent to-green-50 dark:to-green-900/10 flex gap-4 mt-3">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div id="rSquared" class="text-2xl font-bold text-green-500">-</div>
+                                </div>
+                                <div class="text-xs mt-1">
+                                    <span class="text-green-600 dark:text-green-400">{% trans "Variance Explained" %}</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow self-center">
+                                <div class="w-12 h-12 flex items-center justify-center bg-green-100 dark:bg-green-900 rounded-lg ml-auto">
+                                    <i class="ri-pie-chart-line text-green-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Students Analyzed Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-purple-50 dark:bg-purple-900/20 h-full">
+                        <div class="flex items-center justify-between">
+                            <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "Students Analyzed" %}</h6>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">n</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-transparent to-purple-50 dark:to-purple-900/10 flex gap-4 mt-3">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div id="totalStudents" class="text-2xl font-bold text-purple-500">-</div>
+                                </div>
+                                <div class="text-xs mt-1">
+                                    <span class="text-purple-600 dark:text-purple-400">{% trans "With both data" %}</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow self-center">
+                                <div class="w-12 h-12 flex items-center justify-center bg-purple-100 dark:bg-purple-900 rounded-lg ml-auto">
+                                    <i class="ri-group-line text-purple-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation Section -->
+                <div class="mt-6 border-t border-gray-200 dark:border-gray-600 pt-4">
+                    <div class="mb-3 bg-gray-200 dark:bg-gray-800 rounded-lg p-3">
+                        <button id="toggleCorrelationExplanation" class="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>{% trans "How is this calculated?" %}</span>
+                            <svg id="correlationExplanationToggleIcon" class="w-3 h-3 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Explanation Content (Initially Hidden) -->
+                    <div id="correlationExplanationContent" class="hidden space-y-4">
+                        <!-- Methodology Explanation -->
+                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                            <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h4a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 00-2-2z"></path>
+                                </svg>
+                                {% trans "Correlation Analysis Methodology" %}
+                            </h4>
+                            <div class="space-y-3 text-sm text-blue-700 dark:text-blue-300">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h5 class="font-medium mb-2">{% trans "Data Collection Process:" %}</h5>
+                                        <ul class="space-y-1 text-xs">
+                                            <li>• {% trans "Step 1: Find students with Benesse grades in courses matching academic year pattern ('{year}年度')" %}</li>
+                                            <li>• {% trans "Step 2: Query ClickHouse for platform activity data using intelligent student ID matching" %}</li>
+                                            <li>• {% trans "Step 3: Apply course-specific filtering to match time spent to relevant courses" %}</li>
+                                            <li>• {% trans "Step 4: Calculate time spent with session capping (1.5hr max per session)" %}</li>
+                                            <li>• {% trans "Step 5: Match students who have both grade and time tracking data" %}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="bg-blue-100 dark:bg-blue-800/30 rounded p-3">
+                                    <strong>{% trans "Statistical Analysis:" %}</strong> {% trans "Once student data is successfully matched, the system calculates Pearson correlation coefficient (r) and R-squared (r²) to measure the linear relationship between time spent on platform and academic performance. Each data point represents one student's average grade vs. total time spent during the academic year." %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interpretation Guide -->
+                        <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                            <h4 class="font-semibold text-green-800 dark:text-green-200 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                {% trans "How to Interpret the Results" %}
+                            </h4>
+                            <div class="space-y-3 text-sm text-green-700 dark:text-green-300">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h5 class="font-medium mb-2">{% trans "Correlation Strength (r):" %}</h5>
+                                        <div class="space-y-1 text-xs">
+                                            <div><strong>r ≥ 0.7:</strong> {% trans "Strong positive correlation" %}</div>
+                                            <div><strong>0.5 ≤ r < 0.7:</strong> {% trans "Moderate positive correlation" %}</div>
+                                            <div><strong>0.3 ≤ r < 0.5:</strong> {% trans "Weak positive correlation" %}</div>
+                                            <div><strong>-0.3 < r < 0.3:</strong> {% trans "No meaningful correlation" %}</div>
+                                            <div><strong>r ≤ -0.3:</strong> {% trans "Negative correlation" %}</div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-medium mb-2">{% trans "R-Squared Interpretation (r²):" %}</h5>
+                                        <div class="space-y-1 text-xs">
+                                            <div><strong>{% trans "R² = 25%:" %}</strong> {% trans "Time explains 25% of grade variance" %}</div>
+                                            <div><strong>{% trans "R² = 50%:" %}</strong> {% trans "Time explains 50% of grade variance" %}</div>
+                                            <div><strong>{% trans "R² = 75%:" %}</strong> {% trans "Time explains 75% of grade variance" %}</div>
+                                            <div><strong>{% trans "Higher R²:" %}</strong> {% trans "Stronger predictive relationship" %}</div>
+                                            <div><strong>{% trans "Lower R²:" %}</strong> {% trans "Other factors influence grades more" %}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="border-t border-green-200 dark:border-green-700 pt-3">
+                                    <div class="bg-green-100 dark:bg-green-800/30 rounded p-3">
+                                        <strong>{% trans "Quadrant Analysis:" %}</strong> {% trans "The scatter plot divides students into four quadrants based on median time spent and median grade:" %}
+                                        <ul class="mt-2 space-y-1 text-xs">
+                                            <li>• <strong>🎯 {% trans "Sweet Spot" %}:</strong> {% trans "High grades with efficient time use (above median grade, below median time)" %}</li>
+                                            <li>• <strong>💪 {% trans "Hard Workers" %}:</strong> {% trans "High grades with high time investment (above median for both)" %}</li>
+                                            <li>• <strong>😴 {% trans "Under-engaged" %}:</strong> {% trans "Low grades with low time investment (below median for both)" %}</li>
+                                            <li>• <strong>😰 {% trans "Struggling" %}:</strong> {% trans "Low grades despite high time investment (below median grade, above median time)" %}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Time Spent vs Grade Correlation Section -->
+
+    <!-- Start School vs Home Time Analysis Section -->
+    <div class="col-span-full">
+        <div class="card">
+            <div class="card-header">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h5 class="card-title">{% trans "School vs Home Time Analysis" %}</h5>
+                        <p class="text-gray-500 dark:text-dark-text-two">{% trans "Actual time spent analysis segmented by school hours vs home hours across academic years" %}</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <!-- View Toggle Button -->
+                        <div class="flex bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                            <button id="timeAnalysisYearlyToggle" class="px-6 py-3 text-sm font-semibold rounded-l-lg transition-all duration-200 bg-primary-500 hover:bg-primary-700 text-white shadow-md border-r border-gray-300 dark:border-gray-600">
+                                <i class="ri-calendar-2-line mr-2"></i>
+                                {% trans "Yearly" %}
+                            </button>
+                            <button id="timeAnalysisMonthlyToggle" class="px-6 py-3 text-sm font-semibold rounded-r-lg transition-all duration-200 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500">
+                                <i class="ri-calendar-line mr-2"></i>
+                                {% trans "Monthly" %}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Chart Container -->
+                <div class="h-auto w-full">
+                    <div id="schoolHomeTimeChart">
+                        <!-- Loading state will be replaced by chart -->
+                    </div>
+                </div>
+
+                <!-- Summary Statistics -->
+                <div class="mt-6 grid grid-cols-12 gap-4">
+                    <!-- Total School Hours Card -->
+                    <div class="col-span-12 sm:col-span-6 lg:col-span-3">
+                        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                        <i class="ri-school-line text-white text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-green-900 dark:text-green-100">{% trans "Total School Hours" %}</p>
+                                    <p class="text-lg font-semibold text-green-900 dark:text-green-100" id="totalSchoolHours">
+                                        {{ time_spent_data.summary_stats.total_school_hours|floatformat:1 }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Home Hours Card -->
+                    <div class="col-span-12 sm:col-span-6 lg:col-span-3">
+                        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                                        <i class="ri-home-line text-white text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-orange-900 dark:text-orange-100">{% trans "Total Home Hours" %}</p>
+                                    <p class="text-lg font-semibold text-orange-900 dark:text-orange-100" id="totalHomeHours">
+                                        {{ time_spent_data.summary_stats.total_home_hours|floatformat:1 }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Students Analyzed Card -->
+                    <div class="col-span-12 sm:col-span-6 lg:col-span-3">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                        <i class="ri-user-line text-white text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-blue-900 dark:text-blue-100">{% trans "Students Analyzed" %}</p>
+                                    <p class="text-lg font-semibold text-blue-900 dark:text-blue-100" id="totalStudents">
+                                        {{ time_spent_data.summary_stats.total_students_analyzed|floatformat:0 }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analysis Period Card -->
+                    <div class="col-span-12 sm:col-span-6 lg:col-span-3">
+                        <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                                        <i class="ri-calendar-check-line text-white text-sm"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-purple-900 dark:text-purple-100">{% trans "Years Analyzed" %}</p>
+                                    <p class="text-lg font-semibold text-purple-900 dark:text-purple-100" id="yearsAnalyzed">
+                                        {{ time_spent_data.summary_stats.years_analyzed|length }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analysis Configuration Info (Collapsible) -->
+                <div class="mt-6 border-t border-gray-200 dark:border-gray-600 pt-4">
+                    <div class="mb-3 bg-gray-200 dark:bg-gray-800 rounded-lg p-3">
+                        <button id="toggleTimeAnalysisConfig" class="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span>{% trans "Time Analysis" %}</span>
+                            <svg id="timeAnalysisConfigToggleIcon" class="w-3 h-3 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Configuration Content (Initially Hidden) -->
+                    <div id="timeAnalysisConfigContent" class="hidden">
+                        <div class="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0">
+                                    <i class="ri-information-line text-gray-500 dark:text-gray-400 text-lg"></i>
+                                </div>
+                                <div class="text-sm text-gray-600 dark:text-gray-300">
+                                    <h6 class="font-semibold mb-2">{% trans "Analysis Configuration:" %}</h6>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <p><strong>{% trans "School Hours" %}:</strong> {{ time_spent_data.metadata.school_hours }}</p>
+                                            <p><strong>{% trans "Max Session Duration" %}:</strong> {{ time_spent_data.metadata.max_session_duration_hours }}h</p>
+                                            <p><strong>{% trans "Max Activity Duration" %}:</strong> {{ time_spent_data.metadata.max_activity_duration_minutes }} min</p>
+                                        </div>
+                                        <div>
+                                            <p><strong>{% trans "Holidays Considered" %}:</strong> {{ time_spent_data.metadata.holidays_count }} days</p>
+                                            <p><strong>{% trans "Analysis Period" %}:</strong> {{ time_spent_data.metadata.date_range.start }} - {{ time_spent_data.metadata.date_range.end }}</p>
+                                            <p><strong>{% trans "Cache Duration" %}:</strong> {{ time_spent_data.metadata.cache_timeout }}s</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End School vs Home Time Analysis Section -->
+
+    <!-- Start Course Transparency Section -->
+    <div class="col-span-full mt-6">
+        <div class="card">
+            <div class="card-header">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h5 class="card-title">{% trans "Grade Data Transparency" %}</h5>
+                        <p class="text-gray-500 dark:text-dark-text-two">{% trans "View which courses contributed to grade performance data for each academic year" %}</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5">
+                            <span class="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                <i class="ri-database-2-line mr-1"></i>
+                                {% trans "Course-based categorization" %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Course Transparency Container -->
+                <div id="courseTransparencyContainer">
+                    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                        <i class="ri-loader-4-line text-2xl mb-2"></i>
+                        <p>{% trans "Loading course transparency data..." %}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Course Transparency Section -->
+</div>
+
+<!-- ApexCharts Script -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart data from Django context
+    const monthlyData = {{ monthly_chart_data|safe }};
+    const yearlyData = {{ yearly_chart_data|safe }};
+
+    // Translations
+    const translations = {
+        monthlyLogCounts: "{% trans 'Monthly Log Counts' %}",
+        yearlyLogCounts: "{% trans 'Yearly Log Counts' %}",
+        logCountsByMonth: "{% trans 'Log Counts by Month' %}",
+        logCountsByYear: "{% trans 'Log Counts by Academic Year' %}"
+    };
+
+    // Chart configuration
+    let currentView = 'yearly';
+    let chart;
+
+    function createChart(data, viewType) {
+        const labels = data.map(item => {
+            if (viewType === 'monthly') {
+                return item.period; // YYYY-MM format
+            } else {
+                return item.period_display || `${item.period}年度`; // Academic year format
+            }
+        });
+
+        const counts = data.map(item => item.count);
+
+        const options = {
+            series: [{
+                name: viewType === 'monthly' ? translations.monthlyLogCounts : translations.yearlyLogCounts,
+                data: counts.map((count, index) => ({
+                    x: labels[index],
+                    y: count
+                }))
+            }],
+            chart: {
+                type: 'line',
+                height: 500,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                }
+            },
+            title: {
+                text: viewType === 'monthly' ? translations.logCountsByMonth : translations.logCountsByYear,
+                align: 'left'
+            },
+            xaxis: {
+                type: viewType === 'monthly' ? 'datetime' : 'category',
+                categories: labels,
+                title: {
+                    text: viewType === 'monthly' ? '{% trans "Month" %}' : '{% trans "Academic Year" %}'
+                }
+            },
+            yaxis: {
+                title: {
+                    text: '{% trans "Log Count" %}'
+                },
+                labels: {
+                    formatter: function(value) {
+                        return value.toLocaleString();
+                    }
+                }
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 3
+            },
+            fill: {
+                type: 'solid',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.3,
+                    opacityTo: 0.1,
+                    stops: [0, 90, 100]
+                }
+            },
+            colors: ['#101480'],
+            grid: {
+                borderColor: '#e7e7e7',
+                row: {
+                    colors: ['#f3f3f3', 'transparent'],
+                    opacity: 0.5
+                }
+            },
+            markers: {
+                size: 4,
+                colors: ['#101480'],
+                strokeColors: '#fff',
+                strokeWidth: 2,
+                hover: {
+                    size: 6
+                }
+            },
+            tooltip: {
+                shared: true,
+                intersect: false,
+                y: {
+                    formatter: function(value) {
+                        return value.toLocaleString() + ' {% trans "logs" %}';
+                    }
+                }
+            }
+        };
+
+        return new ApexCharts(document.querySelector("#logAnalyticsChart"), options);
+    }
+
+    // Initialize with yearly view
+    chart = createChart(yearlyData, 'yearly');
+    chart.render();
+
+    // Toggle button handlers
+    document.getElementById('monthlyToggle').addEventListener('click', function() {
+        if (currentView !== 'monthly') {
+            currentView = 'monthly';
+            chart.destroy();
+            chart = createChart(monthlyData, 'monthly');
+            chart.render();
+
+            // Update button styles - Monthly becomes active (blue), Yearly becomes inactive (gray)
+            this.classList.add('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            this.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+
+            document.getElementById('yearlyToggle').classList.remove('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            document.getElementById('yearlyToggle').classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+        }
+    });
+
+    document.getElementById('yearlyToggle').addEventListener('click', function() {
+        if (currentView !== 'yearly') {
+            currentView = 'yearly';
+            chart.destroy();
+            chart = createChart(yearlyData, 'yearly');
+            chart.render();
+
+            // Update button styles - Yearly becomes active (blue), Monthly becomes inactive (gray)
+            this.classList.add('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            this.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+
+            document.getElementById('monthlyToggle').classList.remove('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            document.getElementById('monthlyToggle').classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+        }
+    });
+});
+</script>
+
+<!-- Cache Clear JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clearCacheBtn = document.getElementById('clear-cache-btn');
+
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', function() {
+            // Disable button and show loading state
+            clearCacheBtn.disabled = true;
+            const originalContent = clearCacheBtn.innerHTML;
+            clearCacheBtn.innerHTML = '<i class="ri-loader-4-line text-sm animate-spin"></i><span>{% trans "Clearing..." %}</span>';
+
+            // Make AJAX request to clear cache
+            fetch('{% url "past_years:clear_cache" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    showNotification('success', data.message);
+
+                    // Wait a moment then reload the page
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // Show error message
+                    showNotification('error', data.message || '{% trans "Failed to clear cache" %}');
+
+                    // Restore button state
+                    clearCacheBtn.disabled = false;
+                    clearCacheBtn.innerHTML = originalContent;
+                }
+            })
+            .catch(error => {
+                console.error('Cache clear error:', error);
+                showNotification('error', '{% trans "An error occurred while clearing cache" %}');
+
+                // Restore button state
+                clearCacheBtn.disabled = false;
+                clearCacheBtn.innerHTML = originalContent;
+            });
+        });
+    }
+
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Helper function to show notifications
+    function showNotification(type, message) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+
+        if (type === 'success') {
+            notification.className += ' bg-green-600 text-white';
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="ri-check-circle-line text-xl"></i>
+                    <div>
+                        <div class="font-semibold">{% trans "Success" %}</div>
+                        <div class="text-sm">${message}</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            notification.className += ' bg-red-600 text-white';
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="ri-error-warning-line text-xl"></i>
+                    <div>
+                        <div class="font-semibold">{% trans "Error" %}</div>
+                        <div class="text-sm">${message}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Add to page
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 5000);
+    }
+});
+</script>
+
+<!-- Grade Performance Chart Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Grade chart data from Django context (both types)
+    const yearlyGradeData = {{ yearly_grade_chart_data|safe }};
+    const normalDistributionData = {{ normal_distribution_chart_data|safe }};
+
+    // Track current chart view
+    let currentGradeView = 'percentile';
+    let gradeChart;
+
+    // Translations for grade chart
+    const gradeTranslations = {
+        top25Performance: "{% trans 'Top 25% Performance' %}",
+        bottom25Performance: "{% trans 'Bottom 25% Performance' %}",
+        highPerformers: "{% trans 'High Performers (Mean + 0.5σ)' %}",
+        lowPerformers: "{% trans 'Low Performers (Mean - 0.5σ)' %}",
+        academicYear: "{% trans 'Academic Year' %}",
+        averageGrade: "{% trans 'Average Grade' %}",
+        percentileAnalysis: "{% trans 'Percentile Analysis' %}",
+        normalDistributionAnalysis: "{% trans 'Normal Distribution Analysis' %}"
+    };
+
+    function createPercentileChart(data) {
+        const top25Data = data.top_25 || [];
+        const bottom25Data = data.bottom_25 || [];
+
+        // Prepare labels and data for academic years
+        const labels = top25Data.map(item => {
+            return item.period_display || `${item.period}年度`; // Academic year format
+        });
+
+        const top25Grades = top25Data.map((item, index) => ({
+            x: labels[index],
+            y: item.avg_grade,
+            studentCount: item.student_count,
+            totalStudents: item.total_students_analyzed,
+            percentage: 25, // Always 25% for percentile approach
+            method: 'Percentile-based (Top 25%)'
+        }));
+
+        const bottom25Grades = bottom25Data.map((item, index) => ({
+            x: labels[index],
+            y: item.avg_grade,
+            studentCount: item.student_count,
+            totalStudents: item.total_students_analyzed,
+            percentage: 25, // Always 25% for percentile approach
+            method: 'Percentile-based (Bottom 25%)'
+        }));
+
+        const options = {
+            series: [
+                {
+                    name: gradeTranslations.top25Performance,
+                    data: top25Grades
+                },
+                {
+                    name: gradeTranslations.bottom25Performance,
+                    data: bottom25Grades
+                }
+            ],
+            chart: {
+                type: 'line',
+                height: 500,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                }
+            },
+            title: {
+                text: gradeTranslations.gradePerformanceByYear + ' ({% trans "Percentile Method" %})',
+                align: 'left'
+            },
+            xaxis: {
+                type: 'category',
+                categories: labels,
+                title: {
+                    text: '{% trans "Academic Year" %}'
+                }
+            },
+            yaxis: {
+                title: {
+                    text: '{% trans "Average Grade" %}'
+                },
+                min: 0,
+                max: 100,
+                labels: {
+                    formatter: function(value) {
+                        return value.toFixed(1);
+                    }
+                }
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 3
+            },
+            colors: ['#10B981', '#F59E0B'], // Green for top performers, Orange for low performers
+            grid: {
+                borderColor: '#e7e7e7',
+                row: {
+                    colors: ['#f3f3f3', 'transparent'],
+                    opacity: 0.5
+                }
+            },
+            markers: {
+                size: 4,
+                strokeColors: '#fff',
+                strokeWidth: 2,
+                hover: {
+                    size: 6
+                }
+            },
+            tooltip: {
+                shared: true,
+                intersect: false,
+                custom: function({series, seriesIndex, dataPointIndex, w}) {
+                    const data = w.config.series[seriesIndex].data[dataPointIndex];
+                    const seriesName = w.config.series[seriesIndex].name;
+                    const academicYear = data.x;
+                    const grade = data.y.toFixed(1);
+                    const studentCount = data.studentCount;
+                    const totalStudents = data.totalStudents;
+                    const percentage = data.percentage;
+                    const method = data.method;
+
+                    const color = seriesIndex === 0 ? '#10B981' : '#F59E0B';
+
+                    return `
+                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-[200px]">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-3 h-3 rounded-full" style="background-color: ${color}"></div>
+                                <span class="font-semibold text-gray-900 dark:text-white">${seriesName}</span>
+                            </div>
+                            <div class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                                <div><strong>{% trans "Academic Year" %}:</strong> ${academicYear}</div>
+                                <div><strong>{% trans "Average Grade" %}:</strong> ${grade} {% trans "points" %}</div>
+                                <div><strong>{% trans "Students in Group" %}:</strong> ${studentCount} (${percentage}%)</div>
+                                <div><strong>{% trans "Total Students" %}:</strong> ${totalStudents}</div>
+                                <div><strong>{% trans "Method" %}:</strong> ${method}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            legend: {
+                position: 'top',
+                horizontalAlign: 'right'
+            }
+        };
+
+        return new ApexCharts(document.querySelector("#gradePerformanceChart"), options);
+    }
+
+    function createNormalDistributionChart(data) {
+        const highPerformersData = data.high_performers || [];
+        const lowPerformersData = data.low_performers || [];
+        const distributionStats = data.distribution_stats || [];
+
+        // Prepare labels and data for academic years
+        const labels = highPerformersData.map(item => {
+            return item.period_display || `${item.period}年度`; // Academic year format
+        });
+
+        const highPerformersGrades = highPerformersData.map((item, index) => {
+            const stats = distributionStats.find(stat => stat.academic_year === item.academic_year) || {};
+            return {
+                x: labels[index],
+                y: item.avg_grade,
+                studentCount: item.student_count,
+                totalStudents: item.total_students_analyzed,
+                percentage: item.percentage_of_total,
+                threshold: item.threshold_used,
+                method: `Statistical (>${stats.high_threshold || 'N/A'})`,
+                meanGrade: stats.mean_grade || 0,
+                stdDev: stats.std_deviation || 0
+            };
+        });
+
+        const lowPerformersGrades = lowPerformersData.map((item, index) => {
+            const stats = distributionStats.find(stat => stat.academic_year === item.academic_year) || {};
+            return {
+                x: labels[index],
+                y: item.avg_grade,
+                studentCount: item.student_count,
+                totalStudents: item.total_students_analyzed,
+                percentage: item.percentage_of_total,
+                threshold: item.threshold_used,
+                method: `Statistical (<${stats.low_threshold || 'N/A'})`,
+                meanGrade: stats.mean_grade || 0,
+                stdDev: stats.std_deviation || 0
+            };
+        });
+
+        const options = {
+            series: [
+                {
+                    name: gradeTranslations.highPerformers,
+                    data: highPerformersGrades
+                },
+                {
+                    name: gradeTranslations.lowPerformers,
+                    data: lowPerformersGrades
+                }
+            ],
+            chart: {
+                type: 'line',
+                height: 500,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                }
+            },
+            title: {
+                text: gradeTranslations.statisticalPerformanceByYear + ' ({% trans "Normal Distribution Method" %})',
+                align: 'left'
+            },
+            xaxis: {
+                type: 'category',
+                categories: labels,
+                title: {
+                    text: '{% trans "Academic Year" %}'
+                }
+            },
+            yaxis: {
+                title: {
+                    text: '{% trans "Average Grade" %}'
+                },
+                min: 0,
+                max: 100,
+                labels: {
+                    formatter: function(value) {
+                        return value.toFixed(1);
+                    }
+                }
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 3
+            },
+            colors: ['#8B5CF6', '#EF4444'], // Purple for high performers, Red for low performers (different from percentile)
+            grid: {
+                borderColor: '#e7e7e7',
+                row: {
+                    colors: ['#f3f3f3', 'transparent'],
+                    opacity: 0.5
+                }
+            },
+            markers: {
+                size: 4,
+                strokeColors: '#fff',
+                strokeWidth: 2,
+                hover: {
+                    size: 6
+                }
+            },
+            tooltip: {
+                shared: true,
+                intersect: false,
+                custom: function({series, seriesIndex, dataPointIndex, w}) {
+                    const data = w.config.series[seriesIndex].data[dataPointIndex];
+                    const seriesName = w.config.series[seriesIndex].name;
+                    const academicYear = data.x;
+                    const grade = data.y.toFixed(1);
+                    const studentCount = data.studentCount;
+                    const totalStudents = data.totalStudents;
+                    const percentage = data.percentage.toFixed(1);
+                    const threshold = data.threshold.toFixed(1);
+                    const method = data.method;
+                    const meanGrade = data.meanGrade.toFixed(1);
+                    const stdDev = data.stdDev.toFixed(1);
+
+                    const color = seriesIndex === 0 ? '#8B5CF6' : '#EF4444';
+
+                    return `
+                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-[220px]">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-3 h-3 rounded-full" style="background-color: ${color}"></div>
+                                <span class="font-semibold text-gray-900 dark:text-white">${seriesName}</span>
+                            </div>
+                            <div class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                                <div><strong>{% trans "Academic Year" %}:</strong> ${academicYear}</div>
+                                <div><strong>{% trans "Average Grade" %}:</strong> ${grade} {% trans "points" %}</div>
+                                <div><strong>{% trans "Students in Group" %}:</strong> ${studentCount} (${percentage}%)</div>
+                                <div><strong>{% trans "Total Students" %}:</strong> ${totalStudents}</div>
+                                <div><strong>{% trans "Threshold" %}:</strong> ${threshold} {% trans "points" %}</div>
+                                <div><strong>{% trans "Year Mean" %}:</strong> ${meanGrade} ± ${stdDev}</div>
+                                <div><strong>{% trans "Method" %}:</strong> {% trans "Mean ± 0.5σ" %}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            legend: {
+                position: 'top',
+                horizontalAlign: 'right'
+            }
+        };
+
+        return new ApexCharts(document.querySelector("#gradePerformanceChart"), options);
+    }
+
+    // Initialize with percentile chart
+    gradeChart = createPercentileChart(yearlyGradeData);
+    gradeChart.render();
+
+    // Toggle button handlers
+    document.getElementById('percentileToggle').addEventListener('click', function() {
+        if (currentGradeView !== 'percentile') {
+            currentGradeView = 'percentile';
+            gradeChart.destroy();
+            gradeChart = createPercentileChart(yearlyGradeData);
+            gradeChart.render();
+
+            // Update button styles - Percentile becomes active (blue), Statistical becomes inactive (gray)
+            this.classList.add('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            this.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+
+            document.getElementById('normalDistToggle').classList.remove('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            document.getElementById('normalDistToggle').classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+
+            // Update explanation display
+            updateExplanationDisplay();
+        }
+    });
+
+    document.getElementById('normalDistToggle').addEventListener('click', function() {
+        if (currentGradeView !== 'normal_distribution') {
+            currentGradeView = 'normal_distribution';
+            gradeChart.destroy();
+            gradeChart = createNormalDistributionChart(normalDistributionData);
+            gradeChart.render();
+
+            // Update button styles - Statistical becomes active (blue), Percentile becomes inactive (gray)
+            this.classList.add('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            this.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+
+            document.getElementById('percentileToggle').classList.remove('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            document.getElementById('percentileToggle').classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+
+            // Update explanation display
+            updateExplanationDisplay();
+        }
+    });
+
+    // Re-render chart when toggling between percentile and normal distribution views
+    function updateGradeChart(viewType) {
+        const data = viewType === 'percentile' ? yearlyGradeData : normalDistributionData;
+        renderGradeChart(data, viewType);
+    }
+
+    // Chart Explanation Toggle Functionality
+    const explanationToggleBtn = document.getElementById('toggleGradeExplanation');
+    const explanationContent = document.getElementById('gradeExplanationContent');
+    const explanationToggleIcon = document.getElementById('explanationToggleIcon');
+
+    if (explanationToggleBtn && explanationContent) {
+        explanationToggleBtn.addEventListener('click', function() {
+            const isHidden = explanationContent.classList.contains('hidden');
+
+            if (isHidden) {
+                // Show explanation
+                explanationContent.classList.remove('hidden');
+                explanationToggleIcon.style.transform = 'rotate(180deg)';
+            } else {
+                // Hide explanation
+                explanationContent.classList.add('hidden');
+                explanationToggleIcon.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+
+    // Update explanation visibility based on current chart view
+    function updateExplanationDisplay() {
+        const percentileExplanation = document.getElementById('percentileExplanation');
+        const normalDistributionExplanation = document.getElementById('normalDistributionExplanation');
+
+        if (percentileExplanation && normalDistributionExplanation) {
+            if (currentGradeView === 'percentile') {
+                percentileExplanation.style.display = 'block';
+                normalDistributionExplanation.style.display = 'none';
+            } else {
+                percentileExplanation.style.display = 'none';
+                normalDistributionExplanation.style.display = 'block';
+            }
+        }
+    }
+
+    // Initialize explanation display
+    updateExplanationDisplay();
+});
+</script>
+
+<!-- Course Transparency Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Course transparency data from Django context
+    const gradeData = {{ yearly_grade_chart_data|safe }};
+
+    // Track currently expanded section
+    let currentlyExpandedYear = null;
+
+    // Build course transparency UI
+    function buildCourseTransparency() {
+        const container = document.getElementById('courseTransparencyContainer');
+        if (!container) return;
+
+        const top25Data = gradeData.top_25 || [];
+        const bottom25Data = gradeData.bottom_25 || [];
+
+        if (top25Data.length === 0 && bottom25Data.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <i class="ri-information-line text-2xl mb-2"></i>
+                    <p>{% trans "No grade performance data available" %}</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Get unique academic years from both datasets
+        const allYears = new Set();
+        top25Data.forEach(item => allYears.add(item.academic_year));
+        bottom25Data.forEach(item => allYears.add(item.academic_year));
+
+        const sortedYears = Array.from(allYears).sort((a, b) => b - a); // Most recent first
+
+        let html = '<div class="space-y-4">';
+
+        sortedYears.forEach(year => {
+            const top25Item = top25Data.find(item => item.academic_year === year);
+            const bottom25Item = bottom25Data.find(item => item.academic_year === year);
+
+            // Use data from whichever is available (should be the same)
+            const yearData = top25Item || bottom25Item;
+            if (!yearData) return;
+
+            const coursesUsed = yearData.courses_used || [];
+            const courseCount = coursesUsed.length;
+            const totalStudents = yearData.student_count || 0;
+
+            // Calculate total grades across all courses for this year
+            const totalGrades = coursesUsed.reduce((sum, course) => sum + (course.grades_in_year || 0), 0);
+
+            // Collect unique grade file names for this year
+            const allGradeFileNames = new Set();
+            coursesUsed.forEach(course => {
+                if (course.grade_file_names && course.grade_file_names !== 'No grade file name') {
+                    // Split by comma and add each unique name
+                    course.grade_file_names.split(', ').forEach(name => {
+                        if (name.trim()) {
+                            allGradeFileNames.add(name.trim());
+                        }
+                    });
+                }
+            });
+            const gradeFileNamesText = allGradeFileNames.size > 0 ?
+                Array.from(allGradeFileNames).join(', ') :
+                'No grade file names';
+
+            html += `
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div class="bg-gray-50 dark:bg-gray-800 px-4 py-3 rounded-t-lg">
+                        <div class="flex items-center justify-between cursor-pointer" onclick="toggleYearSection(${year})">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center">
+                                        <i class="ri-graduation-cap-line text-primary-600 dark:text-primary-400"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white">${year}年度</h4>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                                        ${courseCount} {% trans "courses" %} • ${totalStudents} {% trans "students" %} • ${totalGrades.toLocaleString()} {% trans "grades" %}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="text-xs bg-white dark:bg-gray-700 rounded-full px-3 py-1 border border-gray-300 dark:border-gray-600">
+                                    <span class="text-gray-600 dark:text-gray-300">${courseCount} {% trans "courses" %}</span>
+                                </div>
+                                <i id="chevron-${year}" class="ri-chevron-down-line text-xl text-gray-400 transition-transform duration-200"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="year-${year}" class="course-details" style="display: none;">
+                        <div class="p-4">
+                            <div class="mb-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{% trans "Courses Used in Analysis" %}</h5>
+                                    <div class="flex items-center space-x-2">
+                                        <button onclick="showAllCourses(${year})" id="show-all-${year}" class="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 px-2 py-1 rounded border border-primary-200 dark:border-primary-700">
+                                            {% trans "Show All" %}
+                                        </button>
+                                        <button onclick="showTopCourses(${year})" id="show-top-${year}" class="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 px-2 py-1 rounded border border-gray-200 dark:border-gray-700" style="display: none;">
+                                            {% trans "Show Top 10" %}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="courses-${year}" class="space-y-2">
+                                    <!-- Courses will be inserted here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+
+        // Populate course details for each year
+        sortedYears.forEach(year => {
+            const yearData = top25Data.find(item => item.academic_year === year) || bottom25Data.find(item => item.academic_year === year);
+            if (yearData && yearData.courses_used) {
+                populateCourseDetails(year, yearData.courses_used);
+            }
+        });
+    }
+
+    // Function to populate course details for a specific year
+    function populateCourseDetails(year, courses) {
+        const container = document.getElementById(`courses-${year}`);
+        if (!container) return;
+
+        // Sort courses by students in year (descending)
+        const sortedCourses = courses.sort((a, b) => (b.students_in_year || 0) - (a.students_in_year || 0));
+
+        let html = '';
+        const showLimit = 10; // Show top 10 by default
+
+        sortedCourses.forEach((course, index) => {
+            const isHidden = index >= showLimit;
+            const displayClass = isHidden ? 'style="display: none;"' : '';
+            const hiddenClass = isHidden ? 'course-hidden' : 'course-visible';
+
+            html += `
+                <div class="course-item ${hiddenClass}" data-year="${year}" ${displayClass}>
+                    <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                        <div class="flex items-center space-x-3 flex-grow">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                                    <i class="ri-book-line text-blue-600 dark:text-blue-400 text-sm"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow min-w-0">
+                                <div class="flex items-center space-x-2">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                        ${course.name || 'Course ' + course.id}
+                                    </p>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">
+                                        ID: ${course.id}
+                                    </span>
+                                </div>
+                                <div class="flex items-center space-x-4 mt-1">
+                                    <span class="text-xs text-gray-600 dark:text-gray-400">
+                                        <i class="ri-user-line mr-1"></i>${course.students_in_year || 0} {% trans "students" %}
+                                    </span>
+                                    <span class="text-xs text-gray-600 dark:text-gray-400">
+                                        <i class="ri-file-list-line mr-1"></i>${course.grades_in_year || 0} {% trans "grades" %}
+                                    </span>
+                                    <span class="text-xs text-gray-600 dark:text-gray-400">
+                                        <i class="ri-bar-chart-line mr-1"></i>Avg: ${(course.avg_grade_in_year || 0).toFixed(1)}
+                                    </span>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="text-xs text-gray-500 dark:text-gray-500">
+                                        <i class="ri-file-text-line mr-1"></i>{% trans "Grade file" %}: ${course.grade_file_names || 'No grade file name'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        // Update button visibility
+        const showAllBtn = document.getElementById(`show-all-${year}`);
+        const showTopBtn = document.getElementById(`show-top-${year}`);
+
+        if (courses.length <= showLimit) {
+            if (showAllBtn) showAllBtn.style.display = 'none';
+            if (showTopBtn) showTopBtn.style.display = 'none';
+        }
+    }
+
+    // Global functions for interactivity
+    window.toggleYearSection = function(year) {
+        const section = document.getElementById(`year-${year}`);
+        const chevron = document.getElementById(`chevron-${year}`);
+
+        // If clicking on the currently expanded section, just collapse it
+        if (currentlyExpandedYear === year) {
+            section.style.display = 'none';
+            chevron.classList.remove('rotate-180');
+            currentlyExpandedYear = null;
+            return;
+        }
+
+        // Collapse the currently expanded section if there is one
+        if (currentlyExpandedYear !== null) {
+            const currentSection = document.getElementById(`year-${currentlyExpandedYear}`);
+            const currentChevron = document.getElementById(`chevron-${currentlyExpandedYear}`);
+            if (currentSection) {
+                currentSection.style.display = 'none';
+                currentChevron.classList.remove('rotate-180');
+            }
+        }
+
+        // Expand the clicked section
+        section.style.display = 'block';
+        chevron.classList.add('rotate-180');
+        currentlyExpandedYear = year;
+    };
+
+    window.showAllCourses = function(year) {
+        const hiddenCourses = document.querySelectorAll(`[data-year="${year}"].course-hidden`);
+        hiddenCourses.forEach(course => {
+            course.style.display = 'block';
+        });
+
+        document.getElementById(`show-all-${year}`).style.display = 'none';
+        document.getElementById(`show-top-${year}`).style.display = 'inline-block';
+    };
+
+    window.showTopCourses = function(year) {
+        const hiddenCourses = document.querySelectorAll(`[data-year="${year}"].course-hidden`);
+        hiddenCourses.forEach(course => {
+            course.style.display = 'none';
+        });
+
+        document.getElementById(`show-all-${year}`).style.display = 'inline-block';
+        document.getElementById(`show-top-${year}`).style.display = 'none';
+    };
+
+    // Initialize course transparency
+    buildCourseTransparency();
+});
+</script>
+
+<!-- Time Spent vs Grade Correlation Chart Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Correlation data from Django context
+    const correlationDataByYear = {{ time_grade_correlation_chart_data|safe }};
+
+    // Debug: Log the correlation data to console
+    console.log('Correlation data loaded:', correlationDataByYear);
+    console.log('Available years in correlation data:', Object.keys(correlationDataByYear));
+
+    // Chart variables
+    let correlationChart;
+    let currentCorrelationYear = null;
+
+    // Translations for correlation chart
+    const correlationTranslations = {
+        timeSpent: "{% trans 'Time Spent (Minutes)' %}",
+        averageGrade: "{% trans 'Average Grade' %}",
+        correlationAnalysis: "{% trans 'Time Spent vs Grade Correlation' %}",
+        student: "{% trans 'Student' %}",
+        minutes: "{% trans 'minutes' %}",
+        points: "{% trans 'points' %}",
+        courses: "{% trans 'courses' %}",
+        activeDays: "{% trans 'active days' %}"
+    };
+
+    // Academic year selector
+    const yearSelector = document.getElementById('correlationYearSelector');
+    const correlationInfoBadge = document.getElementById('correlationInfoBadge');
+    const correlationStats = document.getElementById('correlationStats');
+
+    function createCorrelationChart(yearData) {
+        console.log('createCorrelationChart called with:', yearData);
+        const correlationData = yearData.correlation_data || [];
+        const statistics = yearData.statistics || {};
+        console.log('Correlation data length:', correlationData.length);
+        console.log('Statistics:', statistics);
+
+        if (correlationData.length === 0) {
+            console.log('No correlation data, showing no data message');
+            // Show no data message
+            document.getElementById('timeGradeCorrelationChart').innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-emotion-sad-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "No Data Available" %}</p>
+                    <p class="text-sm">{% trans "No students found with both grade and time tracking data for this academic year" %}</p>
+                </div>
+            `;
+            correlationStats.style.display = 'none';
+            correlationInfoBadge.style.display = 'none';
+            return;
+        }
+
+        console.log('Preparing scatter data for', correlationData.length, 'students');
+        // Prepare data for scatter plot
+        const scatterData = correlationData.map(student => ({
+            x: student.total_time_spent_minutes,
+            y: student.average_grade,
+            studentId: student.student_id,
+            totalGrades: student.total_grades,
+            activeDays: student.active_days,
+            courseCount: student.course_count,
+            averageDailyMinutes: student.average_daily_minutes
+        }));
+        console.log('Scatter data sample:', scatterData[0]);
+
+        // Calculate medians for reference lines
+        const timeValues = scatterData.map(d => d.x).sort((a, b) => a - b);
+        const gradeValues = scatterData.map(d => d.y).sort((a, b) => a - b);
+
+        const medianTime = timeValues.length % 2 === 0
+            ? (timeValues[timeValues.length / 2 - 1] + timeValues[timeValues.length / 2]) / 2
+            : timeValues[Math.floor(timeValues.length / 2)];
+
+        const medianGrade = gradeValues.length % 2 === 0
+            ? (gradeValues[gradeValues.length / 2 - 1] + gradeValues[gradeValues.length / 2]) / 2
+            : gradeValues[Math.floor(gradeValues.length / 2)];
+
+        // Calculate max values for positioning quadrant labels
+        const maxTime = Math.max.apply(Math, timeValues);
+        const maxGrade = Math.max.apply(Math, gradeValues);
+
+        console.log('Median time:', medianTime, 'Median grade:', medianGrade);
+
+        // Get regression line data if available
+        const regressionLine = statistics.regression_line || [];
+
+        const options = {
+            series: [
+                {
+                    name: correlationTranslations.student,
+                    type: 'scatter',
+                    data: scatterData
+                }
+            ],
+            chart: {
+                type: 'scatter',
+                height: 500,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                }
+            },
+            title: {
+                text: `${correlationTranslations.correlationAnalysis} (${currentCorrelationYear}年度)`,
+                align: 'left'
+            },
+            xaxis: {
+                type: 'numeric',
+                title: {
+                    text: correlationTranslations.timeSpent
+                },
+                min: 0,
+                labels: {
+                    formatter: function(value) {
+                        return value.toFixed(1);
+                    }
+                }
+            },
+            yaxis: {
+                title: {
+                    text: correlationTranslations.averageGrade
+                },
+                min: 0,
+                max: 100,
+                labels: {
+                    formatter: function(value) {
+                        return value.toFixed(1);
+                    }
+                }
+            },
+            colors: ['#3B82F6'],
+            markers: {
+                size: 6,
+                strokeColors: '#fff',
+                strokeWidth: 2,
+                hover: {
+                    size: 8
+                }
+            },
+            grid: {
+                borderColor: '#e7e7e7',
+                xaxis: {
+                    lines: {
+                        show: true
+                    }
+                },
+                yaxis: {
+                    lines: {
+                        show: true
+                    }
+                }
+            },
+            annotations: {
+                xaxis: [{
+                    x: medianTime,
+                    borderColor: '#FF6B6B',
+                    borderWidth: 2,
+                    strokeDashArray: 5,
+                    label: {
+                        text: '{% trans "Median Time" %}: ' + medianTime.toFixed(1) + 'm',
+                        position: 'top',
+                        style: {
+                            color: '#fff',
+                            background: '#FF6B6B',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            padding: {
+                                left: 8,
+                                right: 8,
+                                top: 4,
+                                bottom: 4
+                            }
+                        }
+                    }
+                }],
+                yaxis: [{
+                    y: medianGrade,
+                    borderColor: '#4ECDC4',
+                    borderWidth: 2,
+                    strokeDashArray: 5,
+                    label: {
+                        text: '{% trans "Median Grade" %}: ' + medianGrade.toFixed(1),
+                        position: 'left',
+                        style: {
+                            color: '#fff',
+                            background: '#4ECDC4',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            padding: {
+                                left: 8,
+                                right: 8,
+                                top: 4,
+                                bottom: 4
+                            }
+                        }
+                    }
+                }],
+                points: [
+                    // Sweet Spot quadrant label (upper-left)
+                    {
+                        x: Math.max(0, medianTime * 0.3),
+                        y: Math.min(100, medianGrade + (100 - medianGrade) * 0.5),
+                        marker: {
+                            size: 0
+                        },
+                        label: {
+                            text: '🎯 {% trans "Sweet Spot" %}\n{% trans "High Grade, Low Time" %}',
+                            textAnchor: 'middle',
+                            style: {
+                                color: '#fff',
+                                background: '#10B981',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                padding: {
+                                    left: 8,
+                                    right: 8,
+                                    top: 6,
+                                    bottom: 6
+                                }
+                            }
+                        }
+                    },
+                    // Hard Workers quadrant label (upper-right)
+                    {
+                        x: medianTime + (maxTime - medianTime) * 0.5,
+                        y: Math.min(100, medianGrade + (100 - medianGrade) * 0.5),
+                        marker: {
+                            size: 0
+                        },
+                        label: {
+                            text: '💪 {% trans "Hard Workers" %}\n{% trans "High Grade, High Time" %}',
+                            textAnchor: 'middle',
+                            style: {
+                                color: '#fff',
+                                background: '#3B82F6',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                padding: {
+                                    left: 8,
+                                    right: 8,
+                                    top: 6,
+                                    bottom: 6
+                                }
+                            }
+                        }
+                    },
+                    // Under-engaged quadrant label (lower-left)
+                    {
+                        x: Math.max(0, medianTime * 0.3),
+                        y: Math.max(0, medianGrade * 0.5),
+                        marker: {
+                            size: 0
+                        },
+                        label: {
+                            text: '😴 {% trans "Under-engaged" %}\n{% trans "Low Grade, Low Time" %}',
+                            textAnchor: 'middle',
+                            style: {
+                                color: '#fff',
+                                background: '#6B7280',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                padding: {
+                                    left: 8,
+                                    right: 8,
+                                    top: 6,
+                                    bottom: 6
+                                }
+                            }
+                        }
+                    },
+                    // Struggling quadrant label (lower-right)
+                    {
+                        x: medianTime + (maxTime - medianTime) * 0.5,
+                        y: Math.max(0, medianGrade * 0.5),
+                        marker: {
+                            size: 0
+                        },
+                        label: {
+                            text: '😰 {% trans "Struggling" %}\n{% trans "Low Grade, High Time" %}',
+                            textAnchor: 'middle',
+                            style: {
+                                color: '#fff',
+                                background: '#EF4444',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                padding: {
+                                    left: 8,
+                                    right: 8,
+                                    top: 6,
+                                    bottom: 6
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            tooltip: {
+                custom: function({series, seriesIndex, dataPointIndex, w}) {
+                    const data = w.config.series[seriesIndex].data[dataPointIndex];
+                    const timeSpent = data.x.toFixed(1);
+                    const timeSpentHours = (data.x / 60).toFixed(1);
+                    const grade = data.y.toFixed(1);
+                    const studentId = data.studentId;
+                    const totalGrades = data.totalGrades;
+                    const activeDays = data.activeDays;
+                    const courseCount = data.courseCount;
+                    const averageDailyMinutes = data.averageDailyMinutes.toFixed(2);
+                    const averageDailyHours = (data.averageDailyMinutes / 60).toFixed(2);
+
+                    // Determine quadrant
+                    let quadrant = '';
+                    let quadrantColor = '';
+                    if (data.y >= medianGrade && data.x < medianTime) {
+                        quadrant = '🎯 {% trans "Sweet Spot" %}';
+                        quadrantColor = '#10B981';
+                    } else if (data.y >= medianGrade && data.x >= medianTime) {
+                        quadrant = '💪 {% trans "Hard Workers" %}';
+                        quadrantColor = '#3B82F6';
+                    } else if (data.y < medianGrade && data.x < medianTime) {
+                        quadrant = '😴 {% trans "Under-engaged" %}';
+                        quadrantColor = '#6B7280';
+                    } else {
+                        quadrant = '😰 {% trans "Struggling" %}';
+                        quadrantColor = '#EF4444';
+                    }
+
+                    return `
+                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-[200px]">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span class="font-semibold text-gray-900 dark:text-white">${correlationTranslations.student} ${studentId}</span>
+                            </div>
+                            <div class="mb-2 p-2 rounded" style="background-color: ${quadrantColor}20; border-left: 3px solid ${quadrantColor};">
+                                <span class="text-sm font-medium" style="color: ${quadrantColor};">${quadrant}</span>
+                            </div>
+                            <div class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                                <div><strong>{% trans "Average Grade" %}:</strong> ${grade} ${correlationTranslations.points}</div>
+                                <div><strong>{% trans "Time Spent" %}:</strong> ${timeSpent} ${correlationTranslations.minutes} (${timeSpentHours} hours)</div>
+                                <div><strong>{% trans "Total Grades" %}:</strong> ${totalGrades}</div>
+                                <div><strong>{% trans "Courses" %}:</strong> ${courseCount} ${correlationTranslations.courses}</div>
+                                <div><strong>{% trans "Active Days" %}:</strong> ${activeDays} ${correlationTranslations.activeDays}</div>
+                                <div><strong>{% trans "Daily Avg" %}:</strong> ${averageDailyMinutes} ${correlationTranslations.minutes}/day (${averageDailyHours} hours/day)</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            legend: {
+                show: false
+            }
+        };
+
+        // Add regression line if available
+        if (regressionLine.length > 0) {
+            options.series.push({
+                name: '{% trans "Trend Line" %}',
+                type: 'line',
+                data: regressionLine.map(point => ({
+                    x: point.x,
+                    y: point.y
+                }))
+            });
+
+            // Update colors for both series
+            options.colors = ['#3B82F6', '#EF4444'];
+            options.stroke = {
+                width: [0, 3],
+                curve: 'smooth'
+            };
+            options.legend.show = true;
+        }
+
+        // Destroy existing chart if it exists
+        if (correlationChart) {
+            correlationChart.destroy();
+        }
+
+        correlationChart = new ApexCharts(document.querySelector("#timeGradeCorrelationChart"), options);
+        correlationChart.render();
+
+        // Update statistics cards
+        updateCorrelationStatistics(statistics, correlationData);
+        correlationStats.style.display = 'grid';
+        correlationInfoBadge.style.display = 'block';
+    }
+
+    function updateCorrelationStatistics(statistics, correlationData = []) {
+        console.log('Updating correlation statistics:', statistics);
+        console.log('Correlation data length:', correlationData.length);
+
+        // Update correlation coefficient
+        const correlationCoeff = statistics.correlation_coefficient || 0;
+        document.getElementById('correlationCoefficient').textContent = correlationCoeff.toFixed(3);
+
+        // Update correlation direction
+        let direction = '{% trans "No correlation" %}';
+        let strengthText = '{% trans "None" %}';
+
+        if (statistics.correlation_direction === 'positive') {
+            direction = '{% trans "Positive" %}';
+        } else if (statistics.correlation_direction === 'negative') {
+            direction = '{% trans "Negative" %}';
+        }
+
+        if (statistics.correlation_strength) {
+            strengthText = statistics.correlation_strength;
+        }
+
+        document.getElementById('correlationDirection').textContent = direction;
+        document.getElementById('correlationStrength').textContent = strengthText;
+
+        // Update R-squared
+        const rSquared = statistics.r_squared || 0;
+        document.getElementById('rSquared').textContent = (rSquared * 100).toFixed(1) + '%';
+
+        // Update total students - use multiple fallback sources
+        let totalStudents = 0;
+
+        // Try different possible field names and fallbacks
+        if (statistics.total_students !== undefined) {
+            totalStudents = statistics.total_students;
+        } else if (statistics.sample_size !== undefined) {
+            totalStudents = statistics.sample_size;
+        } else if (correlationData && correlationData.length) {
+            totalStudents = correlationData.length;
+        }
+
+        console.log('Total students calculated:', totalStudents);
+        document.getElementById('totalStudents').textContent = totalStudents.toLocaleString();
+    }
+
+    // Year selector change handler
+    yearSelector.addEventListener('change', function() {
+        const selectedYear = this.value;
+        console.log('Year selector changed:', selectedYear);
+
+        if (!selectedYear) {
+            console.log('No year selected, showing default message');
+            // Reset to default state
+            document.getElementById('timeGradeCorrelationChart').innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-scatter-chart-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "Select an Academic Year" %}</p>
+                    <p class="text-sm">{% trans "Choose an academic year from the dropdown above to view the correlation between time spent and grades" %}</p>
+                </div>
+            `;
+            correlationStats.style.display = 'none';
+            correlationInfoBadge.style.display = 'none';
+            currentCorrelationYear = null;
+            return;
+        }
+
+        currentCorrelationYear = parseInt(selectedYear);
+        const yearData = correlationDataByYear[selectedYear];
+        console.log('Year data found for', selectedYear, ':', yearData);
+
+        if (yearData) {
+            console.log('Creating chart for year', selectedYear, 'with', yearData.correlation_data?.length, 'data points');
+            createCorrelationChart(yearData);
+        } else {
+            console.log('No year data found for', selectedYear);
+            // Show loading or no data message
+            document.getElementById('timeGradeCorrelationChart').innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-loader-4-line text-4xl animate-spin mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "Loading Data..." %}</p>
+                    <p class="text-sm">{% trans "Please wait while we load the correlation data for this academic year" %}</p>
+                </div>
+            `;
+            correlationStats.style.display = 'none';
+            correlationInfoBadge.style.display = 'none';
+        }
+    });
+
+    // Explanation toggle functionality
+    const correlationExplanationToggleBtn = document.getElementById('toggleCorrelationExplanation');
+    const correlationExplanationContent = document.getElementById('correlationExplanationContent');
+    const correlationExplanationToggleIcon = document.getElementById('correlationExplanationToggleIcon');
+
+    if (correlationExplanationToggleBtn && correlationExplanationContent) {
+        correlationExplanationToggleBtn.addEventListener('click', function() {
+            const isHidden = correlationExplanationContent.classList.contains('hidden');
+
+            if (isHidden) {
+                // Show explanation
+                correlationExplanationContent.classList.remove('hidden');
+                correlationExplanationToggleIcon.style.transform = 'rotate(180deg)';
+            } else {
+                // Hide explanation
+                correlationExplanationContent.classList.add('hidden');
+                correlationExplanationToggleIcon.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+
+    // Initialize with empty state
+    correlationStats.style.display = 'none';
+    correlationInfoBadge.style.display = 'none';
+
+    // Auto-select the second item in the year selector (if available)
+    setTimeout(() => {
+        const yearOptions = yearSelector.querySelectorAll('option');
+        // Check if we have at least 3 options (empty option + 2+ years)
+        if (yearOptions.length >= 3) {
+            // Select the second item (index 1 is the first year, index 2 is the second year)
+            const secondYearOption = yearOptions[2]; // Skip the empty option at index 0 and first year at index 1
+            if (secondYearOption) {
+                yearSelector.value = secondYearOption.value;
+                // Trigger the change event to load the chart
+                yearSelector.dispatchEvent(new Event('change'));
+            }
+        }
+    }, 100); // Small delay to ensure DOM is fully ready
+});
+</script>
+
+<!-- School vs Home Time Analysis Chart Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Time spent data from Django context
+    const yearlyData = {{ time_spent_yearly_chart_data|safe }};
+    const monthlyData = {{ time_spent_monthly_chart_data|safe }};
+
+    console.log('School vs Home Time Analysis Data:', { yearlyData, monthlyData });
+
+    // Chart variables
+    let timeAnalysisChart;
+    let currentTimeView = 'yearly'; // Start with yearly view
+
+    // Toggle buttons
+    const yearlyToggle = document.getElementById('timeAnalysisYearlyToggle');
+    const monthlyToggle = document.getElementById('timeAnalysisMonthlyToggle');
+
+    // Translations for time analysis chart
+    const timeAnalysisTranslations = {
+        schoolHours: "{% trans 'School Hours' %}",
+        homeHours: "{% trans 'Home Hours' %}",
+        hours: "{% trans 'hours' %}",
+        students: "{% trans 'students' %}",
+        academicYear: "{% trans 'Academic Year' %}",
+        month: "{% trans 'Month' %}",
+        schoolVsHomeTime: "{% trans 'School vs Home Time Analysis' %}",
+        totalHours: "{% trans 'Total Hours' %}",
+        percentage: "{% trans 'Percentage' %}"
+    };
+
+    function createTimeAnalysisChart(data, viewType) {
+        console.log('Creating time analysis chart:', { viewType, dataLength: data.length });
+
+        // Clear any existing content first
+        const chartContainer = document.getElementById('schoolHomeTimeChart');
+
+        if (!data || data.length === 0) {
+            chartContainer.innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-bar-chart-box-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "No Time Data Available" %}</p>
+                    <p class="text-sm">{% trans "No time spent data found for the selected period" %}</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Show loading state while preparing chart
+        chartContainer.innerHTML = `
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <i class="ri-loader-4-line text-2xl animate-spin mb-2"></i>
+                <p class="text-sm">{% trans "Rendering chart..." %}</p>
+            </div>
+        `;
+
+        // Prepare labels and data based on view type
+        let labels, schoolHoursData, homeHoursData;
+
+        if (viewType === 'yearly') {
+            // For yearly view: show academic years on x-axis
+            labels = data.map(item => item.year_display || `${item.academic_year}年度`);
+
+            schoolHoursData = data.map((item, index) => ({
+                x: labels[index],
+                y: parseFloat(item.school_hours) || 0,
+                percentage: parseFloat(item.school_percentage) || 0,
+                studentCount: item.student_count || 0,
+                totalHours: parseFloat(item.total_hours) || 0,
+                academicYear: item.academic_year
+            }));
+
+            homeHoursData = data.map((item, index) => ({
+                x: labels[index],
+                y: parseFloat(item.home_hours) || 0,
+                percentage: parseFloat(item.home_percentage) || 0,
+                studentCount: item.student_count || 0,
+                totalHours: parseFloat(item.total_hours) || 0,
+                academicYear: item.academic_year
+            }));
+        } else {
+            // For monthly view: show year-month on x-axis
+            labels = data.map(item => item.month_display || `${item.academic_year}-${item.month.toString().padStart(2, '0')}`);
+
+            schoolHoursData = data.map((item, index) => ({
+                x: labels[index],
+                y: parseFloat(item.school_hours) || 0,
+                percentage: parseFloat(item.school_percentage) || 0,
+                studentCount: item.student_count || 0,
+                totalHours: parseFloat(item.total_hours) || 0,
+                academicYear: item.academic_year,
+                month: item.month
+            }));
+
+            homeHoursData = data.map((item, index) => ({
+                x: labels[index],
+                y: parseFloat(item.home_hours) || 0,
+                percentage: parseFloat(item.home_percentage) || 0,
+                studentCount: item.student_count || 0,
+                totalHours: parseFloat(item.total_hours) || 0,
+                academicYear: item.academic_year,
+                month: item.month
+            }));
+        }
+
+        const chartOptions = {
+            series: [
+                {
+                    name: timeAnalysisTranslations.schoolHours,
+                    data: schoolHoursData,
+                    color: '#10B981' // Green for school time
+                },
+                {
+                    name: timeAnalysisTranslations.homeHours,
+                    data: homeHoursData,
+                    color: '#F59E0B' // Orange for home time
+                }
+            ],
+            chart: {
+                type: 'bar',
+                height: 500,
+                stacked: true,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: false,
+                        zoomin: false,
+                        zoomout: false,
+                        pan: false,
+                        reset: true
+                    }
+                },
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800
+                },
+                events: {
+                    mounted: function() {
+                        console.log('Time analysis chart mounted successfully');
+                    },
+                    animationEnd: function() {
+                        console.log('Time analysis chart animation completed');
+                    }
+                }
+            },
+            plotOptions: {
+                bar: {
+                    horizontal: false,
+                    columnWidth: viewType === 'yearly' ? '70%' : '50%',
+                    borderRadius: 4,
+                    dataLabels: {
+                        total: {
+                            enabled: true,
+                            style: {
+                                fontSize: '12px',
+                                fontWeight: 600
+                            },
+                            formatter: function(val) {
+                                return parseFloat(val).toFixed(1) + 'h';
+                            }
+                        }
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                style: {
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    colors: ['#ffffff']
+                },
+                formatter: function(val, opts) {
+                    return val > 50 ? `${val.toFixed(0)}h` : ''; // Only show label if value is significant
+                }
+            },
+            title: {
+                text: `${timeAnalysisTranslations.schoolVsHomeTime} (${viewType === 'yearly' ? timeAnalysisTranslations.academicYear : timeAnalysisTranslations.month})`,
+                align: 'left',
+                style: {
+                    fontSize: '18px',
+                    fontWeight: 'bold'
+                }
+            },
+            subtitle: {
+                text: viewType === 'yearly' ?
+                    '{% trans "Actual time spent during school hours vs home hours by academic year" %}' :
+                    '{% trans "Monthly breakdown of time spent during school hours vs home hours" %}',
+                align: 'left',
+                style: {
+                    fontSize: '14px',
+                    color: '#6B7280'
+                }
+            },
+            xaxis: {
+                categories: labels,
+                title: {
+                    text: viewType === 'yearly' ? timeAnalysisTranslations.academicYear : timeAnalysisTranslations.month,
+                    style: {
+                        fontSize: '14px',
+                        fontWeight: 600
+                    }
+                },
+                labels: {
+                    style: {
+                        fontSize: '12px'
+                    },
+                    rotate: viewType === 'monthly' ? -45 : 0
+                }
+            },
+            yaxis: {
+                title: {
+                    text: timeAnalysisTranslations.hours,
+                    style: {
+                        fontSize: '14px',
+                        fontWeight: 600
+                    }
+                },
+                labels: {
+                    style: {
+                        fontSize: '12px'
+                    },
+                    formatter: function(val) {
+                        return val.toFixed(0) + 'h';
+                    }
+                }
+            },
+            colors: ['#10B981', '#F59E0B'],
+            legend: {
+                position: 'top',
+                horizontalAlign: 'right',
+                fontSize: '14px',
+                markers: {
+                    size: 6
+                }
+            },
+            tooltip: {
+                shared: true,
+                intersect: false,
+                custom: function({series, seriesIndex, dataPointIndex, w}) {
+                    const schoolData = w.config.series[0].data[dataPointIndex];
+                    const homeData = w.config.series[1].data[dataPointIndex];
+
+                    const period = labels[dataPointIndex];
+                    const schoolHours = schoolData.y.toFixed(1);
+                    const homeHours = homeData.y.toFixed(1);
+                    const totalHours = (schoolData.y + homeData.y).toFixed(1);
+                    const schoolPercentage = schoolData.percentage.toFixed(1);
+                    const homePercentage = homeData.percentage.toFixed(1);
+                    const students = schoolData.studentCount || homeData.studentCount;
+
+                    // Additional info for tooltip
+                    const academicYear = schoolData.academicYear || homeData.academicYear;
+                    const monthInfo = viewType === 'monthly' && schoolData.month ?
+                        `<div><strong>{% trans "Month" %}:</strong> ${schoolData.month}</div>` : '';
+
+                    return `
+                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 min-w-[250px]">
+                            <div class="font-semibold text-gray-900 dark:text-white mb-3 text-center border-b pb-2">
+                                ${period}
+                            </div>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                                        <span class="text-gray-700 dark:text-gray-300">${timeAnalysisTranslations.schoolHours}:</span>
+                                    </div>
+                                    <span class="font-medium text-gray-900 dark:text-white">${schoolHours}h (${schoolPercentage}%)</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-3 h-3 rounded-full bg-orange-500"></div>
+                                        <span class="text-gray-700 dark:text-gray-300">${timeAnalysisTranslations.homeHours}:</span>
+                                    </div>
+                                    <span class="font-medium text-gray-900 dark:text-white">${homeHours}h (${homePercentage}%)</span>
+                                </div>
+                                <div class="border-t pt-2 mt-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-700 dark:text-gray-300">${timeAnalysisTranslations.totalHours}:</span>
+                                        <span class="font-semibold text-gray-900 dark:text-white">${totalHours}h</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-700 dark:text-gray-300">${timeAnalysisTranslations.students}:</span>
+                                        <span class="font-medium text-gray-900 dark:text-white">${students.toLocaleString()}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-gray-700 dark:text-gray-300">{% trans "Academic Year" %}:</span>
+                                        <span class="font-medium text-gray-900 dark:text-white">${academicYear}年度</span>
+                                    </div>
+                                    ${monthInfo}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            grid: {
+                borderColor: '#E5E7EB',
+                strokeDashArray: 3
+            },
+            responsive: [
+                {
+                    breakpoint: 768,
+                    options: {
+                        plotOptions: {
+                            bar: {
+                                columnWidth: '80%'
+                            }
+                        },
+                        dataLabels: {
+                            enabled: false
+                        }
+                    }
+                }
+            ]
+        };
+
+        // Destroy existing chart if it exists
+        if (timeAnalysisChart) {
+            timeAnalysisChart.destroy();
+        }
+
+        try {
+            // Clear the container before creating new chart
+            chartContainer.innerHTML = '';
+
+            timeAnalysisChart = new ApexCharts(chartContainer, chartOptions);
+
+            // Render the chart and handle any errors
+            timeAnalysisChart.render().then(() => {
+                console.log('Time analysis chart rendered successfully');
+            }).catch((error) => {
+                console.error('Error rendering time analysis chart:', error);
+                chartContainer.innerHTML = `
+                    <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <i class="ri-error-warning-line text-4xl mb-4"></i>
+                        <p class="text-lg font-medium mb-2">{% trans "Chart Rendering Error" %}</p>
+                        <p class="text-sm">{% trans "Unable to display the time analysis chart. Please try refreshing the page." %}</p>
+                    </div>
+                `;
+            });
+        } catch (error) {
+            console.error('Error creating time analysis chart:', error);
+            chartContainer.innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-error-warning-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "Chart Creation Error" %}</p>
+                    <p class="text-sm">{% trans "Unable to create the time analysis chart. Please try refreshing the page." %}</p>
+                </div>
+            `;
+        }
+    }
+
+    function switchTimeView(newView) {
+        if (newView === currentTimeView) return;
+
+        currentTimeView = newView;
+
+        // Update button states
+        if (newView === 'yearly') {
+            yearlyToggle.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+            yearlyToggle.classList.add('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+
+            monthlyToggle.classList.remove('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            monthlyToggle.classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+
+            createTimeAnalysisChart(yearlyData, 'yearly');
+        } else {
+            monthlyToggle.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+            monthlyToggle.classList.add('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+
+            yearlyToggle.classList.remove('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            yearlyToggle.classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+
+            createTimeAnalysisChart(monthlyData, 'monthly');
+        }
+    }
+
+    // Event listeners for toggle buttons
+    yearlyToggle.addEventListener('click', () => switchTimeView('yearly'));
+    monthlyToggle.addEventListener('click', () => switchTimeView('monthly'));
+
+    // Analysis Configuration Toggle Functionality
+    const timeAnalysisConfigToggleBtn = document.getElementById('toggleTimeAnalysisConfig');
+    const timeAnalysisConfigContent = document.getElementById('timeAnalysisConfigContent');
+    const timeAnalysisConfigToggleIcon = document.getElementById('timeAnalysisConfigToggleIcon');
+
+    if (timeAnalysisConfigToggleBtn && timeAnalysisConfigContent) {
+        timeAnalysisConfigToggleBtn.addEventListener('click', function() {
+            const isHidden = timeAnalysisConfigContent.classList.contains('hidden');
+
+            if (isHidden) {
+                // Show configuration
+                timeAnalysisConfigContent.classList.remove('hidden');
+                timeAnalysisConfigToggleIcon.style.transform = 'rotate(180deg)';
+            } else {
+                // Hide configuration
+                timeAnalysisConfigContent.classList.add('hidden');
+                timeAnalysisConfigToggleIcon.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+
+    // Show loading state initially
+    const initialChartContainer = document.getElementById('schoolHomeTimeChart');
+    if (initialChartContainer) {
+        initialChartContainer.innerHTML = `
+            <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                <i class="ri-loader-4-line text-4xl animate-spin mb-4"></i>
+                <p class="text-lg font-medium mb-2">{% trans "Loading Time Analysis..." %}</p>
+                <p class="text-sm">{% trans "Calculating actual time spent during school hours vs home hours" %}</p>
+            </div>
+        `;
+    }
+
+    // Initialize chart with yearly view after a short delay to show loading state
+    setTimeout(() => {
+        try {
+            console.log('Initializing time analysis chart with data:', { yearlyData, monthlyData });
+            createTimeAnalysisChart(yearlyData, 'yearly');
+        } catch (error) {
+            console.error('Error during initial chart creation:', error);
+            if (initialChartContainer) {
+                initialChartContainer.innerHTML = `
+                    <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <i class="ri-error-warning-line text-4xl mb-4"></i>
+                        <p class="text-lg font-medium mb-2">{% trans "Initialization Error" %}</p>
+                        <p class="text-sm">{% trans "Unable to initialize the time analysis chart. Please refresh the page." %}</p>
+                    </div>
+                `;
+            }
+        }
+    }, 100);
+});
+</script>
+
+{% endblock %}

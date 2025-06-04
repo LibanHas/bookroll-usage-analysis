@@ -39,6 +39,7 @@ FORCE_SCRIPT_NAME = '/dashboard'
 ALLOWED_HOST_PATTERNS = [
     r'sk\.let\.media\.kyoto-u\.ac\.jp(,\s*sk\.let\.media\.kyoto-u\.ac\.jp)*',
     r'10\.236\.173\.223',
+    r'10\.236\.173\.129',
     r'localhost',
 ]
 
@@ -73,6 +74,9 @@ INSTALLED_APPS = [
     'core',
     'clickhouse_backend',
     'teacher_student',
+    'holiday',
+    'past_years',
+    'course',
 ]
 
 if not IS_PRODUCTION:
@@ -106,6 +110,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'past_years.context_processors.past_years_context',
             ],
         },
     },
@@ -131,7 +136,7 @@ DATABASES = {
         'NAME': os.getenv('MOODLE_DB_NAME', 'moodle'),
         'USER': os.getenv('MOODLE_DB_USER', 'moodle'),
         'PASSWORD': os.getenv('MOODLE_DB_PASSWORD', 'moodle'),
-        'HOST': '127.0.0.1',  # Use IP instead of localhost
+        'HOST': os.getenv('MOODLE_DB_HOST', '127.0.0.1'),  # Use IP instead of localhost
         'PORT': os.getenv('MOODLE_DB_PORT', '30102'),
         'OPTIONS': {
             'init_command': "SET SESSION TRANSACTION READ ONLY",
@@ -145,7 +150,7 @@ DATABASES = {
         'NAME': os.getenv('BOOKROLL_DB_NAME', 'bookroll'),
         'USER': os.getenv('BOOKROLL_DB_USER', 'bookroll'),
         'PASSWORD': os.getenv('BOOKROLL_DB_PASSWORD'),
-        'HOST': '127.0.0.1',  # Use IP instead of localhost
+        'HOST': os.getenv('BOOKROLL_DB_HOST', '127.0.0.1'),  # Use IP instead of localhost
         'PORT': os.getenv('BOOKROLL_DB_PORT', '30100'),
         'OPTIONS': {
             'init_command': "SET SESSION TRANSACTION READ ONLY",
@@ -154,6 +159,7 @@ DATABASES = {
             'connect_timeout': 10,
         },
     },
+    # ClickHouse database for 2025+ data (current/future data pipeline)
     'clickhouse_db': {
         'ENGINE': 'clickhouse_backend.backend',
         'NAME': os.getenv('CLICKHOUSE_DB_NAME'),
@@ -165,6 +171,35 @@ DATABASES = {
             'settings': {
                 'allow_experimental_window_functions': 1,
             }
+        }
+    },
+    # ClickHouse database for pre-2025 data (historical data pipeline)
+    'clickhouse_db_pre_2025': {
+        'ENGINE': 'clickhouse_backend.backend',
+        'NAME': os.getenv('CLICKHOUSE_DB_PRE_2025_NAME'),
+        'USER': os.getenv('CLICKHOUSE_DB_PRE_2025_USER', 'default'),
+        'PASSWORD': os.getenv('CLICKHOUSE_DB_PRE_2025_PASSWORD'),
+        'HOST': os.getenv('CLICKHOUSE_DB_PRE_2025_HOST'),
+        'PORT': os.getenv('CLICKHOUSE_DB_PRE_2025_PORT', '9002'),
+        'OPTIONS': {
+            'settings': {
+                'allow_experimental_window_functions': 1,
+            }
+        }
+    },
+    # Analysis database for pre-2025 data (historical data pipeline)
+    'analysis_db': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv('ANALYSIS_DB_NAME'),
+        'USER': os.getenv('ANALYSIS_DB_USER', 'analysis'),
+        'PASSWORD': os.getenv('ANALYSIS_DB_PASSWORD'),
+        'HOST': os.getenv('ANALYSIS_DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('ANALYSIS_DB_PORT', '3306'),
+        'OPTIONS': {
+            'init_command': "SET SESSION TRANSACTION READ ONLY",
+            'charset': 'utf8mb4',
+            'use_unicode': True,
+            'connect_timeout': 10,
         }
     },
 }
@@ -262,32 +297,81 @@ LOGGING = {
             'format': '{asctime} {levelname} [{name}] {message}',
             'style': '{',
         },
+        'sql': {
+            'format': '{asctime} {levelname} [SQL] {message}',
+            'style': '{',
+        },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+            'level': 'DEBUG',
+        },
+        'sql_console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'sql',
+            'level': 'DEBUG',
         },
         'file': {
             'class': 'logging.FileHandler',
             'filename': BASE_DIR / 'logs' / 'django.log',
             'formatter': 'verbose',
+            'level': 'DEBUG',
         },
+    },
+    'root': {
+        'handlers': ['console', 'file'] if not IS_PRODUCTION else ['file'],
+        'level': 'DEBUG',
     },
     'loggers': {
         'django': {
             'handlers': ['console', 'file'] if not IS_PRODUCTION else ['file'],
             'level': 'INFO',
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': ['sql_console', 'file'] if not IS_PRODUCTION else ['file'],
+            'level': 'INFO',
+            'propagate': False,
         },
         'django.channels.server': {
             'handlers': ['console'] if not IS_PRODUCTION else ['file'],
-            'level': 'DEBUG' if not IS_PRODUCTION else 'INFO',
+            'level': 'INFO',
+            'propagate': False,
         },
         # Add custom logger for authentication events
         'core.views': {
             'handlers': ['console', 'file'] if not IS_PRODUCTION else ['file'],
             'level': 'WARNING',
-            'propagate': True,
+            'propagate': False,
+        },
+        # Optimized logger for past_years app
+        'past_years': {
+            'handlers': ['console', 'file'] if not IS_PRODUCTION else ['file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'past_years.models': {
+            'handlers': ['console', 'file'] if not IS_PRODUCTION else ['file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'past_years.views': {
+            'handlers': ['console', 'file'] if not IS_PRODUCTION else ['file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        # Course app logging
+        'course': {
+            'handlers': ['console', 'file'] if not IS_PRODUCTION else ['file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'course.management.commands.sync_moodle_courses': {
+            'handlers': ['console', 'file'] if not IS_PRODUCTION else ['file'],
+            'level': 'DEBUG',
+            'propagate': False,
         },
     },
 }
@@ -366,3 +450,20 @@ USE_TZ = True
 
 
 LMS_URL = os.getenv('LMS_URL', '')
+
+SCHOOL_START_TIME = os.getenv('SCHOOL_START_TIME', '08:00')
+SCHOOL_END_TIME = os.getenv('SCHOOL_END_TIME', '16:00')
+
+# Course Management Settings
+COURSE_SUBJECT_CATEGORIES = [
+    ('english', 'English'),
+    ('mathematics', 'Mathematics'),
+]
+
+# Course sync settings
+COURSE_SYNC_BATCH_SIZE = int(os.getenv('COURSE_SYNC_BATCH_SIZE', '100'))
+COURSE_SYNC_TIMEOUT = int(os.getenv('COURSE_SYNC_TIMEOUT', '300'))  # 5 minutes
+
+
+MAX_SESSION_DURATION = int(os.getenv('MAX_SESSION_DURATION', '5400'))  # 1.5 hours
+MAX_READING_TIME = int(os.getenv('MAX_READING_TIME', '1800'))  # 30 minutes

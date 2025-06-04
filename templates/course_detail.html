@@ -13,6 +13,8 @@
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <!-- Include dashboard JS -->
 <script src="{% static 'js/pages/dashboard-admin-lms.js' %}"></script>
+<!-- Include student time analysis JS -->
+<script src="{% static 'js/pages/student-time-analysis.js' %}"></script>
 
 <div class="grid grid-cols-12 gap-x-4">
     <!-- Start Bread Crumb Section -->
@@ -183,6 +185,182 @@
         </div>
     </div>
 
+    <!-- Student Highlights -->
+    <div class="col-span-full card">
+        <div class="flex flex-col gap-2 px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h6 class="card-title">{% trans "Student Highlights" %}</h6>
+                    <p class="card-description">{% trans "Most active to least active students based on highlights and interactions" %}</p>
+                </div>
+                <!-- Chart Controls -->
+                <div class="flex gap-2 flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-600 dark:text-gray-300">{% trans "Chart Type:" %}</label>
+                        <select id="chartTypeSelect" class="form-input text-sm w-48">
+                            <option value="individual">{% trans "Individual Students" %}</option>
+                            <option value="distribution">{% trans "Statistical Distribution" %}</option>
+                            <option value="normal">{% trans "Normal Distribution" %}</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-600 dark:text-gray-300">{% trans "Privacy:" %}</label>
+                        <button id="privacyToggle" class="btn b-solid btn-primary-solid btn-sm">
+                            <i class="ri-eye-line mr-1"></i> {% trans "Show Names" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <!-- Student Highlights Data -->
+            <script type="application/json" id="student-highlights-data">
+                {{ student_highlights_data|safe }}
+            </script>
+
+            <!-- Student Activity Chart -->
+            <div id="student-highlights-chart" style="height: 500px;"></div>
+
+            <!-- Student Participation Summary -->
+            <div id="student-participation-summary" class="mb-6"></div>
+
+            <!-- Information about student activity -->
+            <div class="mt-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                <div class="bg-gray-200  dark:bg-blue-900/20 p-4 rounded-lg flex items-center justify-between cursor-pointer" id="toggle-student-activity-info">
+                    <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-300">
+                        <i class="ri-information-line mr-1"></i> {% trans "About Student Activity Metrics" %}
+                    </h4>
+                    <i class="ri-arrow-down-s-line text-blue-800 dark:text-blue-300 transition-transform duration-200" id="student-activity-info-icon"></i>
+                </div>
+
+                <div id="student-activity-info-content" class="hidden mt-3">
+                    <p class="text-sm text-blue-700 dark:text-blue-400 mb-3">
+                        {% trans "This section provides three different views of student engagement levels based on their interactions with course content. Use the Chart Type selector to switch between views." %}
+                    </p>
+
+                    <!-- Chart Types Explanation -->
+                    <div class="space-y-3">
+                        <div class="border-l-4 border-blue-400 pl-3">
+                            <h5 class="text-sm font-semibold text-blue-800 dark:text-blue-300">{% trans "Individual Students Chart" %}</h5>
+                            <p class="text-xs text-blue-700 dark:text-blue-400">
+                                {% trans "Shows each student's activity count individually. Students are color-coded by status: Active (blue), Absent/No Activity (red), Not Currently Enrolled (yellow), Unknown (gray)." %}
+                            </p>
+                        </div>
+
+                        <div class="border-l-4 border-green-400 pl-3">
+                            <h5 class="text-sm font-semibold text-blue-800 dark:text-blue-300">{% trans "Statistical Distribution Chart" %}</h5>
+                            <p class="text-xs text-blue-700 dark:text-blue-400">
+                                {% trans "Groups students into activity ranges (0, 1-10, 11-25, etc.) showing how many students fall into each engagement level. Useful for understanding overall class participation patterns." %}
+                            </p>
+                        </div>
+
+                        <div class="border-l-4 border-purple-400 pl-3">
+                            <h5 class="text-sm font-semibold text-blue-800 dark:text-blue-300">{% trans "Normal Distribution Chart" %}</h5>
+                            <p class="text-xs text-blue-700 dark:text-blue-400">
+                                {% trans "Displays a statistical bell curve analysis with standard deviations (σ). Shows both the theoretical normal distribution and actual student data distribution. Helps identify if engagement follows normal patterns." %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Time Analysis -->
+    <div class="col-span-full card">
+        <div class="flex flex-col gap-2 px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h6 class="card-title">{% trans "Student Activity Time Analysis" %}</h6>
+                    <p class="card-description">{% trans "Analysis of student activities during school time vs non-school time" %}</p>
+                </div>
+                <!-- Time Chart Controls -->
+                <div class="flex gap-2 flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-600 dark:text-gray-300">{% trans "Chart Type:" %}</label>
+                        <select id="timeChartTypeSelect" class="form-input text-sm w-48">
+                            <option value="comparison">{% trans "School vs Non-School Comparison" %}</option>
+                            <option value="school_only">{% trans "School Time Only" %}</option>
+                            <option value="non_school_only">{% trans "Non-School Time Only" %}</option>
+                            <option value="percentage">{% trans "Percentage Distribution" %}</option>
+                            <option value="distribution">{% trans "Time Preference Distribution" %}</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-600 dark:text-gray-300">{% trans "Privacy:" %}</label>
+                        <button id="timePrivacyToggle" class="btn b-solid btn-primary-solid btn-sm">
+                            <i class="ri-eye-line mr-1"></i> <span>{% trans "Show Names" %}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <!-- Time-categorized Student Data -->
+            <script type="application/json" id="student-highlights-by-time-data">
+                {{ student_highlights_by_time_data|safe }}
+            </script>
+
+            <!-- Time Analysis Summary -->
+            <div id="time-analysis-summary" class="mb-6"></div>
+
+            <!-- Time Analysis Chart -->
+            <div id="time-analysis-chart" style="height: 500px;"></div>
+
+            <!-- Information about time analysis -->
+            <div class="mt-6 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                <div class="bg-gray-200  dark:bg-green-900/20 p-4 rounded-lg flex items-center justify-between cursor-pointer" id="toggle-time-analysis-info">
+                    <h4 class="text-sm font-semibold text-green-800 dark:text-green-300">
+                        <i class="ri-information-line mr-1"></i> {% trans "About Time Analysis" %}
+                    </h4>
+                    <i class="ri-arrow-down-s-line text-green-800 dark:text-green-300 transition-transform duration-200" id="time-analysis-info-icon"></i>
+                </div>
+
+                <div id="time-analysis-info-content" class="hidden mt-3">
+                    <p class="text-sm text-green-700 dark:text-green-400 mb-3">
+                        {% trans "This analysis categorizes student activities based on when they occur, helping understand learning patterns and engagement outside traditional school hours." %}
+                    </p>
+
+                    <!-- Time Categories Explanation -->
+                    <div class="space-y-3">
+                        <div class="border-l-4 border-blue-400 pl-3">
+                            <h5 class="text-sm font-semibold text-green-800 dark:text-green-300">{% trans "School Time" %}</h5>
+                            <p class="text-xs text-green-700 dark:text-green-400">
+                                {% trans "Activities during school hours" %} ({{ school_start_time }} - {{ school_end_time }}) {% trans "on weekdays, excluding Japanese national holidays. Times are converted from UTC to Japan Standard Time (JST)." %}
+                            </p>
+                        </div>
+
+                        <div class="border-l-4 border-red-400 pl-3">
+                            <h5 class="text-sm font-semibold text-green-800 dark:text-green-300">{% trans "Non-School Time" %}</h5>
+                            <p class="text-xs text-green-700 dark:text-green-400">
+                                {% trans "Activities during weekends, Japanese national holidays, and outside school hours (before" %} {{ school_start_time }} {% trans "or after" %} {{ school_end_time }}). {% trans "This includes self-directed learning and homework time." %}
+                            </p>
+                        </div>
+
+                        <div class="border-l-4 border-yellow-400 pl-3">
+                            <h5 class="text-sm font-semibold text-green-800 dark:text-green-300">{% trans "Timezone Handling" %}</h5>
+                            <p class="text-xs text-green-700 dark:text-green-400">
+                                {% trans "All activity timestamps are stored in UTC and converted to Japan Standard Time (JST) for accurate time categorization. Japanese holidays are automatically considered as non-school time." %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Chart Types Explanation -->
+                    <div class="mt-4 space-y-2">
+                        <h5 class="text-sm font-semibold text-green-800 dark:text-green-300">{% trans "Chart Types:" %}</h5>
+                        <ul class="text-xs text-green-700 dark:text-green-400 list-disc list-inside space-y-1">
+                            <li><strong>{% trans "School vs Non-School Comparison:" %}</strong> {% trans "Side-by-side comparison of activities in both time categories" %}</li>
+                            <li><strong>{% trans "School Time Only:" %}</strong> {% trans "Focus on activities during official school hours" %}</li>
+                            <li><strong>{% trans "Non-School Time Only:" %}</strong> {% trans "Focus on self-directed learning outside school hours" %}</li>
+                            <li><strong>{% trans "Percentage Distribution:" %}</strong> {% trans "Shows the proportion of each student's activities in each time category" %}</li>
+                            <li><strong>{% trans "Time Preference Distribution:" %}</strong> {% trans "Overview of how many students prefer each time category" %}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Course Teachers -->
     <div class="col-span-full lg:col-span-4 card">
         <div class="flex flex-col gap-2 px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
@@ -202,10 +380,10 @@
                         </div>
                         <div class="ml-3">
                             <p class="text-base font-medium text-gray-900 dark:text-white">
-                                {{ teacher.name }}
-                            </p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">
-                                {{ teacher.email }}
+                                <a href="{% url 'teacher_detail' teacher.id %}"
+                                   class="hover:text-primary-500 transition-colors duration-200 hover:underline">
+                                    {{ teacher.name }}
+                                </a>
                             </p>
                         </div>
                     </div>
@@ -268,164 +446,178 @@
             </div>
 
             <!-- Pass keyword data to JavaScript -->
+            <script type="application/json" id="keyword-data">
+                [
+                    {% for keyword in top_keywords|slice:":10" %}
+                        {
+                            "keyword": "{{ keyword.keyword }}",
+                            "frequency": {{ keyword.frequency }},
+                            "score": {{ keyword.score|floatformat:3 }}
+                        }{% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ]
+            </script>
+
             <script>
                 document.addEventListener('DOMContentLoaded', function() {
-                    const keywordData = [
-                        {% for keyword in top_keywords|slice:":10" %}
-                            {
-                                keyword: "{{ keyword.keyword }}",
-                                frequency: {{ keyword.frequency }},
-                                score: {{ keyword.score|floatformat:3 }}
-                            }{% if not forloop.last %},{% endif %}
-                        {% endfor %}
-                    ];
+                    const keywordDataElement = document.getElementById('keyword-data');
 
-                    // Word Cloud (using treemap)
-                    if (keywordData.length > 0) {
-                        // Find min and max frequency for scaling
-                        const minFrequency = Math.min(...keywordData.map(item => item.frequency));
-                        const maxFrequency = Math.max(...keywordData.map(item => item.frequency));
+                    if (keywordDataElement && keywordDataElement.textContent) {
+                        try {
+                            const keywordData = JSON.parse(keywordDataElement.textContent);
 
-                        // Base font size for the page (for min frequency)
-                        const baseFontSize = 14;
-                        // Max font size (for max frequency)
-                        const maxFontSize = 28;
+                            // Word Cloud (using treemap)
+                            if (keywordData.length > 0) {
+                                // Find min and max frequency for scaling
+                                const minFrequency = Math.min(...keywordData.map(item => item.frequency));
+                                const maxFrequency = Math.max(...keywordData.map(item => item.frequency));
 
-                        // Prepare data with font size calculation
-                        const wordCloudData = keywordData.map(item => {
-                            // Calculate scaled font size based on frequency
-                            let fontSize = baseFontSize;
-                            if (maxFrequency > minFrequency) {
-                                const scale = (item.frequency - minFrequency) / (maxFrequency - minFrequency);
-                                fontSize = Math.round(baseFontSize + scale * (maxFontSize - baseFontSize));
+                                // Base font size for the page (for min frequency)
+                                const baseFontSize = 14;
+                                // Max font size (for max frequency)
+                                const maxFontSize = 28;
+
+                                // Prepare data with font size calculation
+                                const wordCloudData = keywordData.map(item => {
+                                    // Calculate scaled font size based on frequency
+                                    let fontSize = baseFontSize;
+                                    if (maxFrequency > minFrequency) {
+                                        const scale = (item.frequency - minFrequency) / (maxFrequency - minFrequency);
+                                        fontSize = Math.round(baseFontSize + scale * (maxFontSize - baseFontSize));
+                                    }
+
+                                    return {
+                                        x: item.keyword,
+                                        y: item.frequency,
+                                        fontSize: fontSize
+                                    };
+                                });
+
+                                const wordCloudOptions = {
+                                    series: [
+                                        {
+                                            data: wordCloudData
+                                        }
+                                    ],
+                                    chart: {
+                                        height: 300,
+                                        type: 'treemap',
+                                        toolbar: {
+                                            show: false
+                                        }
+                                    },
+                                    title: {
+                                        text: '{% trans "Keyword Cloud" %}',
+                                        align: 'center',
+                                        style: {
+                                            fontSize: '16px',
+                                            fontWeight: 'normal'
+                                        }
+                                    },
+                                    colors: [
+                                        '#5F71FA', '#76D466', '#FF4626', '#FFC107', '#9C27B0',
+                                        '#4CAF50', '#26e9ff', '#f44336', '#E91E63', '#2196F3'
+                                    ],
+                                    plotOptions: {
+                                        treemap: {
+                                            distributed: true,
+                                            enableShades: false
+                                        }
+                                    },
+                                    dataLabels: {
+                                        style: {
+                                            fontFamily: 'inherit',
+                                            fontWeight: 'normal'
+                                        },
+                                        formatter: function(text, op) {
+                                            return text;
+                                        }
+                                    },
+                                    tooltip: {
+                                        y: {
+                                            formatter: function(value) {
+                                                return value;
+                                            }
+                                        }
+                                    },
+                                    // Add custom rendering
+                                    states: {
+                                        hover: {
+                                            filter: {
+                                                type: 'none'
+                                            }
+                                        }
+                                    },
+                                    // Add this to enable custom rendering
+                                    forecastDataPoints: {
+                                        count: 0
+                                    }
+                                };
+
+                                const wordCloudChart = new ApexCharts(document.querySelector("#keyword-cloud-chart"), wordCloudOptions);
+                                wordCloudChart.render();
+
+                                // Add custom rendering for font sizes after the chart is rendered
+                                wordCloudChart.addEventListener('rendered', function() {
+                                    // Find all text elements in the chart
+                                    const textElements = document.querySelectorAll('#keyword-cloud-chart .apexcharts-data-labels text');
+
+                                    // Apply font sizes to each text element
+                                    textElements.forEach((textElement, index) => {
+                                        if (index < wordCloudData.length) {
+                                            textElement.style.fontSize = wordCloudData[index].fontSize + 'px';
+                                        }
+                                    });
+                                });
                             }
 
-                            return {
-                                x: item.keyword,
-                                y: item.frequency,
-                                fontSize: fontSize
-                            };
-                        });
+                            // Create the bar chart
+                            if (keywordData.length > 0) {
+                                const options = {
+                                    series: [{
+                                        name: '{% trans "Frequency" %}',
+                                        data: keywordData.map(item => item.frequency).reverse()
+                                    }],
+                                    chart: {
+                                        type: 'bar',
+                                        height: 300,
+                                        toolbar: {
+                                            show: false
+                                        }
+                                    },
+                                    plotOptions: {
+                                        bar: {
+                                            horizontal: true,
+                                            borderRadius: 4
+                                        }
+                                    },
+                                    dataLabels: {
+                                        enabled: false
+                                    },
+                                    xaxis: {
+                                        categories: keywordData.map(item => item.keyword).reverse(),
+                                        title: {
+                                            text: '{% trans "Frequency" %}'
+                                        }
+                                    },
+                                    colors: ['#4f46e5'],
+                                    tooltip: {
+                                        y: {
+                                            formatter: function(val) {
+                                                return val
+                                            }
+                                        }
+                                    }
+                                };
 
-                        const wordCloudOptions = {
-                            series: [
-                                {
-                                    data: wordCloudData
-                                }
-                            ],
-                            chart: {
-                                height: 300,
-                                type: 'treemap',
-                                toolbar: {
-                                    show: false
-                                }
-                            },
-                            title: {
-                                text: '{% trans "Keyword Cloud" %}',
-                                align: 'center',
-                                style: {
-                                    fontSize: '16px',
-                                    fontWeight: 'normal'
-                                }
-                            },
-                            colors: [
-                                '#5F71FA', '#76D466', '#FF4626', '#FFC107', '#9C27B0',
-                                '#4CAF50', '#26e9ff', '#f44336', '#E91E63', '#2196F3'
-                            ],
-                            plotOptions: {
-                                treemap: {
-                                    distributed: true,
-                                    enableShades: false
-                                }
-                            },
-                            dataLabels: {
-                                style: {
-                                    fontFamily: 'inherit',
-                                    fontWeight: 'normal'
-                                },
-                                formatter: function(text, op) {
-                                    return text;
-                                }
-                            },
-                            tooltip: {
-                                y: {
-                                    formatter: function(value) {
-                                        return value;
-                                    }
-                                }
-                            },
-                            // Add custom rendering
-                            states: {
-                                hover: {
-                                    filter: {
-                                        type: 'none'
-                                    }
-                                }
-                            },
-                            // Add this to enable custom rendering
-                            forecastDataPoints: {
-                                count: 0
+                                const chart = new ApexCharts(document.querySelector("#keyword-chart"), options);
+                                chart.render();
                             }
-                        };
-
-                        const wordCloudChart = new ApexCharts(document.querySelector("#keyword-cloud-chart"), wordCloudOptions);
-                        wordCloudChart.render();
-
-                        // Add custom rendering for font sizes after the chart is rendered
-                        wordCloudChart.addEventListener('rendered', function() {
-                            // Find all text elements in the chart
-                            const textElements = document.querySelectorAll('#keyword-cloud-chart .apexcharts-data-labels text');
-
-                            // Apply font sizes to each text element
-                            textElements.forEach((textElement, index) => {
-                                if (index < wordCloudData.length) {
-                                    textElement.style.fontSize = wordCloudData[index].fontSize + 'px';
-                                }
-                            });
-                        });
-                    }
-
-                    // Create the bar chart
-                    if (keywordData.length > 0) {
-                        const options = {
-                            series: [{
-                                name: '{% trans "Frequency" %}',
-                                data: keywordData.map(item => item.frequency).reverse()
-                            }],
-                            chart: {
-                                type: 'bar',
-                                height: 300,
-                                toolbar: {
-                                    show: false
-                                }
-                            },
-                            plotOptions: {
-                                bar: {
-                                    horizontal: true,
-                                    borderRadius: 4
-                                }
-                            },
-                            dataLabels: {
-                                enabled: false
-                            },
-                            xaxis: {
-                                categories: keywordData.map(item => item.keyword).reverse(),
-                                title: {
-                                    text: '{% trans "Frequency" %}'
-                                }
-                            },
-                            colors: ['#4f46e5'],
-                            tooltip: {
-                                y: {
-                                    formatter: function(val) {
-                                        return val
-                                    }
-                                }
-                            }
-                        };
-
-                        const chart = new ApexCharts(document.querySelector("#keyword-chart"), options);
-                        chart.render();
+                        } catch (error) {
+                            console.error('Error parsing keyword data:', error);
+                        }
+                    } else {
+                        console.warn('Keyword data element not found or empty.');
                     }
                 });
             </script>
@@ -466,16 +658,22 @@
 
             <!-- Information about keyword extraction -->
             <div class="mt-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
-                    <i class="ri-information-line mr-1"></i> {% trans "About Keyword Extraction" %}
-                </h4>
-                <p class="text-sm text-blue-700 dark:text-blue-400">
-                    {% trans "These keywords are extracted from student highlights using natural language processing. The system analyzes what students highlight to identify important concepts and terms." %}
-                </p>
-                <ul class="mt-2 text-sm text-blue-700 dark:text-blue-400 list-disc list-inside space-y-1">
-                    <li>{% trans "Frequency: Number of times this keyword appears in student highlights" %}</li>
-                    <li>{% trans "Relevance Score: How relevant the keyword is to the course content (higher is better)" %}</li>
-                </ul>
+                <div class="flex items-center justify-between cursor-pointer" id="toggle-keyword-info">
+                    <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-300">
+                        <i class="ri-information-line mr-1"></i> {% trans "About Keyword Extraction" %}
+                    </h4>
+                    <i class="ri-arrow-down-s-line text-blue-800 dark:text-blue-300 transition-transform duration-200" id="keyword-info-icon"></i>
+                </div>
+
+                <div id="keyword-info-content" class="hidden mt-3">
+                    <p class="text-sm text-blue-700 dark:text-blue-400">
+                        {% trans "These keywords are extracted from student highlights using natural language processing. The system analyzes what students highlight to identify important concepts and terms." %}
+                    </p>
+                    <ul class="mt-2 text-sm text-blue-700 dark:text-blue-400 list-disc list-inside space-y-1">
+                        <li>{% trans "Frequency: Number of times this keyword appears in student highlights" %}</li>
+                        <li>{% trans "Relevance Score: How relevant the keyword is to the course content (higher is better)" %}</li>
+                    </ul>
+                </div>
             </div>
             {% else %}
             <div class="text-center py-4">
@@ -487,41 +685,6 @@
 
     {% endif %} <!-- End of course_exists check -->
 </div>
-
- <!-- Student Activity -->
- <div class="mt-4 col-span-full card">
-    <div class="flex flex-col gap-2 px-4 py-5 sm:p-7 bg-gray-200/30 dark:bg-dark-card-shade">
-        <h6 class="card-title">{% trans "Student Highlights" %}</h6>
-        <p class="card-description">{% trans "Most active to least active students based on highlights and interactions" %}</p>
-    </div>
-    <div class="p-6">
-        <!-- Student Highlights Data -->
-        <script type="application/json" id="student-highlights-data">
-            {{ student_highlights_data|safe }}
-        </script>
-
-        <!-- Student Activity Chart -->
-        <div id="student-highlights-chart" style="height: 500px;"></div>
-
-        <!-- Student Participation Summary -->
-        <div id="student-participation-summary" class="mb-6"></div>
-
-        <!-- Information about student activity -->
-        <div class="mt-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-            <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
-                <i class="ri-information-line mr-1"></i> {% trans "About Student Activity Metrics" %}
-            </h4>
-            <p class="text-sm text-blue-700 dark:text-blue-400">
-                {% trans "This chart shows student engagement levels based on their interactions with course content. Students are classified as active (with interactions) or absent (enrolled but no interactions)." %}
-            </p>
-            <ul class="mt-2 text-sm text-blue-700 dark:text-blue-400 list-disc list-inside space-y-1">
-                <li>{% trans "Activity Count: Total number of tracked interactions per student" %}</li>
-                <li>{% trans "A count of zero indicates a student who is enrolled but has not accessed course content" %}</li>
-            </ul>
-        </div>
-    </div>
-</div>
-
 
 <!-- JavaScript for teachers list -->
 <script>
@@ -640,6 +803,52 @@
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         }
+
+        // Collapsible information sections functionality
+        function setupCollapsibleSections() {
+            const sections = [
+                {
+                    toggle: 'toggle-student-activity-info',
+                    content: 'student-activity-info-content',
+                    icon: 'student-activity-info-icon'
+                },
+                {
+                    toggle: 'toggle-time-analysis-info',
+                    content: 'time-analysis-info-content',
+                    icon: 'time-analysis-info-icon'
+                },
+                {
+                    toggle: 'toggle-keyword-info',
+                    content: 'keyword-info-content',
+                    icon: 'keyword-info-icon'
+                }
+            ];
+
+            sections.forEach(section => {
+                const toggleElement = document.getElementById(section.toggle);
+                const contentElement = document.getElementById(section.content);
+                const iconElement = document.getElementById(section.icon);
+
+                if (toggleElement && contentElement && iconElement) {
+                    toggleElement.addEventListener('click', function() {
+                        const isHidden = contentElement.classList.contains('hidden');
+
+                        if (isHidden) {
+                            // Show content
+                            contentElement.classList.remove('hidden');
+                            iconElement.classList.add('rotate-180');
+                        } else {
+                            // Hide content
+                            contentElement.classList.add('hidden');
+                            iconElement.classList.remove('rotate-180');
+                        }
+                    });
+                }
+            });
+        }
+
+        // Initialize collapsible sections
+        setupCollapsibleSections();
     });
 </script>
 

@@ -43,7 +43,7 @@ staticfiles/
 # Windows
 Thumbs.db
 desktop.ini
-
+project.md
 # IDEs
 .idea/
 *.iml
@@ -52,3 +52,8 @@ desktop.ini
 node_modules/
 npm-debug.log
 yarn-error.log
+
+
+.cursor/
+.cursorrules
+.cursorignore

@@ -33,23 +33,14 @@ RUN npm install -g wscat
 # Copy application code to the container
 COPY . .
 
-# Create a non-root user for security
-RUN adduser --disabled-password appuser
-USER appuser
+# Create necessary directories for development
+RUN mkdir -p /app/logs /app/media /app/staticfiles
+
+# For development, we'll run as root to avoid permission issues with mounted volumes
+# In production, use a non-root user for security
 
 # Expose the application port
-EXPOSE 8000
+EXPOSE 8080
 
-
-# Set the entry point for the container
-# CMD ["gunicorn", "--bind", "0.0.0.0:8000", "your_project.wsgi:application"]
-# CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--threads", "2", "your_project.wsgi:application"]
-
-# For development with auto-reload
-CMD ["daphne", "leaf_school.asgi:application", "-b", "0.0.0.0", "-p", "8000", "--reload"]
-
-# Uncomment the lines below for production
-# CMD ["gunicorn", "--bind", "0.0.0.0:8000", "your_project.wsgi:application"]
-# CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--threads", "2", "your_project.wsgi:application"]
-
-# CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Default command - can be overridden by docker-compose
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8080"]

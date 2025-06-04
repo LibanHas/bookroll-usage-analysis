@@ -29,6 +29,8 @@ urlpatterns += i18n_patterns(
     path('admin/', admin.site.urls),
     path('', include('core.urls')),
     path('user/', include('teacher_student.urls')),
+    path('holidays/', include('holiday.urls')),
+    path('past-years/', include('past_years.urls')),
     prefix_default_language=False,  # Don't show /en/ prefix for default language
 )
 

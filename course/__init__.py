@@ -1,0 +1,1 @@
+# Course application for storing Moodle course information

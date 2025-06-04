@@ -1,0 +1,489 @@
+{% extends 'main.html' %}
+{% load static %}
+{% load i18n %}
+{% load past_years_tags %}
+
+{% block main_content %}
+<!-- Include ApexCharts library for charts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<div class="grid grid-cols-12 gap-x-4">
+    <!-- Start Bread Crumb Section -->
+    <div class="col-span-full card">
+        <div class="flex items-center justify-between p-4">
+            <!-- Left side: Title and breadcrumbs -->
+            <div>
+                <h5 class="card-title">{{ page_title }}</h5>
+                <ul class="flex items-center flex-wrap gap-1.5 *:flex-center *:gap-1.5 leading-none text-gray-900 dark:text-dark-text mt-2">
+                    {% for breadcrumb in breadcrumbs %}
+                    <li class="text-primary-500 after:font-remix after:flex-center after:font-thin after:text-gray-900 after:size-5 after:content-['\ea6d'] after:translate-y-[1.4px] last:after:hidden {% if not breadcrumb.url %}current-page text-gray-500 dark:text-dark-text-two{% endif %}">
+                        {% if breadcrumb.url %}
+                        <a href="{% url breadcrumb.url %}">{{ breadcrumb.name }}</a>
+                        {% else %}
+                        <span>{{ breadcrumb.name }}</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Right side: Cache clear button -->
+            <div class="flex items-center gap-2">
+                <form method="post" action="{% past_year_clear_cache_url year %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn b-solid btn-secondary-solid btn-sm flex items-center gap-2 hover:bg-secondary-600 transition-colors duration-200"
+                            id="clear-cache-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" class="text-white">
+                            <path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                        </svg>
+                        {% trans "Clear Cache" %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- End Bread Crumb Section -->
+
+    {% if has_data %}
+    <!-- Start Course Statistics Overview -->
+    <div class="col-span-full grid grid-cols-12 gap-4 card">
+        <!-- Total Courses Progress Card -->
+        <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+            <div class="flex-center-between">
+                <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Total Courses" %}</h6>
+                <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Analytics" %}</div>
+            </div>
+            <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                <div class="pb-8 shrink-0">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="counter-value card-title text-blue-500" data-value="{{ courses_data.total_courses }}">{{ courses_data.total_courses }}</div>
+                    </div>
+                </div>
+                <div class="grow self-center pb-3">
+                    <div class="size-12 flex-center bg-blue-100 dark:bg-blue-900 rounded-lg ml-auto">
+                        <i class="ri-book-line text-blue-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Courses with Activity Progress Card -->
+        <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+            <div class="flex-center-between">
+                <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Courses with Activity" %}</h6>
+                <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Analytics" %}</div>
+            </div>
+            <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                <div class="pb-8 shrink-0">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="counter-value card-title text-green-500" data-value="{{ activity_data.overall_stats.total_courses_with_activity|default:0 }}">{{ activity_data.overall_stats.total_courses_with_activity|default:0 }}</div>
+                    </div>
+                </div>
+                <div class="grow self-center pb-3">
+                    <div class="size-12 flex-center bg-green-100 dark:bg-green-900 rounded-lg ml-auto">
+                        <i class="ri-checkbox-circle-line text-green-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Students Progress Card -->
+        <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+            <div class="flex-center-between">
+                <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Active Students" %}</h6>
+                <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Analytics" %}</div>
+            </div>
+            <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                <div class="pb-8 shrink-0">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="counter-value card-title text-purple-500" data-value="{{ activity_data.overall_stats.total_unique_students|default:0 }}">{{ activity_data.overall_stats.total_unique_students|default:0 }}</div>
+                    </div>
+                </div>
+                <div class="grow self-center pb-3">
+                    <div class="size-12 flex-center bg-purple-100 dark:bg-purple-900 rounded-lg ml-auto">
+                        <i class="ri-user-line text-purple-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Activities Progress Card -->
+        <div class="col-span-full md:col-span-6 2xl:col-span-3 p-[10px_16px] dk-border-one rounded-xl dk-theme-card-square h-full">
+            <div class="flex-center-between">
+                <h6 class="leading-none text-gray-500 dark:text-white font-semibold">{% trans "Total Activities" %}</h6>
+                <div class="leading-none shrink-0 text-xs text-gray-500 dark:text-dark-text dk-border-one rounded-full px-2 py-1 dk-theme-card-square">{% trans "Analytics" %}</div>
+            </div>
+            <div class="pt-3 bg-card-pattern dark:bg-card-pattern-dark bg-no-repeat bg-100% flex gap-4 mt-3">
+                <div class="pb-8 shrink-0">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="counter-value card-title text-orange-500" data-value="{{ activity_data.overall_stats.total_activities|default:0 }}">{{ activity_data.overall_stats.total_activities|default:0 }}</div>
+                    </div>
+                </div>
+                <div class="grow self-center pb-3">
+                    <div class="size-12 flex-center bg-orange-100 dark:bg-orange-900 rounded-lg ml-auto">
+                        <i class="ri-bar-chart-line text-orange-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Course Statistics Overview -->
+
+    <!-- Start Charts Section -->
+    {% if has_activity_data %}
+    <div class="col-span-full lg:col-span-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">{% trans "Daily Activity Trends" %}</h5>
+                <p class="text-gray-500 dark:text-dark-text-two">{% trans "Student activity over time" %}</p>
+            </div>
+            <div class="card-body">
+                <div id="daily-trends-chart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-span-full lg:col-span-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">{% trans "Activity by Hour" %}</h5>
+                <p class="text-gray-500 dark:text-dark-text-two">{% trans "When students are most active" %}</p>
+            </div>
+            <div class="card-body">
+                <div id="hourly-patterns-chart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-span-full lg:col-span-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">{% trans "Top Operations" %}</h5>
+                <p class="text-gray-500 dark:text-dark-text-two">{% trans "Most common student activities" %}</p>
+            </div>
+            <div class="card-body">
+                <div id="top-operations-chart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-span-full lg:col-span-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">{% trans "Monthly Trends" %}</h5>
+                <p class="text-gray-500 dark:text-dark-text-two">{% trans "Activity trends by month" %}</p>
+            </div>
+            <div class="card-body">
+                <div id="monthly-trends-chart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    <!-- End Charts Section -->
+
+    <!-- Start Course Categories and Listings -->
+    <div class="col-span-full">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">{% trans "Course Categories" %}</h5>
+                <p class="text-gray-500 dark:text-dark-text-two">{% trans "Courses organized by category for" %} {{ year }}年度</p>
+            </div>
+            <div class="card-body">
+                {% for category_id, category in enhanced_categories.items %}
+                <div class="mb-8 last:mb-0">
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                {{ category.name }}
+                                {% if category.academic_year %}
+                                <span class="text-sm text-gray-500 dark:text-gray-400">({{ category.academic_year }}年度)</span>
+                                {% endif %}
+                            </h3>
+                            <span class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm font-medium">
+                                {{ category.course_count }} {% trans "courses" %}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% for child_id, child_category in category.children.items %}
+                    <div class="ml-4 mb-6">
+                        <div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-3">
+                            <div class="flex items-center justify-between mb-3">
+                                <h4 class="text-md font-medium text-gray-800 dark:text-gray-200">
+                                    {{ child_category.name }}
+                                    {% if child_category.academic_year %}
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">({{ child_category.academic_year }}年度)</span>
+                                    {% endif %}
+                                </h4>
+                                <span class="bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded text-sm">
+                                    {{ child_category.course_count }} {% trans "courses" %}
+                                </span>
+                            </div>
+
+                            {% if child_category.courses %}
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                                    <thead class="bg-gray-50 dark:bg-gray-800">
+                                        <tr>
+                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                {% trans "Course Name" %}
+                                            </th>
+                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                {% trans "Short Name" %}
+                                            </th>
+                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                {% trans "Created" %}
+                                            </th>
+                                            {% if has_activity_data %}
+                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                {% trans "Students" %}
+                                            </th>
+                                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                {% trans "Activities" %}
+                                            </th>
+                                            {% endif %}
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
+                                        {% for course in child_category.courses %}
+                                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-600">
+                                            <td class="px-3 py-2 whitespace-nowrap">
+                                                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                    {{ course.name|truncatechars:50 }}
+                                                </div>
+                                                {% if course.summary %}
+                                                <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                    {{ course.summary|striptags|truncatechars:80 }}
+                                                </div>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {{ course.shortname }}
+                                            </td>
+                                            <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {% if course.created %}
+                                                {{ course.created|date:"Y-m-d" }}
+                                                {% else %}
+                                                -
+                                                {% endif %}
+                                            </td>
+                                            {% if has_activity_data %}
+                                            <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {% if course.activity.unique_students %}
+                                                <span class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded text-xs">
+                                                    {{ course.activity.unique_students }}
+                                                </span>
+                                                {% else %}
+                                                <span class="text-gray-400">0</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {% if course.activity.total_activities %}
+                                                <span class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs">
+                                                    {{ course.activity.total_activities }}
+                                                </span>
+                                                {% else %}
+                                                <span class="text-gray-400">0</span>
+                                                {% endif %}
+                                            </td>
+                                            {% endif %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-gray-500 dark:text-gray-400 text-sm italic">{% trans "No courses found in this category." %}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-500 dark:text-gray-400 ml-4">{% trans "No subcategories found." %}</p>
+                    {% endfor %}
+                </div>
+                {% empty %}
+                <div class="text-center py-8">
+                    <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="text-gray-400">
+                            <path fill="currentColor" d="M12 3L1 9l11 6l9-4.91V17h2V9M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82Z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{% trans "No Course Categories Found" %}</h3>
+                    <p class="text-gray-500 dark:text-gray-400">{% trans "No course categories found for this academic year." %}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <!-- End Course Categories and Listings -->
+
+    {% else %}
+    <!-- No Data State -->
+    <div class="col-span-full">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">{{ page_title }}</h5>
+                <p class="text-gray-500 dark:text-dark-text-two">{{ page_description }}</p>
+            </div>
+            <div class="card-body">
+                <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-8 text-center">
+                    <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" class="text-blue-600 dark:text-blue-400">
+                            <path fill="currentColor" d="M12 3L1 9l11 6l9-4.91V17h2V9M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82Z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ page_title }}</h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-6">
+                        {% blocktrans %}No course data found for the academic year {{ year }}. This could mean:{% endblocktrans %}
+                    </p>
+                    <ul class="text-sm text-gray-500 dark:text-gray-400 text-left max-w-md mx-auto space-y-2">
+                        <li>• {% trans "No courses were created for this academic year" %}</li>
+                        <li>• {% trans "Course categories don't follow the expected naming pattern (YYYY年度)" %}</li>
+                        <li>• {% trans "Courses are not visible or have been archived" %}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Chart Data Scripts -->
+{% if has_activity_data %}
+<script type="application/json" id="daily-trends-data">{{ daily_trends_json|safe }}</script>
+<script type="application/json" id="top-operations-data">{{ top_operations_json|safe }}</script>
+<script type="application/json" id="hourly-patterns-data">{{ hourly_patterns_json|safe }}</script>
+<script type="application/json" id="monthly-trends-data">{{ monthly_trends_json|safe }}</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Daily Trends Chart
+    const dailyTrendsData = JSON.parse(document.getElementById('daily-trends-data').textContent);
+    if (dailyTrendsData.length > 0) {
+        const dailyTrendsOptions = {
+            series: [{
+                name: '{% trans "Active Students" %}',
+                data: dailyTrendsData.map(item => ({
+                    x: item.date,
+                    y: item.active_students
+                }))
+            }, {
+                name: '{% trans "Total Activities" %}',
+                data: dailyTrendsData.map(item => ({
+                    x: item.date,
+                    y: item.total_activities
+                }))
+            }],
+            chart: {
+                type: 'line',
+                height: 350,
+                toolbar: { show: false }
+            },
+            xaxis: {
+                type: 'datetime'
+            },
+            yaxis: [{
+                title: { text: '{% trans "Count" %}' }
+            }],
+            colors: ['#3B82F6', '#10B981']
+        };
+        new ApexCharts(document.querySelector("#daily-trends-chart"), dailyTrendsOptions).render();
+    }
+
+    // Hourly Patterns Chart
+    const hourlyPatternsData = JSON.parse(document.getElementById('hourly-patterns-data').textContent);
+    if (hourlyPatternsData.length > 0) {
+        const hourlyPatternsOptions = {
+            series: [{
+                name: '{% trans "Activities" %}',
+                data: hourlyPatternsData.map(item => item.activity_count)
+            }],
+            chart: {
+                type: 'bar',
+                height: 350,
+                toolbar: { show: false }
+            },
+            xaxis: {
+                categories: hourlyPatternsData.map(item => item.hour + ':00'),
+                title: { text: '{% trans "Hour of Day (JST)" %}' }
+            },
+            yaxis: {
+                title: { text: '{% trans "Activity Count" %}' }
+            },
+            colors: ['#8B5CF6']
+        };
+        new ApexCharts(document.querySelector("#hourly-patterns-chart"), hourlyPatternsOptions).render();
+    }
+
+    // Top Operations Chart
+    const topOperationsData = JSON.parse(document.getElementById('top-operations-data').textContent);
+    if (topOperationsData.length > 0) {
+        const topOperationsOptions = {
+            series: [{
+                name: '{% trans "Activity Count" %}',
+                data: topOperationsData.map(item => item.activity_count)
+            }],
+            chart: {
+                type: 'bar',
+                height: 350,
+                toolbar: { show: false }
+            },
+            xaxis: {
+                categories: topOperationsData.map(item => item.operation),
+                title: { text: '{% trans "Operation Type" %}' }
+            },
+            yaxis: {
+                title: { text: '{% trans "Activity Count" %}' }
+            },
+            colors: ['#F59E0B']
+        };
+        new ApexCharts(document.querySelector("#top-operations-chart"), topOperationsOptions).render();
+    }
+
+    // Monthly Trends Chart
+    const monthlyTrendsData = JSON.parse(document.getElementById('monthly-trends-data').textContent);
+    if (monthlyTrendsData.length > 0) {
+        const monthlyTrendsOptions = {
+            series: [{
+                name: '{% trans "Active Students" %}',
+                data: monthlyTrendsData.map(item => item.active_students)
+            }, {
+                name: '{% trans "Total Activities" %}',
+                data: monthlyTrendsData.map(item => item.total_activities)
+            }],
+            chart: {
+                type: 'line',
+                height: 350,
+                toolbar: { show: false }
+            },
+            xaxis: {
+                categories: monthlyTrendsData.map(item => item.month),
+                title: { text: '{% trans "Month" %}' }
+            },
+            yaxis: {
+                title: { text: '{% trans "Count" %}' }
+            },
+            colors: ['#EF4444', '#06B6D4']
+        };
+        new ApexCharts(document.querySelector("#monthly-trends-chart"), monthlyTrendsOptions).render();
+    }
+});
+</script>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Cache clear confirmation
+    const clearCacheBtn = document.getElementById('clear-cache-btn');
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', function(e) {
+            if (!confirm('{% trans "Are you sure you want to clear the cache for this academic year? This will refresh all course data." %}')) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+
+{% endblock %}

@@ -31,7 +31,6 @@
                     <thead>
                         <tr class="text-primary-500">
                             <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">{% trans "Name" %}</th>
-                            <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">{% trans "Email" %}</th>
                             <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">{% trans "Active Courses" %}</th>
                             <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">{% trans "Archived Courses" %}</th>
                             <th class="px-4 py-4 bg-[#F2F4F9] dark:bg-dark-card-two first:rounded-l-lg last:rounded-r-lg dk-theme-card-square">{% trans "Total Course" %}</th>
@@ -47,12 +46,11 @@
                                     </a>
                                     <div>
                                         <h6 class="leading-none text-heading font-semibold">
-                                            <a href="#">{{ teacher.firstname }} {{ teacher.lastname }}</a>
+                                            <a href="{% url 'teacher_detail' teacher.user_id %}">{{ teacher.firstname }} {{ teacher.lastname }}</a>
                                         </h6>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-4">{{ teacher.email }}</td>
                             <td class="px-4 py-4">{{ teacher.active_courses }}</td>
                             <td class="px-4 py-4">{{ teacher.archived_courses }}</td>
                             <td class="px-4 py-4">{{ teacher.total_courses }}</td>

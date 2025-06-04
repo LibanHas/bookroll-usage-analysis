@@ -1,0 +1,393 @@
+2025-05-28 13:17:43,567 DEBUG [SQL] (0.001) SELECT "django_session"."session_key", "django_session"."session_data", "django_session"."expire_date" FROM "django_session" WHERE ("django_session"."expire_date" > '2025-05-28T13:17:43.562328+00:00'::timestamptz AND "django_session"."session_key" = '5yaxkrdgv9hppq37x8zan2fhxju2xypb') LIMIT 21; args=(datetime.datetime(2025, 5, 28, 13, 17, 43, 562328, tzinfo=datetime.timezone.utc), '5yaxkrdgv9hppq37x8zan2fhxju2xypb'); alias=default
+2025-05-28 13:17:43,568 DEBUG [SQL] (0.000) SELECT "auth_user"."id", "auth_user"."password", "auth_user"."last_login", "auth_user"."is_superuser", "auth_user"."username", "auth_user"."first_name", "auth_user"."last_name", "auth_user"."email", "auth_user"."is_staff", "auth_user"."is_active", "auth_user"."date_joined" FROM "auth_user" WHERE "auth_user"."id" = 1 LIMIT 21; args=(1,); alias=default
+2025-05-28 13:17:43,569 DEBUG [past_years.views] YearCoursesView: Processing request for year 2024
+2025-05-28 13:17:43,569 DEBUG [past_years.views] YearCoursesView: Processing request for year 2024
+2025-05-28 13:17:43,569 DEBUG [past_years.views] YearCoursesView: kwargs = {'year': 2024}
+2025-05-28 13:17:43,569 DEBUG [past_years.views] YearCoursesView: kwargs = {'year': 2024}
+2025-05-28 13:17:43,569 DEBUG [past_years.views] YearCoursesView: Calling get_courses_by_academic_year(2024)
+2025-05-28 13:17:43,569 DEBUG [past_years.views] YearCoursesView: Calling get_courses_by_academic_year(2024)
+2025-05-28 13:17:43,570 DEBUG [past_years.models] Returning cached data for academic year 2024
+2025-05-28 13:17:43,570 DEBUG [past_years.models] Returning cached data for academic year 2024
+2025-05-28 13:17:43,570 DEBUG [past_years.views] YearCoursesView: Courses data received - total_courses: 0
+2025-05-28 13:17:43,570 DEBUG [past_years.views] YearCoursesView: Courses data received - total_courses: 0
+2025-05-28 13:17:43,570 DEBUG [past_years.views] YearCoursesView: Categories count: 0
+2025-05-28 13:17:43,570 DEBUG [past_years.views] YearCoursesView: Categories count: 0
+2025-05-28 13:17:43,570 DEBUG [past_years.views] YearCoursesView: Extracted 0 course IDs: []
+2025-05-28 13:17:43,570 DEBUG [past_years.views] YearCoursesView: Extracted 0 course IDs: []
+2025-05-28 13:17:43,570 DEBUG [past_years.views] YearCoursesView: Calling get_course_activity_summary(2024, 0 courses)
+2025-05-28 13:17:43,570 DEBUG [past_years.views] YearCoursesView: Calling get_course_activity_summary(2024, 0 courses)
+2025-05-28 13:17:43,570 DEBUG [past_years.models] Starting ClickHouse activity summary for academic year 2024
+2025-05-28 13:17:43,570 DEBUG [past_years.models] Starting ClickHouse activity summary for academic year 2024
+2025-05-28 13:17:43,570 DEBUG [past_years.models] Course IDs filter: []
+2025-05-28 13:17:43,570 DEBUG [past_years.models] Course IDs filter: []
+2025-05-28 13:17:43,571 DEBUG [past_years.models] Date range: 2024-04-01 to 2025-03-31
+2025-05-28 13:17:43,571 DEBUG [past_years.models] Date range: 2024-04-01 to 2025-03-31
+2025-05-28 13:17:43,571 DEBUG [past_years.models] Executing ClickHouse base query:
+2025-05-28 13:17:43,571 DEBUG [past_years.models] Executing ClickHouse base query:
+2025-05-28 13:17:43,571 DEBUG [past_years.models] Raw query:
+                    SELECT
+                        context_id,
+                        COUNT(DISTINCT actor_account_name) as unique_students,
+                        COUNT(DISTINCT id) as total_activities,
+                        COUNT(DISTINCT toDate(timestamp)) as active_days,
+                        countIf(operation_name = 'OPEN') as content_opens,
+                        countIf(operation_name = 'ADD_MARKER') as markers_added,
+                        countIf(operation_name = 'ADD_MEMO') as memos_added,
+                        countIf(operation_name = 'ADD_HW_MEMO') as handwriting_memos,
+                        countIf(operation_name = 'ADD_BOOKMARK') as bookmarks_added
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(%s)
+                    AND timestamp <= toDate(%s)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                 GROUP BY context_id ORDER BY total_activities DESC
+2025-05-28 13:17:43,571 DEBUG [past_years.models] Raw query:
+                    SELECT
+                        context_id,
+                        COUNT(DISTINCT actor_account_name) as unique_students,
+                        COUNT(DISTINCT id) as total_activities,
+                        COUNT(DISTINCT toDate(timestamp)) as active_days,
+                        countIf(operation_name = 'OPEN') as content_opens,
+                        countIf(operation_name = 'ADD_MARKER') as markers_added,
+                        countIf(operation_name = 'ADD_MEMO') as memos_added,
+                        countIf(operation_name = 'ADD_HW_MEMO') as handwriting_memos,
+                        countIf(operation_name = 'ADD_BOOKMARK') as bookmarks_added
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(%s)
+                    AND timestamp <= toDate(%s)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                 GROUP BY context_id ORDER BY total_activities DESC
+2025-05-28 13:17:43,571 DEBUG [past_years.models] Parameters: ['2024-04-01', '2025-03-31']
+2025-05-28 13:17:43,571 DEBUG [past_years.models] Parameters: ['2024-04-01', '2025-03-31']
+2025-05-28 13:17:43,571 DEBUG [past_years.models] Final query:
+                    SELECT
+                        context_id,
+                        COUNT(DISTINCT actor_account_name) as unique_students,
+                        COUNT(DISTINCT id) as total_activities,
+                        COUNT(DISTINCT toDate(timestamp)) as active_days,
+                        countIf(operation_name = 'OPEN') as content_opens,
+                        countIf(operation_name = 'ADD_MARKER') as markers_added,
+                        countIf(operation_name = 'ADD_MEMO') as memos_added,
+                        countIf(operation_name = 'ADD_HW_MEMO') as handwriting_memos,
+                        countIf(operation_name = 'ADD_BOOKMARK') as bookmarks_added
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate('2024-04-01')
+                    AND timestamp <= toDate('2025-03-31')
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                 GROUP BY context_id ORDER BY total_activities DESC
+2025-05-28 13:17:43,571 DEBUG [past_years.models] Final query:
+                    SELECT
+                        context_id,
+                        COUNT(DISTINCT actor_account_name) as unique_students,
+                        COUNT(DISTINCT id) as total_activities,
+                        COUNT(DISTINCT toDate(timestamp)) as active_days,
+                        countIf(operation_name = 'OPEN') as content_opens,
+                        countIf(operation_name = 'ADD_MARKER') as markers_added,
+                        countIf(operation_name = 'ADD_MEMO') as memos_added,
+                        countIf(operation_name = 'ADD_HW_MEMO') as handwriting_memos,
+                        countIf(operation_name = 'ADD_BOOKMARK') as bookmarks_added
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate('2024-04-01')
+                    AND timestamp <= toDate('2025-03-31')
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                 GROUP BY context_id ORDER BY total_activities DESC
+2025-05-28 13:17:44,922 DEBUG [SQL] (1.351)
+                    SELECT
+                        context_id,
+                        COUNT(DISTINCT actor_account_name) as unique_students,
+                        COUNT(DISTINCT id) as total_activities,
+                        COUNT(DISTINCT toDate(timestamp)) as active_days,
+                        countIf(operation_name = 'OPEN') as content_opens,
+                        countIf(operation_name = 'ADD_MARKER') as markers_added,
+                        countIf(operation_name = 'ADD_MEMO') as memos_added,
+                        countIf(operation_name = 'ADD_HW_MEMO') as handwriting_memos,
+                        countIf(operation_name = 'ADD_BOOKMARK') as bookmarks_added
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(2024-04-01)
+                    AND timestamp <= toDate(2025-03-31)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                 GROUP BY context_id ORDER BY total_activities DESC; args=['2024-04-01', '2025-03-31']; alias=clickhouse_db_pre_2025
+2025-05-28 13:17:44,922 DEBUG [past_years.models] Retrieved 163 course activity records
+2025-05-28 13:17:44,922 DEBUG [past_years.models] Retrieved 163 course activity records
+2025-05-28 13:17:44,922 DEBUG [past_years.models] Executing ClickHouse overall stats query:
+2025-05-28 13:17:44,922 DEBUG [past_years.models] Executing ClickHouse overall stats query:
+2025-05-28 13:17:44,923 DEBUG [past_years.models] Final query:
+                    SELECT
+                        COUNT(DISTINCT context_id) as total_courses_with_activity,
+                        COUNT(DISTINCT actor_account_name) as total_unique_students,
+                        COUNT(DISTINCT id) as total_activities,
+                        AVG(toHour(timestamp)) as avg_activity_hour
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate('2024-04-01')
+                    AND timestamp <= toDate('2025-03-31')
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+
+2025-05-28 13:17:44,923 DEBUG [past_years.models] Final query:
+                    SELECT
+                        COUNT(DISTINCT context_id) as total_courses_with_activity,
+                        COUNT(DISTINCT actor_account_name) as total_unique_students,
+                        COUNT(DISTINCT id) as total_activities,
+                        AVG(toHour(timestamp)) as avg_activity_hour
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate('2024-04-01')
+                    AND timestamp <= toDate('2025-03-31')
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+
+2025-05-28 13:17:45,555 DEBUG [SQL] (0.632)
+                    SELECT
+                        COUNT(DISTINCT context_id) as total_courses_with_activity,
+                        COUNT(DISTINCT actor_account_name) as total_unique_students,
+                        COUNT(DISTINCT id) as total_activities,
+                        AVG(toHour(timestamp)) as avg_activity_hour
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(2024-04-01)
+                    AND timestamp <= toDate(2025-03-31)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                ; args=['2024-04-01', '2025-03-31']; alias=clickhouse_db_pre_2025
+2025-05-28 13:17:45,555 DEBUG [past_years.models] Overall stats result: (163, 1000, 15739898, 11.94261906386463)
+2025-05-28 13:17:45,555 DEBUG [past_years.models] Overall stats result: (163, 1000, 15739898, 11.94261906386463)
+2025-05-28 13:17:45,555 DEBUG [past_years.models] Executing ClickHouse daily trends query:
+2025-05-28 13:17:45,555 DEBUG [past_years.models] Executing ClickHouse daily trends query:
+2025-05-28 13:17:45,555 DEBUG [past_years.models] Final query:
+                    SELECT
+                        toDate(timestamp) as date,
+                        COUNT(DISTINCT context_id) as active_courses,
+                        COUNT(DISTINCT actor_account_name) as active_students,
+                        COUNT(DISTINCT id) as total_activities
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate('2024-04-01')
+                    AND timestamp <= toDate('2025-03-31')
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                 GROUP BY date ORDER BY date
+2025-05-28 13:17:45,555 DEBUG [past_years.models] Final query:
+                    SELECT
+                        toDate(timestamp) as date,
+                        COUNT(DISTINCT context_id) as active_courses,
+                        COUNT(DISTINCT actor_account_name) as active_students,
+                        COUNT(DISTINCT id) as total_activities
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate('2024-04-01')
+                    AND timestamp <= toDate('2025-03-31')
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                 GROUP BY date ORDER BY date
+2025-05-28 13:17:47,212 DEBUG [SQL] (1.656)
+                    SELECT
+                        toDate(timestamp) as date,
+                        COUNT(DISTINCT context_id) as active_courses,
+                        COUNT(DISTINCT actor_account_name) as active_students,
+                        COUNT(DISTINCT id) as total_activities
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(2024-04-01)
+                    AND timestamp <= toDate(2025-03-31)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                 GROUP BY date ORDER BY date; args=['2024-04-01', '2025-03-31']; alias=clickhouse_db_pre_2025
+2025-05-28 13:17:47,212 DEBUG [past_years.models] Retrieved 364 daily trend records
+2025-05-28 13:17:47,212 DEBUG [past_years.models] Retrieved 364 daily trend records
+2025-05-28 13:17:47,212 DEBUG [past_years.models] Executing ClickHouse operations query:
+2025-05-28 13:17:47,212 DEBUG [past_years.models] Executing ClickHouse operations query:
+2025-05-28 13:17:47,212 DEBUG [past_years.models] Final query:
+                    SELECT
+                        operation_name,
+                        COUNT(DISTINCT id) as activity_count,
+                        COUNT(DISTINCT context_id) as course_count,
+                        COUNT(DISTINCT actor_account_name) as student_count
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate('2024-04-01')
+                    AND timestamp <= toDate('2025-03-31')
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                    AND operation_name != ''
+                    AND operation_name IS NOT NULL
+                 GROUP BY operation_name ORDER BY activity_count DESC LIMIT 10
+2025-05-28 13:17:47,212 DEBUG [past_years.models] Final query:
+                    SELECT
+                        operation_name,
+                        COUNT(DISTINCT id) as activity_count,
+                        COUNT(DISTINCT context_id) as course_count,
+                        COUNT(DISTINCT actor_account_name) as student_count
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate('2024-04-01')
+                    AND timestamp <= toDate('2025-03-31')
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                    AND operation_name != ''
+                    AND operation_name IS NOT NULL
+                 GROUP BY operation_name ORDER BY activity_count DESC LIMIT 10
+2025-05-28 13:17:48,478 DEBUG [SQL] (1.266)
+                    SELECT
+                        operation_name,
+                        COUNT(DISTINCT id) as activity_count,
+                        COUNT(DISTINCT context_id) as course_count,
+                        COUNT(DISTINCT actor_account_name) as student_count
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(2024-04-01)
+                    AND timestamp <= toDate(2025-03-31)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                    AND operation_name != ''
+                    AND operation_name IS NOT NULL
+                 GROUP BY operation_name ORDER BY activity_count DESC LIMIT 10; args=['2024-04-01', '2025-03-31']; alias=clickhouse_db_pre_2025
+2025-05-28 13:17:48,479 DEBUG [past_years.models] Retrieved 10 operation type records
+2025-05-28 13:17:48,479 DEBUG [past_years.models] Retrieved 10 operation type records
+2025-05-28 13:17:48,479 DEBUG [past_years.models] ClickHouse activity summary completed successfully
+2025-05-28 13:17:48,479 DEBUG [past_years.models] ClickHouse activity summary completed successfully
+2025-05-28 13:17:48,479 DEBUG [past_years.models] Result summary: 163 courses, 15739898 total activities
+2025-05-28 13:17:48,479 DEBUG [past_years.models] Result summary: 163 courses, 15739898 total activities
+2025-05-28 13:17:48,479 DEBUG [past_years.views] YearCoursesView: Activity data received - course_activities count: 163
+2025-05-28 13:17:48,479 DEBUG [past_years.views] YearCoursesView: Activity data received - course_activities count: 163
+2025-05-28 13:17:48,480 DEBUG [past_years.views] YearCoursesView: Calling get_course_engagement_patterns(2024)
+2025-05-28 13:17:48,480 DEBUG [past_years.views] YearCoursesView: Calling get_course_engagement_patterns(2024)
+2025-05-28 13:17:48,480 DEBUG [past_years.models] Starting ClickHouse engagement patterns for academic year 2024
+2025-05-28 13:17:48,480 DEBUG [past_years.models] Starting ClickHouse engagement patterns for academic year 2024
+2025-05-28 13:17:48,480 DEBUG [past_years.models] Engagement patterns date range: 2024-04-01 to 2025-03-31
+2025-05-28 13:17:48,480 DEBUG [past_years.models] Engagement patterns date range: 2024-04-01 to 2025-03-31
+2025-05-28 13:17:48,480 DEBUG [past_years.models] Executing hourly patterns query:
+                    SELECT
+                        toHour(timestamp + INTERVAL 9 HOUR) as jst_hour,
+                        COUNT(DISTINCT id) as activity_count,
+                        COUNT(DISTINCT actor_account_name) as student_count
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(%s)
+                    AND timestamp <= toDate(%s)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                    GROUP BY jst_hour
+                    ORDER BY jst_hour
+
+2025-05-28 13:17:48,480 DEBUG [past_years.models] Executing hourly patterns query:
+                    SELECT
+                        toHour(timestamp + INTERVAL 9 HOUR) as jst_hour,
+                        COUNT(DISTINCT id) as activity_count,
+                        COUNT(DISTINCT actor_account_name) as student_count
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(%s)
+                    AND timestamp <= toDate(%s)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                    GROUP BY jst_hour
+                    ORDER BY jst_hour
+
+2025-05-28 13:17:50,663 DEBUG [SQL] (2.183)
+                    SELECT
+                        toHour(timestamp + INTERVAL 9 HOUR) as jst_hour,
+                        COUNT(DISTINCT id) as activity_count,
+                        COUNT(DISTINCT actor_account_name) as student_count
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(2024-04-01)
+                    AND timestamp <= toDate(2025-03-31)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                    GROUP BY jst_hour
+                    ORDER BY jst_hour
+                ; args=['2024-04-01', '2025-03-31']; alias=clickhouse_db_pre_2025
+2025-05-28 13:17:50,664 DEBUG [past_years.models] Retrieved 24 hourly pattern records
+2025-05-28 13:17:50,664 DEBUG [past_years.models] Retrieved 24 hourly pattern records
+2025-05-28 13:17:50,664 DEBUG [past_years.models] Executing daily patterns query:
+                    SELECT
+                        toDayOfWeek(timestamp + INTERVAL 9 HOUR) as jst_day_of_week,
+                        COUNT(DISTINCT id) as activity_count,
+                        COUNT(DISTINCT actor_account_name) as student_count
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(%s)
+                    AND timestamp <= toDate(%s)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                    GROUP BY jst_day_of_week
+                    ORDER BY jst_day_of_week
+
+2025-05-28 13:17:50,664 DEBUG [past_years.models] Executing daily patterns query:
+                    SELECT
+                        toDayOfWeek(timestamp + INTERVAL 9 HOUR) as jst_day_of_week,
+                        COUNT(DISTINCT id) as activity_count,
+                        COUNT(DISTINCT actor_account_name) as student_count
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(%s)
+                    AND timestamp <= toDate(%s)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                    GROUP BY jst_day_of_week
+                    ORDER BY jst_day_of_week
+
+2025-05-28 13:17:52,632 DEBUG [SQL] (1.968)
+                    SELECT
+                        toDayOfWeek(timestamp + INTERVAL 9 HOUR) as jst_day_of_week,
+                        COUNT(DISTINCT id) as activity_count,
+                        COUNT(DISTINCT actor_account_name) as student_count
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(2024-04-01)
+                    AND timestamp <= toDate(2025-03-31)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                    GROUP BY jst_day_of_week
+                    ORDER BY jst_day_of_week
+                ; args=['2024-04-01', '2025-03-31']; alias=clickhouse_db_pre_2025
+2025-05-28 13:17:52,633 DEBUG [past_years.models] Retrieved 7 daily pattern records
+2025-05-28 13:17:52,633 DEBUG [past_years.models] Retrieved 7 daily pattern records
+2025-05-28 13:17:52,633 DEBUG [past_years.models] Executing monthly trends query:
+                    SELECT
+                        toYYYYMM(timestamp) as month,
+                        COUNT(DISTINCT context_id) as active_courses,
+                        COUNT(DISTINCT actor_account_name) as active_students,
+                        COUNT(DISTINCT id) as total_activities
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(%s)
+                    AND timestamp <= toDate(%s)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                    GROUP BY month
+                    ORDER BY month
+
+2025-05-28 13:17:52,633 DEBUG [past_years.models] Executing monthly trends query:
+                    SELECT
+                        toYYYYMM(timestamp) as month,
+                        COUNT(DISTINCT context_id) as active_courses,
+                        COUNT(DISTINCT actor_account_name) as active_students,
+                        COUNT(DISTINCT id) as total_activities
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(%s)
+                    AND timestamp <= toDate(%s)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                    GROUP BY month
+                    ORDER BY month
+
+2025-05-28 13:17:53,351 DEBUG [SQL] (0.718)
+                    SELECT
+                        toYYYYMM(timestamp) as month,
+                        COUNT(DISTINCT context_id) as active_courses,
+                        COUNT(DISTINCT actor_account_name) as active_students,
+                        COUNT(DISTINCT id) as total_activities
+                    FROM saikyo_statements_mv
+                    WHERE timestamp >= toDate(2024-04-01)
+                    AND timestamp <= toDate(2025-03-31)
+                    AND context_id != ''
+                    AND context_id IS NOT NULL
+                    GROUP BY month
+                    ORDER BY month
+                ; args=['2024-04-01', '2025-03-31']; alias=clickhouse_db_pre_2025
+2025-05-28 13:17:53,351 DEBUG [past_years.models] Retrieved 12 monthly trend records
+2025-05-28 13:17:53,351 DEBUG [past_years.models] Retrieved 12 monthly trend records
+2025-05-28 13:17:53,351 DEBUG [past_years.models] ClickHouse engagement patterns completed successfully
+2025-05-28 13:17:53,351 DEBUG [past_years.models] ClickHouse engagement patterns completed successfully
+2025-05-28 13:17:53,351 DEBUG [past_years.views] YearCoursesView: Engagement patterns received - hourly_patterns count: 24
+2025-05-28 13:17:53,351 DEBUG [past_years.views] YearCoursesView: Engagement patterns received - hourly_patterns count: 24
+2025-05-28 13:17:53,352 DEBUG [past_years.views] YearCoursesView: Created activity mapping for 163 courses
+2025-05-28 13:17:53,352 DEBUG [past_years.views] YearCoursesView: Created activity mapping for 163 courses
+2025-05-28 13:17:53,352 DEBUG [past_years.views] YearCoursesView: Enhanced categories created: 0
+2025-05-28 13:17:53,352 DEBUG [past_years.views] YearCoursesView: Enhanced categories created: 0
+2025-05-28 13:17:53,352 DEBUG [past_years.views] YearCoursesView: Final status - has_data: False, has_activity_data: True
+2025-05-28 13:17:53,352 DEBUG [past_years.views] YearCoursesView: Final status - has_data: False, has_activity_data: True
+2025-05-28 13:17:53,353 DEBUG [past_years.views] YearCoursesView: Context prepared successfully for year 2024
+2025-05-28 13:17:53,353 DEBUG [past_years.views] YearCoursesView: Context prepared successfully for year 2024
+2025-05-28 13:17:53,440 INFO [django.channels.server] HTTP GET /dashboard/past-years/2024/courses/ 200 [9.88, 10.236.173.253:64146]
+2025-05-28 13:17:53,440 INFO [django.channels.server] HTTP GET /dashboard/past-years/2024/courses/ 200 [9.88, 10.236.173.253:64146]
