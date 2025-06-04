@@ -73,6 +73,18 @@ class PastYearsOverviewView(LoginRequiredMixin, TemplateView):
             # Get grade performance summary statistics
             grade_summary = PastYearGradeAnalytics.get_grade_performance_summary_stats()
 
+            # Get time spent vs grade correlation data for available years
+            correlation_data_by_year = {}
+            for year in available_years[:5]:  # Limit to first 5 years for performance
+                try:
+                    correlation_data = PastYearGradeAnalytics.get_time_spent_vs_grade_correlation(year)
+                    # Include data if it has correlation_data OR if it's demo data
+                    if correlation_data.get('correlation_data') or correlation_data.get('metadata', {}).get('is_demo'):
+                        correlation_data_by_year[year] = correlation_data
+                        logger.info(f"Added correlation data for year {year}: {len(correlation_data.get('correlation_data', []))} data points, is_demo: {correlation_data.get('metadata', {}).get('is_demo', False)}")
+                except Exception as e:
+                    logger.warning(f"Could not get correlation data for year {year}: {str(e)}")
+
             # Prepare chart data for JavaScript (yearly only) with course transparency
             yearly_grade_chart_data = json.dumps({
                 'top_25': yearly_grade_data.get('top_25_data', []),
@@ -94,13 +106,18 @@ class PastYearsOverviewView(LoginRequiredMixin, TemplateView):
                 }
             })
 
+            # Prepare time spent vs grade correlation chart data for JavaScript
+            time_grade_correlation_chart_data = json.dumps(correlation_data_by_year)
+
         except Exception as e:
             logger.error(f"Error fetching grade performance analytics: {str(e)}")
             yearly_grade_data = {'top_25_data': [], 'bottom_25_data': [], 'performance_summary': {}}
             normal_distribution_data = {'high_performers_data': [], 'low_performers_data': [], 'distribution_stats': [], 'performance_summary': {}}
             grade_summary = {'total_students_analyzed': 0, 'performance_metrics': {}}
+            correlation_data_by_year = {}
             yearly_grade_chart_data = '{"top_25": [], "bottom_25": [], "course_transparency": {"enabled": false}}'
             normal_distribution_chart_data = '{"high_performers": [], "low_performers": [], "distribution_stats": [], "course_transparency": {"enabled": false}}'
+            time_grade_correlation_chart_data = '{}'
 
         context.update({
             'available_years': available_years,
@@ -113,8 +130,10 @@ class PastYearsOverviewView(LoginRequiredMixin, TemplateView):
             'yearly_chart_data': yearly_chart_data,
             'yearly_grade_chart_data': yearly_grade_chart_data,
             'normal_distribution_chart_data': normal_distribution_chart_data,
+            'time_grade_correlation_chart_data': time_grade_correlation_chart_data,
             'yearly_grade_data': yearly_grade_data,
             'normal_distribution_data': normal_distribution_data,
+            'correlation_data_by_year': correlation_data_by_year,
             'grade_summary': grade_summary,
         })
         return context
@@ -582,9 +601,6 @@ class CourseGradeDistributionView(LoginRequiredMixin, View):
             # Cache the distribution data for 1 hour
             # Course-specific distributions are less expensive to regenerate
             cache.set(cache_key, distribution_data, 3600)
-
-            # Register this cache key for future clearing
-            PastYearCourseCategory.register_course_cache_key(year, course_id)
 
             logger.info(f"CACHE SET: Cached grade distribution for course {course_id} in year {year}")
 

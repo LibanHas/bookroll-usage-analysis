@@ -466,3 +466,4 @@ COURSE_SYNC_TIMEOUT = int(os.getenv('COURSE_SYNC_TIMEOUT', '300'))  # 5 minutes
 
 
 MAX_SESSION_DURATION = int(os.getenv('MAX_SESSION_DURATION', '5400'))  # 1.5 hours
+MAX_READING_TIME = int(os.getenv('MAX_READING_TIME', '1800'))  # 30 minutes

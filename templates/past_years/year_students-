@@ -497,173 +497,6 @@
         </div>
         {% endif %}
 
-        <!-- Quartile Analysis Section -->
-        {% if student_analytics.combined_analytics.student_course_correlations %}
-        <div class="col-span-full">
-            <div class="card">
-                <div class="card-header">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h5 class="card-title">{% trans "Quartile Analysis: Most Active vs Least Active Students" %}</h5>
-                            <p class="text-gray-500 dark:text-dark-text-two">{% trans "Direct comparison between top 25% and bottom 25% most active students to test if more activities lead to higher grades" %}</p>
-                        </div>
-                        <button id="toggle-quartile-analysis" class="btn btn-sm btn-secondary-solid flex items-center gap-2 transition-all duration-200">
-                            <svg id="quartile-toggle-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" class="transition-transform duration-200 transform rotate-0">
-                                <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6l-6-6l1.41-1.41z"/>
-                            </svg>
-                            <span id="quartile-toggle-text">{% trans "Show Analysis" %}</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div id="quartile-analysis-results" class="space-y-4" style="display: none;">
-                        <!-- Methodology explanation -->
-                        <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
-                            <div class="flex items-center gap-2 mb-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" class="text-indigo-600">
-                                    <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
-                                </svg>
-                                <h6 class="font-semibold text-indigo-800 dark:text-indigo-200">{% trans "Quartile Methodology" %}</h6>
-                            </div>
-                            <p class="text-sm text-indigo-700 dark:text-indigo-300 mb-2">
-                                {% trans "This analysis compares the extremes: the 25% most active students vs the 25% least active students. This provides a clearer test of whether high activity levels are associated with better academic performance." %}
-                            </p>
-                            <div class="text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-800 rounded px-2 py-1">
-                                <strong>{% trans "Advantage over median analysis:" %}</strong> {% trans "By focusing on the extremes, we remove the 'middle 50%' of students who might have mixed patterns, giving a clearer signal of the activity-grade relationship." %}
-                            </div>
-                        </div>
-
-                        <!-- Quartile Comparison Cards -->
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <!-- Top 25% Most Active Students -->
-                            <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 rounded-lg p-6 border border-emerald-200 dark:border-emerald-700">
-                                <div class="flex items-center gap-3 mb-4">
-                                    <div class="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="text-white">
-                                            <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22L12 18.77L5.82 22L7 14.14L2 9.27l6.91-1.01L12 2z"/>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h6 class="font-bold text-emerald-800 dark:text-emerald-200">{% trans "Top 25% Most Active" %}</h6>
-                                        <p class="text-sm text-emerald-600 dark:text-emerald-400">{% trans "Highest activity students" %}</p>
-                                    </div>
-                                </div>
-
-                                <div class="space-y-3">
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">{% trans "Student-Course Records:" %}</span>
-                                        <span id="top-quartile-count" class="text-lg font-bold text-emerald-800 dark:text-emerald-200">--</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">{% trans "Average Grade:" %}</span>
-                                        <span id="top-quartile-grade" class="text-2xl font-bold text-emerald-800 dark:text-emerald-200">--%</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">{% trans "Activity Range:" %}</span>
-                                        <span id="top-quartile-activity-range" class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">-- to --</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">{% trans "Min Threshold:" %}</span>
-                                        <span id="top-quartile-threshold" class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">--</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Bottom 25% Least Active Students -->
-                            <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg p-6 border border-orange-200 dark:border-orange-700">
-                                <div class="flex items-center gap-3 mb-4">
-                                    <div class="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="text-white">
-                                            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5l1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h6 class="font-bold text-orange-800 dark:text-orange-200">{% trans "Bottom 25% Least Active" %}</h6>
-                                        <p class="text-sm text-orange-600 dark:text-orange-400">{% trans "Lowest activity students" %}</p>
-                                    </div>
-                                </div>
-
-                                <div class="space-y-3">
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm font-medium text-orange-700 dark:text-orange-300">{% trans "Student-Course Records:" %}</span>
-                                        <span id="bottom-quartile-count" class="text-lg font-bold text-orange-800 dark:text-orange-200">--</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm font-medium text-orange-700 dark:text-orange-300">{% trans "Average Grade:" %}</span>
-                                        <span id="bottom-quartile-grade" class="text-2xl font-bold text-orange-800 dark:text-orange-200">--%</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm font-medium text-orange-700 dark:text-orange-300">{% trans "Activity Range:" %}</span>
-                                        <span id="bottom-quartile-activity-range" class="text-sm font-semibold text-orange-800 dark:text-orange-200">-- to --</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm font-medium text-orange-700 dark:text-orange-300">{% trans "Max Threshold:" %}</span>
-                                        <span id="bottom-quartile-threshold" class="text-sm font-semibold text-orange-800 dark:text-orange-200">--</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Comparison Results -->
-                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
-                            <h6 class="font-semibold text-gray-800 dark:text-gray-200 mb-4">{% trans "Quartile Comparison Results" %}</h6>
-
-                            <!-- Grade Difference -->
-                            <div class="mb-4">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{% trans "Grade Difference (Top 25% - Bottom 25%):" %}</span>
-                                    <span id="quartile-grade-difference" class="text-xl font-bold text-gray-800 dark:text-gray-200">-- points</span>
-                                </div>
-                                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 relative overflow-hidden">
-                                    <div id="quartile-grade-difference-bar" class="h-full bg-gradient-to-r transition-all duration-500" style="width: 0%"></div>
-                                </div>
-                                <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    <span>{% trans "No difference" %}</span>
-                                    <span>{% trans "Strong difference" %}</span>
-                                </div>
-                            </div>
-
-                            <!-- Statistical Significance -->
-                            <div class="mb-4">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{% trans "Effect Size:" %}</span>
-                                    <span id="quartile-effect-size" class="text-lg font-semibold text-gray-800 dark:text-gray-200">--</span>
-                                </div>
-                                <div id="quartile-effect-interpretation" class="text-sm text-gray-600 dark:text-gray-400">{% trans "Calculating..." %}</div>
-                            </div>
-
-                            <!-- Hypothesis Test for Quartiles -->
-                            <div class="bg-white dark:bg-gray-700 rounded-lg p-4 border">
-                                <h6 class="font-semibold text-gray-800 dark:text-gray-200 mb-2">{% trans "Quartile Hypothesis Test" %}</h6>
-                                <div class="space-y-2">
-                                    <div class="flex justify-between">
-                                        <span class="text-sm text-gray-600 dark:text-gray-400">{% trans "Sample Sizes:" %}</span>
-                                        <span id="quartile-sample-sizes" class="text-sm font-medium text-gray-800 dark:text-gray-200">-- vs --</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span class="text-sm text-gray-600 dark:text-gray-400">{% trans "Confidence Level:" %}</span>
-                                        <span class="text-sm font-medium text-green-600 dark:text-green-400">95%</span>
-                                    </div>
-                                    <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                                        <div id="quartile-conclusion" class="text-sm font-medium text-gray-800 dark:text-gray-200">{% trans "Calculating statistical significance..." %}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Insight Generation -->
-                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                            <h6 class="font-semibold text-blue-800 dark:text-blue-200 mb-2">{% trans "Quartile Analysis Insights" %}</h6>
-                            <div id="quartile-insights" class="space-y-2">
-                                <!-- Insights will be populated by JavaScript -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
         <!-- Insights Section -->
         {% if student_analytics.combined_analytics.insights %}
         <div class="col-span-full">
@@ -714,20 +547,10 @@
                             </thead>
                             <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                                 {% for course in student_analytics.grade_analytics.course_stats|slice:":20" %}
-                                {% if course.avg_grade and course.student_count > 0 %}
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900 dark:text-white">{{ course.course_name|default:course.course_id }}</div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                                            {% if course.grade_file_names %}
-                                                Grade file names: {{ course.grade_file_names }}
-                                            {% else %}
-                                                ID: {{ course.course_id }}
-                                            {% endif %}
-                                            <span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded ml-2">
-                                                {{ course.grade_count }} Benesse grade{{ course.grade_count|pluralize }}
-                                            </span>
-                                        </div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">ID: {{ course.course_id }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{{ course.student_count }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -752,19 +575,6 @@
                                             </svg>
                                             {% trans "Distribution" %}
                                         </button>
-                                    </td>
-                                </tr>
-                                {% endif %}
-                                {% empty %}
-                                <tr>
-                                    <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                                        <div class="flex flex-col items-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" class="text-gray-400 mb-4">
-                                                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5l1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                                            </svg>
-                                            <p class="text-lg font-medium">{% trans "No Course Performance Data" %}</p>
-                                            <p class="text-sm mt-2">{% trans "No courses with Benesse grade data found for this academic year." %}</p>
-                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -1010,9 +820,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize hypothesis toggle functionality
     initializeHypothesisToggle();
-
-    // Initialize quartile analysis toggle functionality
-    initializeQuartileToggle();
 
     // Store original correlation data for filtering
     window.originalCorrelationData = correlationData;
@@ -1602,272 +1409,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Struggling students (Low Activity, Low Grade):', strugglingCount);
         console.log('Activity threshold:', activityThreshold);
         console.log('Grade threshold:', gradeThreshold);
-
-        // Update quartile analysis with current data
-        updateQuartileAnalysis(validData, selectedActivityTypes);
-    }
-
-    // Function to update quartile analysis
-    function updateQuartileAnalysis(validData, selectedActivityTypes) {
-        if (!validData || validData.length === 0) {
-            console.log('🔍 No data for quartile analysis');
-            return;
-        }
-
-        try {
-            console.log('🔍 Updating quartile analysis with ' + validData.length + ' records');
-
-            // Sort by custom total activities for quartile calculation
-            const sortedByActivity = [...validData].sort((a, b) => a.custom_total_activities - b.custom_total_activities);
-
-            // Calculate quartile boundaries
-            const dataLength = sortedByActivity.length;
-            const q1Index = Math.floor(dataLength * 0.25);
-            const q3Index = Math.floor(dataLength * 0.75);
-
-            // Get quartile thresholds
-            const bottomQuartileThreshold = sortedByActivity[q1Index].custom_total_activities;
-            const topQuartileThreshold = sortedByActivity[q3Index].custom_total_activities;
-
-            // Filter data for each quartile
-            const bottomQuartileData = sortedByActivity.slice(0, q1Index + 1);
-            const topQuartileData = sortedByActivity.slice(q3Index);
-
-            console.log('🔍 Quartile thresholds:', {
-                bottom: bottomQuartileThreshold,
-                top: topQuartileThreshold,
-                bottomCount: bottomQuartileData.length,
-                topCount: topQuartileData.length
-            });
-
-            // Calculate statistics for each quartile
-            const bottomQuartileStats = calculateQuartileStats(bottomQuartileData);
-            const topQuartileStats = calculateQuartileStats(topQuartileData);
-
-            // Update UI elements
-            updateQuartileUI(bottomQuartileStats, topQuartileStats, bottomQuartileThreshold, topQuartileThreshold, selectedActivityTypes);
-
-            // Perform statistical analysis
-            performQuartileStatisticalAnalysis(bottomQuartileStats, topQuartileStats);
-
-            // Generate insights
-            generateQuartileInsights(bottomQuartileStats, topQuartileStats, validData.length);
-
-        } catch (error) {
-            console.error('Error in quartile analysis:', error);
-        }
-    }
-
-    // Function to calculate statistics for a quartile
-    function calculateQuartileStats(quartileData) {
-        if (!quartileData || quartileData.length === 0) {
-            return {
-                count: 0,
-                avgGrade: 0,
-                minActivity: 0,
-                maxActivity: 0,
-                avgActivity: 0,
-                grades: []
-            };
-        }
-
-        const grades = quartileData.map(item => item.avg_grade);
-        const activities = quartileData.map(item => item.custom_total_activities);
-
-        const avgGrade = grades.reduce((sum, grade) => sum + grade, 0) / grades.length;
-        const avgActivity = activities.reduce((sum, activity) => sum + activity, 0) / activities.length;
-        console.log('🔍 Quartile stats:', {
-            count: quartileData.length,
-            avgGrade: avgGrade,
-            minActivity: Math.min(...activities),
-            maxActivity: Math.max(...activities),
-            avgActivity: avgActivity,
-            grades: grades,
-            activities: activities
-        });
-        return {
-            count: quartileData.length,
-            avgGrade: avgGrade,
-            minActivity: Math.min(...activities),
-            maxActivity: Math.max(...activities),
-            avgActivity: avgActivity,
-            grades: grades,
-            activities: activities
-        };
-    }
-
-    // Function to update the quartile analysis UI
-    function updateQuartileUI(bottomStats, topStats, bottomThreshold, topThreshold, selectedActivityTypes) {
-        // Update counts
-        document.getElementById('bottom-quartile-count').textContent = bottomStats.count.toLocaleString();
-        document.getElementById('top-quartile-count').textContent = topStats.count.toLocaleString();
-
-        // Update average grades
-        document.getElementById('bottom-quartile-grade').textContent = bottomStats.avgGrade.toFixed(1) + '%';
-        document.getElementById('top-quartile-grade').textContent = topStats.avgGrade.toFixed(1) + '%';
-
-        // Update activity ranges
-        document.getElementById('bottom-quartile-activity-range').textContent =
-            bottomStats.minActivity.toLocaleString() + ' to ' + bottomStats.maxActivity.toLocaleString();
-        document.getElementById('top-quartile-activity-range').textContent =
-            topStats.minActivity.toLocaleString() + ' to ' + topStats.maxActivity.toLocaleString();
-
-        // Update thresholds
-        document.getElementById('bottom-quartile-threshold').textContent = bottomThreshold.toLocaleString();
-        document.getElementById('top-quartile-threshold').textContent = topThreshold.toLocaleString();
-
-        // Calculate and display grade difference
-        const gradeDifference = topStats.avgGrade - bottomStats.avgGrade;
-        document.getElementById('quartile-grade-difference').textContent = gradeDifference.toFixed(1) + ' points';
-
-        // Update grade difference bar (scale 0-20 points as 0-100%)
-        const maxDifference = 20; // Assume max meaningful difference is 20 points
-        const barPercentage = Math.min(Math.abs(gradeDifference) / maxDifference * 100, 100);
-        const gradeBar = document.getElementById('quartile-grade-difference-bar');
-
-        if (gradeDifference > 0) {
-            gradeBar.className = 'h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-500';
-        } else {
-            gradeBar.className = 'h-full bg-gradient-to-r from-red-400 to-red-600 transition-all duration-500';
-        }
-        gradeBar.style.width = barPercentage + '%';
-
-        // Update sample sizes
-        document.getElementById('quartile-sample-sizes').textContent =
-            bottomStats.count + ' vs ' + topStats.count;
-    }
-
-    // Function to perform statistical analysis
-    function performQuartileStatisticalAnalysis(bottomStats, topStats) {
-        const gradeDifference = topStats.avgGrade - bottomStats.avgGrade;
-
-        // Calculate effect size (Cohen's d)
-        const pooledStd = calculatePooledStandardDeviation(bottomStats.grades, topStats.grades);
-        const effectSize = pooledStd > 0 ? gradeDifference / pooledStd : 0;
-
-        // Update effect size display
-        document.getElementById('quartile-effect-size').textContent = effectSize.toFixed(3);
-
-        // Interpret effect size
-        let effectInterpretation = '';
-        let conclusionClass = '';
-        let conclusion = '';
-
-        if (Math.abs(effectSize) < 0.2) {
-            effectInterpretation = '{% trans "Negligible effect - activity level has minimal impact on grades" %}';
-            conclusionClass = 'text-gray-600 dark:text-gray-400';
-            conclusion = '{% trans "No meaningful difference found between high and low activity students" %}';
-        } else if (Math.abs(effectSize) < 0.5) {
-            effectInterpretation = '{% trans "Small effect - weak relationship between activity and grades" %}';
-            conclusionClass = 'text-yellow-600 dark:text-yellow-400';
-            conclusion = '{% trans "Small but measurable difference between activity levels" %}';
-        } else if (Math.abs(effectSize) < 0.8) {
-            effectInterpretation = '{% trans "Medium effect - moderate relationship between activity and grades" %}';
-            conclusionClass = 'text-orange-600 dark:text-orange-400';
-            conclusion = '{% trans "Moderate evidence that activity level affects academic performance" %}';
-        } else {
-            effectInterpretation = '{% trans "Large effect - strong relationship between activity and grades" %}';
-            conclusionClass = 'text-green-600 dark:text-green-400';
-            conclusion = '{% trans "Strong evidence that high activity leads to better grades" %}';
-        }
-
-        document.getElementById('quartile-effect-interpretation').textContent = effectInterpretation;
-
-        const conclusionElement = document.getElementById('quartile-conclusion');
-        conclusionElement.textContent = conclusion;
-        conclusionElement.className = 'text-sm font-medium ' + conclusionClass;
-
-        console.log('🔍 Quartile Statistical Analysis:', {
-            gradeDifference: gradeDifference.toFixed(2),
-            effectSize: effectSize.toFixed(3),
-            interpretation: effectInterpretation
-        });
-    }
-
-    // Function to calculate pooled standard deviation
-    function calculatePooledStandardDeviation(group1, group2) {
-        if (group1.length === 0 || group2.length === 0) return 0;
-
-        const mean1 = group1.reduce((sum, val) => sum + val, 0) / group1.length;
-        const mean2 = group2.reduce((sum, val) => sum + val, 0) / group2.length;
-
-        const variance1 = group1.reduce((sum, val) => sum + Math.pow(val - mean1, 2), 0) / (group1.length - 1);
-        const variance2 = group2.reduce((sum, val) => sum + Math.pow(val - mean2, 2), 0) / (group2.length - 1);
-
-        const pooledVariance = ((group1.length - 1) * variance1 + (group2.length - 1) * variance2) /
-                              (group1.length + group2.length - 2);
-
-        return Math.sqrt(pooledVariance);
-    }
-
-    // Function to generate quartile insights
-    function generateQuartileInsights(bottomStats, topStats, totalRecords) {
-        const insights = [];
-        const gradeDifference = topStats.avgGrade - bottomStats.avgGrade;
-
-        // Primary finding
-        if (gradeDifference > 5) {
-            insights.push('{% trans "High-activity students significantly outperform low-activity students by" %} ' +
-                         gradeDifference.toFixed(1) + ' {% trans "percentage points on average." %}');
-        } else if (gradeDifference > 0) {
-            insights.push('{% trans "High-activity students marginally outperform low-activity students by" %} ' +
-                         gradeDifference.toFixed(1) + ' {% trans "percentage points." %}');
-        } else {
-            insights.push('{% trans "Low-activity students actually perform better than high-activity students by" %} ' +
-                         Math.abs(gradeDifference).toFixed(1) + ' {% trans "percentage points, contradicting the hypothesis." %}');
-        }
-
-        // Activity range insight
-        const activityRatio = topStats.avgActivity / bottomStats.avgActivity;
-        if (activityRatio > 5) {
-            insights.push('{% trans "Top quartile students engage in" %} ' + activityRatio.toFixed(1) +
-                         'x {% trans "more activities than bottom quartile students." %}');
-        }
-
-        // Sample size validation
-        const minSampleSize = Math.min(bottomStats.count, topStats.count);
-        if (minSampleSize < 30) {
-            insights.push('{% trans "Small sample sizes (n=" %}' + minSampleSize +
-                         '{% trans ") may limit the reliability of these findings." %}');
-        } else {
-            insights.push('{% trans "Analysis based on substantial sample sizes provides reliable results." %}');
-        }
-
-        // Grade distribution insight
-        const topGradeStd = calculateStandardDeviation(topStats.grades);
-        const bottomGradeStd = calculateStandardDeviation(bottomStats.grades);
-
-        if (topGradeStd < bottomGradeStd) {
-            insights.push('{% trans "High-activity students show more consistent performance (less grade variation)." %}');
-        } else {
-            insights.push('{% trans "Low-activity students show more consistent performance (less grade variation)." %}');
-        }
-
-        // Update insights in UI
-        const insightsContainer = document.getElementById('quartile-insights');
-        insightsContainer.innerHTML = '';
-
-        insights.forEach(insight => {
-            const insightDiv = document.createElement('div');
-            insightDiv.className = 'flex items-start space-x-3 p-2 bg-blue-100 dark:bg-blue-800 rounded';
-            insightDiv.innerHTML = `
-                <div class="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center mt-0.5 shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" class="text-white">
-                        <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                    </svg>
-                </div>
-                <p class="text-xs text-blue-800 dark:text-blue-200">${insight}</p>
-            `;
-            insightsContainer.appendChild(insightDiv);
-        });
-    }
-
-    // Helper function to calculate standard deviation
-    function calculateStandardDeviation(values) {
-        if (values.length === 0) return 0;
-        const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-        const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
-        return Math.sqrt(variance);
     }
 
     // Initialize hypothesis test results toggle functionality
@@ -2020,31 +1561,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
-
-    // Initialize quartile analysis toggle functionality
-    function initializeQuartileToggle() {
-        const toggleQuartileAnalysis = document.getElementById('toggle-quartile-analysis');
-        const quartileAnalysisResults = document.getElementById('quartile-analysis-results');
-        const quartileToggleIcon = document.getElementById('quartile-toggle-icon');
-        const quartileToggleText = document.getElementById('quartile-toggle-text');
-
-        if (toggleQuartileAnalysis && quartileAnalysisResults && quartileToggleIcon && quartileToggleText) {
-            toggleQuartileAnalysis.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (quartileAnalysisResults.style.display === 'none') {
-                    quartileAnalysisResults.style.display = 'block';
-                    quartileToggleIcon.classList.remove('rotate-0');
-                    quartileToggleIcon.classList.add('rotate-180');
-                    quartileToggleText.textContent = '{% trans "Hide Analysis" %}';
-                } else {
-                    quartileAnalysisResults.style.display = 'none';
-                    quartileToggleIcon.classList.remove('rotate-180');
-                    quartileToggleIcon.classList.add('rotate-0');
-                    quartileToggleText.textContent = '{% trans "Show Analysis" %}';
-                }
-            });
-        }
-    }
 });
 </script>
 
@@ -2144,13 +1660,6 @@ document.addEventListener('DOMContentLoaded', function() {
         statStddev.textContent = `${stats.std_dev}%`;
         statCount.textContent = stats.count;
 
-        // Update modal subtitle with grade file names if available
-        if (data.grade_file_names) {
-            modalSubtitle.textContent = `Grade file names: ${data.grade_file_names}`;
-        } else {
-            modalSubtitle.textContent = `Grade Distribution Analysis`;
-        }
-
         // Update distribution table
         distributionTableBody.innerHTML = '';
         data.distribution_data.forEach(bin => {
@@ -2233,12 +1742,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const courseId = e.target.dataset.courseId;
             const courseName = e.target.dataset.courseName;
 
-            console.log('📊 Distribution button clicked:', {
-                courseId: courseId,
-                courseName: courseName,
-                year: '{{ year }}'
-            });
-
             // Show modal
             modal.style.display = 'flex';
             modalTitle.textContent = courseName || `Course ${courseId}`;
@@ -2249,24 +1752,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Fetch distribution data
             const url = `/past-years/{{ year }}/students/course/${courseId}/distribution/`;
-            console.log('📊 Fetching distribution data from:', url);
 
             fetch(url)
-                .then(response => {
-                    console.log('📊 Distribution response status:', response.status);
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
-                    console.log('📊 Distribution data received:', data);
                     if (data.success) {
                         displayDistributionData(data.data);
                     } else {
-                        console.error('📊 Distribution error:', data.error);
                         showError(data.error || 'Failed to load distribution data');
                     }
                 })
                 .catch(error => {
-                    console.error('📊 Distribution fetch error:', error);
+                    console.error('Error fetching distribution data:', error);
                     showError('Network error: Unable to load distribution data');
                 });
         }

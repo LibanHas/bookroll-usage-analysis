@@ -391,6 +391,214 @@
     </div>
     <!-- End Grade Performance Analytics Section -->
 
+    <!-- Start Time Spent vs Grade Correlation Section -->
+    <div class="col-span-full">
+        <div class="card">
+            <div class="card-header">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h5 class="card-title">{% trans "Time Spent vs Grade Correlation" %}</h5>
+                        <p class="text-gray-500 dark:text-dark-text-two">{% trans "Correlation analysis between student time spent on platform and their academic performance" %}</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <!-- Academic Year Selector -->
+                        <div class="flex bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                            <select id="correlationYearSelector" class="px-4 py-2 text-sm font-medium rounded-lg border-0 bg-transparent focus:ring-2 focus:ring-primary-500 text-gray-700 dark:text-gray-300">
+                                <option value="">{% trans "Select Academic Year" %}</option>
+                                {% for year in available_years %}
+                                <option value="{{ year }}">{{ year }}年度</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Correlation Info Badge -->
+                        <div id="correlationInfoBadge" class="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2" style="display: none;">
+                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                <i class="ri-line-chart-line mr-2"></i>
+                                <span id="correlationStrength">-</span> Correlation
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Chart Container -->
+                <div class="h-auto w-full">
+                    <div id="timeGradeCorrelationChart">
+                        <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                            <i class="ri-scatter-chart-line text-4xl mb-4"></i>
+                            <p class="text-lg font-medium mb-2">{% trans "Select an Academic Year" %}</p>
+                            <p class="text-sm">{% trans "Choose an academic year from the dropdown above to view the correlation between time spent and grades" %}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Correlation Statistics -->
+                <div id="correlationStats" class="mt-6 grid grid-cols-12 gap-4" style="display: none;">
+                    <!-- Correlation Coefficient Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-blue-50 dark:bg-blue-900/20 h-full">
+                        <div class="flex items-center justify-between">
+                            <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "Correlation Coefficient" %}</h6>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">r</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-transparent to-blue-50 dark:to-blue-900/10 flex gap-4 mt-3">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div id="correlationCoefficient" class="text-2xl font-bold text-blue-500">-</div>
+                                </div>
+                                <div class="text-xs mt-1">
+                                    <span id="correlationDirection" class="text-blue-600 dark:text-blue-400">-</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow self-center">
+                                <div class="w-12 h-12 flex items-center justify-center bg-blue-100 dark:bg-blue-900 rounded-lg ml-auto">
+                                    <i class="ri-line-chart-line text-blue-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- R-Squared Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-green-50 dark:bg-green-900/20 h-full">
+                        <div class="flex items-center justify-between">
+                            <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "R-Squared" %}</h6>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">r²</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-transparent to-green-50 dark:to-green-900/10 flex gap-4 mt-3">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div id="rSquared" class="text-2xl font-bold text-green-500">-</div>
+                                </div>
+                                <div class="text-xs mt-1">
+                                    <span class="text-green-600 dark:text-green-400">{% trans "Variance Explained" %}</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow self-center">
+                                <div class="w-12 h-12 flex items-center justify-center bg-green-100 dark:bg-green-900 rounded-lg ml-auto">
+                                    <i class="ri-pie-chart-line text-green-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Students Analyzed Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-purple-50 dark:bg-purple-900/20 h-full">
+                        <div class="flex items-center justify-between">
+                            <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "Students Analyzed" %}</h6>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">n</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-transparent to-purple-50 dark:to-purple-900/10 flex gap-4 mt-3">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div id="totalStudents" class="text-2xl font-bold text-purple-500">-</div>
+                                </div>
+                                <div class="text-xs mt-1">
+                                    <span class="text-purple-600 dark:text-purple-400">{% trans "With both data" %}</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow self-center">
+                                <div class="w-12 h-12 flex items-center justify-center bg-purple-100 dark:bg-purple-900 rounded-lg ml-auto">
+                                    <i class="ri-group-line text-purple-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation Section -->
+                <div class="mt-6 border-t border-gray-200 dark:border-gray-600 pt-4">
+                    <div class="mb-3 bg-gray-200 dark:bg-gray-800 rounded-lg p-3">
+                        <button id="toggleCorrelationExplanation" class="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>{% trans "How is this calculated?" %}</span>
+                            <svg id="correlationExplanationToggleIcon" class="w-3 h-3 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Explanation Content (Initially Hidden) -->
+                    <div id="correlationExplanationContent" class="hidden space-y-4">
+                        <!-- Methodology Explanation -->
+                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                            <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h4a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 00-2-2z"></path>
+                                </svg>
+                                {% trans "Correlation Analysis Methodology" %}
+                            </h4>
+                            <div class="space-y-3 text-sm text-blue-700 dark:text-blue-300">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h5 class="font-medium mb-2">{% trans "Data Collection Process:" %}</h5>
+                                        <ul class="space-y-1 text-xs">
+                                            <li>• {% trans "Step 1: Find students with Benesse grades in courses matching academic year pattern ('{year}年度')" %}</li>
+                                            <li>• {% trans "Step 2: Query ClickHouse for platform activity data using intelligent student ID matching" %}</li>
+                                            <li>• {% trans "Step 3: Apply course-specific filtering to match time spent to relevant courses" %}</li>
+                                            <li>• {% trans "Step 4: Calculate time spent with session capping (1.5hr max per session)" %}</li>
+                                            <li>• {% trans "Step 5: Match students who have both grade and time tracking data" %}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="bg-blue-100 dark:bg-blue-800/30 rounded p-3">
+                                    <strong>{% trans "Statistical Analysis:" %}</strong> {% trans "Once student data is successfully matched, the system calculates Pearson correlation coefficient (r) and R-squared (r²) to measure the linear relationship between time spent on platform and academic performance. Each data point represents one student's average grade vs. total time spent during the academic year." %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interpretation Guide -->
+                        <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                            <h4 class="font-semibold text-green-800 dark:text-green-200 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                {% trans "How to Interpret the Results" %}
+                            </h4>
+                            <div class="space-y-3 text-sm text-green-700 dark:text-green-300">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h5 class="font-medium mb-2">{% trans "Correlation Strength (r):" %}</h5>
+                                        <div class="space-y-1 text-xs">
+                                            <div><strong>r ≥ 0.7:</strong> {% trans "Strong positive correlation" %}</div>
+                                            <div><strong>0.5 ≤ r < 0.7:</strong> {% trans "Moderate positive correlation" %}</div>
+                                            <div><strong>0.3 ≤ r < 0.5:</strong> {% trans "Weak positive correlation" %}</div>
+                                            <div><strong>-0.3 < r < 0.3:</strong> {% trans "No meaningful correlation" %}</div>
+                                            <div><strong>r ≤ -0.3:</strong> {% trans "Negative correlation" %}</div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h5 class="font-medium mb-2">{% trans "R-Squared Interpretation (r²):" %}</h5>
+                                        <div class="space-y-1 text-xs">
+                                            <div><strong>{% trans "R² = 25%:" %}</strong> {% trans "Time explains 25% of grade variance" %}</div>
+                                            <div><strong>{% trans "R² = 50%:" %}</strong> {% trans "Time explains 50% of grade variance" %}</div>
+                                            <div><strong>{% trans "R² = 75%:" %}</strong> {% trans "Time explains 75% of grade variance" %}</div>
+                                            <div><strong>{% trans "Higher R²:" %}</strong> {% trans "Stronger predictive relationship" %}</div>
+                                            <div><strong>{% trans "Lower R²:" %}</strong> {% trans "Other factors influence grades more" %}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="border-t border-green-200 dark:border-green-700 pt-3">
+                                    <div class="bg-green-100 dark:bg-green-800/30 rounded p-3">
+                                        <strong>{% trans "Quadrant Analysis:" %}</strong> {% trans "The scatter plot divides students into four quadrants based on median time spent and median grade:" %}
+                                        <ul class="mt-2 space-y-1 text-xs">
+                                            <li>• <strong>🎯 {% trans "Sweet Spot" %}:</strong> {% trans "High grades with efficient time use (above median grade, below median time)" %}</li>
+                                            <li>• <strong>💪 {% trans "Hard Workers" %}:</strong> {% trans "High grades with high time investment (above median for both)" %}</li>
+                                            <li>• <strong>😴 {% trans "Under-engaged" %}:</strong> {% trans "Low grades with low time investment (below median for both)" %}</li>
+                                            <li>• <strong>😰 {% trans "Struggling" %}:</strong> {% trans "Low grades despite high time investment (below median grade, above median time)" %}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Time Spent vs Grade Correlation Section -->
+
     <!-- Start Course Transparency Section -->
     <div class="col-span-full mt-6">
         <div class="card">
@@ -414,7 +622,7 @@
                 <!-- Course Transparency Container -->
                 <div id="courseTransparencyContainer">
                     <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-                        <i class="ri-loader-4-line text-2xl animate-spin mb-2"></i>
+                        <i class="ri-loader-4-line text-2xl mb-2"></i>
                         <p>{% trans "Loading course transparency data..." %}</p>
                     </div>
                 </div>
@@ -1357,6 +1565,530 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize course transparency
     buildCourseTransparency();
+});
+</script>
+
+<!-- Time Spent vs Grade Correlation Chart Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Correlation data from Django context
+    const correlationDataByYear = {{ time_grade_correlation_chart_data|safe }};
+
+    // Debug: Log the correlation data to console
+    console.log('Correlation data loaded:', correlationDataByYear);
+    console.log('Available years in correlation data:', Object.keys(correlationDataByYear));
+
+    // Chart variables
+    let correlationChart;
+    let currentCorrelationYear = null;
+
+    // Translations for correlation chart
+    const correlationTranslations = {
+        timeSpent: "{% trans 'Time Spent (Minutes)' %}",
+        averageGrade: "{% trans 'Average Grade' %}",
+        correlationAnalysis: "{% trans 'Time Spent vs Grade Correlation' %}",
+        student: "{% trans 'Student' %}",
+        minutes: "{% trans 'minutes' %}",
+        points: "{% trans 'points' %}",
+        courses: "{% trans 'courses' %}",
+        activeDays: "{% trans 'active days' %}"
+    };
+
+    // Academic year selector
+    const yearSelector = document.getElementById('correlationYearSelector');
+    const correlationInfoBadge = document.getElementById('correlationInfoBadge');
+    const correlationStats = document.getElementById('correlationStats');
+
+    function createCorrelationChart(yearData) {
+        console.log('createCorrelationChart called with:', yearData);
+        const correlationData = yearData.correlation_data || [];
+        const statistics = yearData.statistics || {};
+        console.log('Correlation data length:', correlationData.length);
+        console.log('Statistics:', statistics);
+
+        if (correlationData.length === 0) {
+            console.log('No correlation data, showing no data message');
+            // Show no data message
+            document.getElementById('timeGradeCorrelationChart').innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-emotion-sad-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "No Data Available" %}</p>
+                    <p class="text-sm">{% trans "No students found with both grade and time tracking data for this academic year" %}</p>
+                </div>
+            `;
+            correlationStats.style.display = 'none';
+            correlationInfoBadge.style.display = 'none';
+            return;
+        }
+
+        console.log('Preparing scatter data for', correlationData.length, 'students');
+        // Prepare data for scatter plot
+        const scatterData = correlationData.map(student => ({
+            x: student.total_time_spent_minutes,
+            y: student.average_grade,
+            studentId: student.student_id,
+            totalGrades: student.total_grades,
+            activeDays: student.active_days,
+            courseCount: student.course_count,
+            averageDailyMinutes: student.average_daily_minutes
+        }));
+        console.log('Scatter data sample:', scatterData[0]);
+
+        // Calculate medians for reference lines
+        const timeValues = scatterData.map(d => d.x).sort((a, b) => a - b);
+        const gradeValues = scatterData.map(d => d.y).sort((a, b) => a - b);
+
+        const medianTime = timeValues.length % 2 === 0
+            ? (timeValues[timeValues.length / 2 - 1] + timeValues[timeValues.length / 2]) / 2
+            : timeValues[Math.floor(timeValues.length / 2)];
+
+        const medianGrade = gradeValues.length % 2 === 0
+            ? (gradeValues[gradeValues.length / 2 - 1] + gradeValues[gradeValues.length / 2]) / 2
+            : gradeValues[Math.floor(gradeValues.length / 2)];
+
+        // Calculate max values for positioning quadrant labels
+        const maxTime = Math.max.apply(Math, timeValues);
+        const maxGrade = Math.max.apply(Math, gradeValues);
+
+        console.log('Median time:', medianTime, 'Median grade:', medianGrade);
+
+        // Get regression line data if available
+        const regressionLine = statistics.regression_line || [];
+
+        const options = {
+            series: [
+                {
+                    name: correlationTranslations.student,
+                    type: 'scatter',
+                    data: scatterData
+                }
+            ],
+            chart: {
+                type: 'scatter',
+                height: 500,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                }
+            },
+            title: {
+                text: `${correlationTranslations.correlationAnalysis} (${currentCorrelationYear}年度)`,
+                align: 'left'
+            },
+            xaxis: {
+                type: 'numeric',
+                title: {
+                    text: correlationTranslations.timeSpent
+                },
+                min: 0,
+                labels: {
+                    formatter: function(value) {
+                        return value.toFixed(1);
+                    }
+                }
+            },
+            yaxis: {
+                title: {
+                    text: correlationTranslations.averageGrade
+                },
+                min: 0,
+                max: 100,
+                labels: {
+                    formatter: function(value) {
+                        return value.toFixed(1);
+                    }
+                }
+            },
+            colors: ['#3B82F6'],
+            markers: {
+                size: 6,
+                strokeColors: '#fff',
+                strokeWidth: 2,
+                hover: {
+                    size: 8
+                }
+            },
+            grid: {
+                borderColor: '#e7e7e7',
+                xaxis: {
+                    lines: {
+                        show: true
+                    }
+                },
+                yaxis: {
+                    lines: {
+                        show: true
+                    }
+                }
+            },
+            annotations: {
+                xaxis: [{
+                    x: medianTime,
+                    borderColor: '#FF6B6B',
+                    borderWidth: 2,
+                    strokeDashArray: 5,
+                    label: {
+                        text: '{% trans "Median Time" %}: ' + medianTime.toFixed(1) + 'm',
+                        position: 'top',
+                        style: {
+                            color: '#fff',
+                            background: '#FF6B6B',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            padding: {
+                                left: 8,
+                                right: 8,
+                                top: 4,
+                                bottom: 4
+                            }
+                        }
+                    }
+                }],
+                yaxis: [{
+                    y: medianGrade,
+                    borderColor: '#4ECDC4',
+                    borderWidth: 2,
+                    strokeDashArray: 5,
+                    label: {
+                        text: '{% trans "Median Grade" %}: ' + medianGrade.toFixed(1),
+                        position: 'left',
+                        style: {
+                            color: '#fff',
+                            background: '#4ECDC4',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            padding: {
+                                left: 8,
+                                right: 8,
+                                top: 4,
+                                bottom: 4
+                            }
+                        }
+                    }
+                }],
+                points: [
+                    // Sweet Spot quadrant label (upper-left)
+                    {
+                        x: Math.max(0, medianTime * 0.3),
+                        y: Math.min(100, medianGrade + (100 - medianGrade) * 0.5),
+                        marker: {
+                            size: 0
+                        },
+                        label: {
+                            text: '🎯 {% trans "Sweet Spot" %}\n{% trans "High Grade, Low Time" %}',
+                            textAnchor: 'middle',
+                            style: {
+                                color: '#fff',
+                                background: '#10B981',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                padding: {
+                                    left: 8,
+                                    right: 8,
+                                    top: 6,
+                                    bottom: 6
+                                }
+                            }
+                        }
+                    },
+                    // Hard Workers quadrant label (upper-right)
+                    {
+                        x: medianTime + (maxTime - medianTime) * 0.5,
+                        y: Math.min(100, medianGrade + (100 - medianGrade) * 0.5),
+                        marker: {
+                            size: 0
+                        },
+                        label: {
+                            text: '💪 {% trans "Hard Workers" %}\n{% trans "High Grade, High Time" %}',
+                            textAnchor: 'middle',
+                            style: {
+                                color: '#fff',
+                                background: '#3B82F6',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                padding: {
+                                    left: 8,
+                                    right: 8,
+                                    top: 6,
+                                    bottom: 6
+                                }
+                            }
+                        }
+                    },
+                    // Under-engaged quadrant label (lower-left)
+                    {
+                        x: Math.max(0, medianTime * 0.3),
+                        y: Math.max(0, medianGrade * 0.5),
+                        marker: {
+                            size: 0
+                        },
+                        label: {
+                            text: '😴 {% trans "Under-engaged" %}\n{% trans "Low Grade, Low Time" %}',
+                            textAnchor: 'middle',
+                            style: {
+                                color: '#fff',
+                                background: '#6B7280',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                padding: {
+                                    left: 8,
+                                    right: 8,
+                                    top: 6,
+                                    bottom: 6
+                                }
+                            }
+                        }
+                    },
+                    // Struggling quadrant label (lower-right)
+                    {
+                        x: medianTime + (maxTime - medianTime) * 0.5,
+                        y: Math.max(0, medianGrade * 0.5),
+                        marker: {
+                            size: 0
+                        },
+                        label: {
+                            text: '😰 {% trans "Struggling" %}\n{% trans "Low Grade, High Time" %}',
+                            textAnchor: 'middle',
+                            style: {
+                                color: '#fff',
+                                background: '#EF4444',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                padding: {
+                                    left: 8,
+                                    right: 8,
+                                    top: 6,
+                                    bottom: 6
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            tooltip: {
+                custom: function({series, seriesIndex, dataPointIndex, w}) {
+                    const data = w.config.series[seriesIndex].data[dataPointIndex];
+                    const timeSpent = data.x.toFixed(1);
+                    const timeSpentHours = (data.x / 60).toFixed(1);
+                    const grade = data.y.toFixed(1);
+                    const studentId = data.studentId;
+                    const totalGrades = data.totalGrades;
+                    const activeDays = data.activeDays;
+                    const courseCount = data.courseCount;
+                    const averageDailyMinutes = data.averageDailyMinutes.toFixed(2);
+                    const averageDailyHours = (data.averageDailyMinutes / 60).toFixed(2);
+
+                    // Determine quadrant
+                    let quadrant = '';
+                    let quadrantColor = '';
+                    if (data.y >= medianGrade && data.x < medianTime) {
+                        quadrant = '🎯 {% trans "Sweet Spot" %}';
+                        quadrantColor = '#10B981';
+                    } else if (data.y >= medianGrade && data.x >= medianTime) {
+                        quadrant = '💪 {% trans "Hard Workers" %}';
+                        quadrantColor = '#3B82F6';
+                    } else if (data.y < medianGrade && data.x < medianTime) {
+                        quadrant = '😴 {% trans "Under-engaged" %}';
+                        quadrantColor = '#6B7280';
+                    } else {
+                        quadrant = '😰 {% trans "Struggling" %}';
+                        quadrantColor = '#EF4444';
+                    }
+
+                    return `
+                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-[200px]">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                <span class="font-semibold text-gray-900 dark:text-white">${correlationTranslations.student} ${studentId}</span>
+                            </div>
+                            <div class="mb-2 p-2 rounded" style="background-color: ${quadrantColor}20; border-left: 3px solid ${quadrantColor};">
+                                <span class="text-sm font-medium" style="color: ${quadrantColor};">${quadrant}</span>
+                            </div>
+                            <div class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                                <div><strong>{% trans "Average Grade" %}:</strong> ${grade} ${correlationTranslations.points}</div>
+                                <div><strong>{% trans "Time Spent" %}:</strong> ${timeSpent} ${correlationTranslations.minutes} (${timeSpentHours} hours)</div>
+                                <div><strong>{% trans "Total Grades" %}:</strong> ${totalGrades}</div>
+                                <div><strong>{% trans "Courses" %}:</strong> ${courseCount} ${correlationTranslations.courses}</div>
+                                <div><strong>{% trans "Active Days" %}:</strong> ${activeDays} ${correlationTranslations.activeDays}</div>
+                                <div><strong>{% trans "Daily Avg" %}:</strong> ${averageDailyMinutes} ${correlationTranslations.minutes}/day (${averageDailyHours} hours/day)</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            legend: {
+                show: false
+            }
+        };
+
+        // Add regression line if available
+        if (regressionLine.length > 0) {
+            options.series.push({
+                name: '{% trans "Trend Line" %}',
+                type: 'line',
+                data: regressionLine.map(point => ({
+                    x: point.x,
+                    y: point.y
+                }))
+            });
+
+            // Update colors for both series
+            options.colors = ['#3B82F6', '#EF4444'];
+            options.stroke = {
+                width: [0, 3],
+                curve: 'smooth'
+            };
+            options.legend.show = true;
+        }
+
+        // Destroy existing chart if it exists
+        if (correlationChart) {
+            correlationChart.destroy();
+        }
+
+        correlationChart = new ApexCharts(document.querySelector("#timeGradeCorrelationChart"), options);
+        correlationChart.render();
+
+        // Update statistics cards
+        updateCorrelationStatistics(statistics, correlationData);
+        correlationStats.style.display = 'grid';
+        correlationInfoBadge.style.display = 'block';
+    }
+
+    function updateCorrelationStatistics(statistics, correlationData = []) {
+        console.log('Updating correlation statistics:', statistics);
+        console.log('Correlation data length:', correlationData.length);
+
+        // Update correlation coefficient
+        const correlationCoeff = statistics.correlation_coefficient || 0;
+        document.getElementById('correlationCoefficient').textContent = correlationCoeff.toFixed(3);
+
+        // Update correlation direction
+        let direction = '{% trans "No correlation" %}';
+        let strengthText = '{% trans "None" %}';
+
+        if (statistics.correlation_direction === 'positive') {
+            direction = '{% trans "Positive" %}';
+        } else if (statistics.correlation_direction === 'negative') {
+            direction = '{% trans "Negative" %}';
+        }
+
+        if (statistics.correlation_strength) {
+            strengthText = statistics.correlation_strength;
+        }
+
+        document.getElementById('correlationDirection').textContent = direction;
+        document.getElementById('correlationStrength').textContent = strengthText;
+
+        // Update R-squared
+        const rSquared = statistics.r_squared || 0;
+        document.getElementById('rSquared').textContent = (rSquared * 100).toFixed(1) + '%';
+
+        // Update total students - use multiple fallback sources
+        let totalStudents = 0;
+
+        // Try different possible field names and fallbacks
+        if (statistics.total_students !== undefined) {
+            totalStudents = statistics.total_students;
+        } else if (statistics.sample_size !== undefined) {
+            totalStudents = statistics.sample_size;
+        } else if (correlationData && correlationData.length) {
+            totalStudents = correlationData.length;
+        }
+
+        console.log('Total students calculated:', totalStudents);
+        document.getElementById('totalStudents').textContent = totalStudents.toLocaleString();
+    }
+
+    // Year selector change handler
+    yearSelector.addEventListener('change', function() {
+        const selectedYear = this.value;
+        console.log('Year selector changed:', selectedYear);
+
+        if (!selectedYear) {
+            console.log('No year selected, showing default message');
+            // Reset to default state
+            document.getElementById('timeGradeCorrelationChart').innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-scatter-chart-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "Select an Academic Year" %}</p>
+                    <p class="text-sm">{% trans "Choose an academic year from the dropdown above to view the correlation between time spent and grades" %}</p>
+                </div>
+            `;
+            correlationStats.style.display = 'none';
+            correlationInfoBadge.style.display = 'none';
+            currentCorrelationYear = null;
+            return;
+        }
+
+        currentCorrelationYear = parseInt(selectedYear);
+        const yearData = correlationDataByYear[selectedYear];
+        console.log('Year data found for', selectedYear, ':', yearData);
+
+        if (yearData) {
+            console.log('Creating chart for year', selectedYear, 'with', yearData.correlation_data?.length, 'data points');
+            createCorrelationChart(yearData);
+        } else {
+            console.log('No year data found for', selectedYear);
+            // Show loading or no data message
+            document.getElementById('timeGradeCorrelationChart').innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-loader-4-line text-4xl animate-spin mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "Loading Data..." %}</p>
+                    <p class="text-sm">{% trans "Please wait while we load the correlation data for this academic year" %}</p>
+                </div>
+            `;
+            correlationStats.style.display = 'none';
+            correlationInfoBadge.style.display = 'none';
+        }
+    });
+
+    // Explanation toggle functionality
+    const correlationExplanationToggleBtn = document.getElementById('toggleCorrelationExplanation');
+    const correlationExplanationContent = document.getElementById('correlationExplanationContent');
+    const correlationExplanationToggleIcon = document.getElementById('correlationExplanationToggleIcon');
+
+    if (correlationExplanationToggleBtn && correlationExplanationContent) {
+        correlationExplanationToggleBtn.addEventListener('click', function() {
+            const isHidden = correlationExplanationContent.classList.contains('hidden');
+
+            if (isHidden) {
+                // Show explanation
+                correlationExplanationContent.classList.remove('hidden');
+                correlationExplanationToggleIcon.style.transform = 'rotate(180deg)';
+            } else {
+                // Hide explanation
+                correlationExplanationContent.classList.add('hidden');
+                correlationExplanationToggleIcon.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+
+    // Initialize with empty state
+    correlationStats.style.display = 'none';
+    correlationInfoBadge.style.display = 'none';
+
+    // Auto-select the second item in the year selector (if available)
+    setTimeout(() => {
+        const yearOptions = yearSelector.querySelectorAll('option');
+        // Check if we have at least 3 options (empty option + 2+ years)
+        if (yearOptions.length >= 3) {
+            // Select the second item (index 1 is the first year, index 2 is the second year)
+            const secondYearOption = yearOptions[2]; // Skip the empty option at index 0 and first year at index 1
+            if (secondYearOption) {
+                yearSelector.value = secondYearOption.value;
+                // Trigger the change event to load the chart
+                yearSelector.dispatchEvent(new Event('change'));
+            }
+        }
+    }, 100); // Small delay to ensure DOM is fully ready
 });
 </script>
 

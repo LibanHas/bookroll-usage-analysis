@@ -9,8 +9,61 @@ import statistics
 import hashlib
 import json
 import time
+import numpy as np
+import random
 
 logger = logging.getLogger(__name__)
+
+
+def get_clickhouse_db_for_academic_year(academic_year: int) -> str:
+    """
+    Get the appropriate ClickHouse database alias for a given academic year.
+
+    This function implements the database routing logic:
+    - Years before 2025: Use 'clickhouse_db_pre_2025' database
+    - Years 2025 and after: Use 'clickhouse_db' database
+
+    Args:
+        academic_year (int): The academic year (e.g., 2024, 2025)
+
+    Returns:
+        str: Database alias ('clickhouse_db' or 'clickhouse_db_pre_2025')
+    """
+    return 'clickhouse_db' if academic_year >= 2025 else 'clickhouse_db_pre_2025'
+
+
+def get_clickhouse_db_for_date_range(start_date: str = None, end_date: str = None) -> str:
+    """
+    Get the appropriate ClickHouse database for a date range.
+
+    Args:
+        start_date (str): Start date in 'YYYY-MM-DD' format
+        end_date (str): End date in 'YYYY-MM-DD' format
+
+    Returns:
+        str: Database alias ('clickhouse_db' or 'clickhouse_db_pre_2025')
+    """
+    years = []
+
+    for date_str in [start_date, end_date]:
+        if date_str:
+            try:
+                year = int(date_str[:4])  # Extract year from YYYY-MM-DD
+                years.append(year)
+            except (ValueError, TypeError):
+                continue
+
+    if not years:
+        # No valid dates, use current year logic
+        current_year = datetime.datetime.now().year
+        return get_clickhouse_db_for_academic_year(current_year)
+
+    # If any year is 2025 or later, use the new database
+    if any(year >= 2025 for year in years):
+        return 'clickhouse_db'
+    else:
+        return 'clickhouse_db_pre_2025'
+
 
 # Cache configuration for historical data
 CACHE_CONFIG = {
@@ -690,6 +743,7 @@ class PastYearCourseCategory(CachedModelMixin, models.Model):
     def get_course_grade_distribution(cls, course_id: str, academic_year: int) -> Dict[str, Any]:
         """
         Get individual student grades for a specific course to create distribution charts.
+        Uses course-based filtering only (consistent with main analytics).
 
         Args:
             course_id (str): The course ID to get grades for
@@ -717,9 +771,23 @@ class PastYearCourseCategory(CachedModelMixin, models.Model):
                     'error': 'No student filter data available'
                 }
 
-            # Calculate date range for academic year
-            start_date = f"{academic_year}-04-01"
-            end_date = f"{academic_year + 1}-03-31"
+            # Verify that this course belongs to the specified academic year
+            courses_data = PastYearCourseCategory.get_courses_by_academic_year(academic_year)
+            valid_course_ids = []
+            if courses_data and courses_data.get('categories'):
+                for category in courses_data.get('categories', {}).values():
+                    for child_category in category.get('children', {}).values():
+                        valid_course_ids.extend([str(course['id']) for course in child_category.get('courses', [])])
+
+            if course_id not in valid_course_ids:
+                logger.warning(f"Course {course_id} does not belong to academic year {academic_year}")
+                return {
+                    'course_id': course_id,
+                    'individual_grades': [],
+                    'distribution_data': [],
+                    'stats': {},
+                    'error': f'Course {course_id} does not belong to academic year {academic_year}'
+                }
 
             with connections['analysis_db'].cursor() as cursor:
                 # Build student filter clause
@@ -729,23 +797,22 @@ class PastYearCourseCategory(CachedModelMixin, models.Model):
                 else:
                     student_filter = f" AND student_id IN ({filter_placeholders})"
 
-                # Get individual grades for the course
+                # Get individual grades for the course - ONLY course and student filtering (NO DATE FILTERING)
                 individual_grades_query = f"""
                     SELECT
                         student_id,
                         quiz as grade,
                         created_at,
-                        course_name
+                        course_name,
+                        name as grade_file_name
                     FROM course_student_scores
                     WHERE course_id = %s
-                    AND created_at >= %s
-                    AND created_at <= %s
                     AND quiz IS NOT NULL
                     AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%') {student_filter}
                     ORDER BY quiz DESC
                 """
 
-                cursor.execute(individual_grades_query, [course_id, start_date, end_date] + filter_ids)
+                cursor.execute(individual_grades_query, [course_id] + filter_ids)
                 individual_grades = cursor.fetchall()
 
                 if not individual_grades:
@@ -754,11 +821,15 @@ class PastYearCourseCategory(CachedModelMixin, models.Model):
                         'individual_grades': [],
                         'distribution_data': [],
                         'stats': {},
-                        'error': 'No grades found for this course'
+                        'error': f'No Benesse grades found for course {course_id} in academic year {academic_year}'
                     }
 
                 # Extract just the grade values for statistical analysis
                 grade_values = [float(grade[1]) for grade in individual_grades]
+
+                # Get unique grade file names for this course
+                grade_file_names = list(set([grade[4] for grade in individual_grades if grade[4]]))
+                grade_file_names_str = ', '.join(sorted(grade_file_names)) if grade_file_names else ""
 
                 # Calculate basic statistics
                 grade_count = len(grade_values)
@@ -795,7 +866,8 @@ class PastYearCourseCategory(CachedModelMixin, models.Model):
                         'student_id': grade_record[0],
                         'grade': float(grade_record[1]),
                         'created_at': grade_record[2].isoformat() if grade_record[2] else None,
-                        'course_name': grade_record[3]
+                        'course_name': grade_record[3],
+                        'grade_file_name': grade_record[4]
                     })
 
                 result = {
@@ -814,10 +886,13 @@ class PastYearCourseCategory(CachedModelMixin, models.Model):
                         'q3': round(q3, 2),
                         'range': round(max_grade - min_grade, 2)
                     },
-                    'filter_info': filter_config
+                    'filter_info': filter_config,
+                    'academic_year': academic_year,
+                    'filtering_method': 'course_based_only',
+                    'grade_file_names': grade_file_names_str
                 }
 
-                logger.info(f"Successfully retrieved {grade_count} grades for course {course_id}")
+                logger.info(f"Successfully retrieved {grade_count} Benesse grades for course {course_id} in academic year {academic_year}")
                 return result
 
         except Exception as e:
@@ -1424,7 +1499,8 @@ class PastYearStudentGrades(models.Model):
                         COUNT(*) as grade_count,
                         AVG(quiz) as avg_grade,
                         MIN(quiz) as min_grade,
-                        MAX(quiz) as max_grade
+                        MAX(quiz) as max_grade,
+                        GROUP_CONCAT(DISTINCT name ORDER BY name SEPARATOR ', ') as grade_file_names
                     FROM course_student_scores
                     WHERE quiz IS NOT NULL
                     AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%') {student_filter}{course_filter}
@@ -1458,15 +1534,48 @@ class PastYearStudentGrades(models.Model):
                 # Simplified course stats without complex median calculation
                 course_stats_with_median = []
                 for course_stat in course_stats:
+                    course_id = course_stat[0]
+                    course_name = course_stat[1]
+                    student_count = course_stat[2]
+                    grade_count = course_stat[3]
+                    avg_grade = course_stat[4]
+                    min_grade = course_stat[5]
+                    max_grade = course_stat[6]
+                    grade_file_names = course_stat[7] if len(course_stat) > 7 else ""
+
+                    # Skip courses with no grades (safety check)
+                    if not avg_grade or grade_count == 0:
+                        logger.debug(f"GRADE ANALYTICS: Skipping course {course_id} - no valid grades")
+                        continue
+
+                    # Calculate proper median for this course
+                    median_query = f"""
+                        SELECT quiz FROM course_student_scores
+                        WHERE course_id = %s
+                        AND quiz IS NOT NULL
+                        AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%') {student_filter}
+                        ORDER BY quiz
+                    """
+                    cursor.execute(median_query, [course_id] + filter_params)
+                    course_grades = [float(row[0]) for row in cursor.fetchall()]
+
+                    # Calculate median using statistics module for accuracy
+                    if course_grades:
+                        import statistics
+                        median_grade = statistics.median(course_grades)
+                    else:
+                        median_grade = avg_grade  # Fallback to average if no grades found
+
                     course_stats_with_median.append({
-                        'course_id': course_stat[0],
-                        'course_name': course_stat[1],
-                        'student_count': course_stat[2],
-                        'grade_count': course_stat[3],
-                        'avg_grade': round(float(course_stat[4]), 2) if course_stat[4] else 0,
-                        'min_grade': float(course_stat[5]) if course_stat[5] else 0,
-                        'max_grade': float(course_stat[6]) if course_stat[6] else 0,
-                        'median_grade': round(float(course_stat[4]), 2) if course_stat[4] else 0,  # Use avg as approximation
+                        'course_id': course_id,
+                        'course_name': course_name,
+                        'student_count': student_count,
+                        'grade_count': grade_count,
+                        'avg_grade': round(float(avg_grade), 2),
+                        'min_grade': float(min_grade),
+                        'max_grade': float(max_grade),
+                        'median_grade': round(float(median_grade), 2),
+                        'grade_file_names': grade_file_names or "",  # Add grade file names
                     })
 
                 result = {
@@ -2497,6 +2606,847 @@ class PastYearStudentGrades(models.Model):
             logger.error(f"Error calculating summary stats: {str(e)}")
             return {}
 
+    @classmethod
+    def get_time_spent_vs_grade_correlation(cls, academic_year: int) -> Dict[str, Any]:
+        """
+        Get time spent vs grade correlation data for students who have grades.
+
+        This method:
+        1. First finds students who have grades in courses for the given academic year
+        2. Then calculates their time spent on platform using ClickHouse
+        3. Returns correlation data for scatter plot visualization
+
+        Args:
+            academic_year (int): The academic year to analyze
+
+        Returns:
+            Dict with correlation data, statistics, and metadata
+        """
+        logger.info(f"Fetching time spent vs grade correlation for academic year {academic_year}")
+
+        try:
+            # Step 1: Get students who have grades for this academic year
+            students_with_grades = cls._get_students_grades_for_correlation(academic_year)
+
+            if not students_with_grades:
+                logger.warning(f"No students with grades found for academic year {academic_year}")
+                return {
+                    'error': 'No students with grades found for this academic year',
+                    'correlation_data': [],
+                    'statistics': {},
+                    'metadata': {
+                        'academic_year': academic_year,
+                        'students_with_grades_only': 0,
+                        'students_with_time_data': 0,
+                        'total_data_points': 0
+                    }
+                }
+
+            logger.info(f"Found {len(students_with_grades)} students with grades")
+
+            # Step 2: Get time spent data for these students using simplified approach
+            grade_student_ids = list(students_with_grades.keys())
+
+            # Prepare course filter data for more accurate time tracking
+            course_filter_data = {}
+            for student_id, grade_info in students_with_grades.items():
+                if 'course_ids' in grade_info and grade_info['course_ids']:
+                    course_filter_data[student_id] = grade_info['course_ids']
+
+            logger.info(f"Prepared course filter data for {len(course_filter_data)} students")
+
+            time_data = cls._get_students_with_time_data(
+                grade_student_ids,
+                academic_year,
+                course_filter_data=course_filter_data
+            )
+            logger.debug(f"TIME DATA: {time_data}")
+
+            if not time_data:
+                logger.warning(f"No time data found for students with grades in academic year {academic_year}")
+                return {
+                    'error': 'No time data found for students with grades',
+                    'correlation_data': [],
+                    'statistics': {},
+                    'metadata': {
+                        'academic_year': academic_year,
+                        'students_with_grades_only': len(students_with_grades),
+                        'students_with_time_data': 0,
+                        'total_data_points': 0
+                    }
+                }
+
+            # Step 3: Combine grade and time data
+            correlation_data = []
+            for student_id, grade_info in students_with_grades.items():
+                if student_id in time_data:
+                    correlation_data.append({
+                        'student_id': student_id,
+                        'average_grade': grade_info['average_grade'],
+                        'total_grades': grade_info['grade_count'],  # Frontend expects total_grades
+                        'total_time_spent_minutes': time_data[student_id]['total_minutes'],  # Frontend expects total_time_spent_minutes
+                        'active_days': time_data[student_id]['active_days'],
+                        'average_daily_minutes': time_data[student_id]['average_daily_minutes'],
+                        'course_count': grade_info['course_count']  # Use actual course count from grade data
+                    })
+
+            if not correlation_data:
+                return {
+                    'error': 'No students found with both grades and time data',
+                    'correlation_data': [],
+                    'statistics': {},
+                    'metadata': {
+                        'academic_year': academic_year,
+                        'students_with_grades_only': len(students_with_grades),
+                        'students_with_time_data': len(time_data),
+                        'total_data_points': 0
+                    }
+                }
+
+            # Step 4: Calculate correlation statistics using the proper method
+            statistics = cls._calculate_correlation_statistics(correlation_data)
+
+            return {
+                'correlation_data': correlation_data,
+                'statistics': statistics,
+                'metadata': {
+                    'academic_year': academic_year,
+                    'students_with_grades_only': len(students_with_grades),
+                    'students_with_time_data': len(time_data),
+                    'total_data_points': len(correlation_data),
+                    'method': 'simplified_numeric_matching'
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Error in get_time_spent_vs_grade_correlation: {e}")
+            return {
+                'error': f'Error calculating correlation: {str(e)}',
+                'correlation_data': [],
+                'statistics': {},
+                'metadata': {
+                    'academic_year': academic_year,
+                    'students_with_grades_only': 0,
+                    'students_with_time_data': 0,
+                    'total_data_points': 0
+                }
+            }
+
+    @classmethod
+    def _get_students_with_any_grades(cls, academic_year: int, filter_type: str, filter_ids: List[str]) -> Dict[str, Dict]:
+        """
+        Fallback method to find students with grades for any courses (not filtered by specific course IDs).
+        This helps identify if the issue is with course categorization or actual data availability.
+        """
+        logger.info(f"Using fallback approach to find students with any grades for year {academic_year}")
+
+        try:
+            with connections['analysis_db'].cursor() as cursor:
+                # Build student filter clause
+                filter_placeholders = ",".join(["%s"] * len(filter_ids))
+                if filter_type == 'NOT_IN':
+                    student_filter = f" AND student_id NOT IN ({filter_placeholders}) AND student_id IS NOT NULL"
+                    logger.debug(f"Using NOT IN filter to exclude {len(filter_ids)} non-students")
+                else:
+                    student_filter = f" AND student_id IN ({filter_placeholders})"
+                    logger.debug(f"Using IN filter to include {len(filter_ids)} students")
+
+                # Find students with grades (any courses)
+                query = f"""
+                    SELECT
+                        student_id,
+                        AVG(quiz) as average_grade,
+                        COUNT(*) as grade_count
+                    FROM course_student_scores
+                    WHERE quiz IS NOT NULL
+                    AND (name LIKE '%Benesse%' OR name LIKE '%ベネッセ%') {student_filter}
+                    AND quiz >= 0 AND quiz <= 100
+                    GROUP BY student_id
+                    HAVING COUNT(*) > 0
+                """
+
+                cursor.execute(query, filter_ids)
+                results = cursor.fetchall()
+
+                logger.info(f"Fallback approach found {len(results)} students with grades")
+
+                students_grades = {}
+                for row in results:
+                    student_id, avg_grade, grade_count = row
+                    students_grades[str(student_id)] = {
+                        'average_grade': float(avg_grade),
+                        'grade_count': int(grade_count)
+                    }
+
+                return students_grades
+
+        except Exception as e:
+            logger.error(f"Error in fallback grades search: {str(e)}")
+            return {}
+
+    @classmethod
+    def _get_students_grades_for_correlation(cls, academic_year: int) -> Dict[str, Dict[str, Any]]:
+        """
+        Get student grades aggregated by student for correlation analysis.
+
+        Returns:
+            Dict[student_id, Dict] containing average grades and course counts per student
+        """
+        try:
+            with connections['analysis_db'].cursor() as cursor:
+                # Build student filter clause based on optimal approach
+                filter_placeholders = ",".join(["%s"] * len(filter_ids))
+                if filter_type == 'NOT_IN':
+                    student_filter = f" AND student_id NOT IN ({filter_placeholders}) AND student_id IS NOT NULL"
+                else:
+                    student_filter = f" AND student_id IN ({filter_placeholders})"
+
+                # Build course filter clause
+                course_filter_placeholders = ",".join(["%s"] * len(course_ids))
+                course_filter = f" AND course_id IN ({course_filter_placeholders})"
+
+                # Get aggregated grades per student
+                grades_query = f"""
+                    SELECT
+                        student_id,
+                        AVG(quiz) as average_grade,
+                        COUNT(*) as total_grades,
+                        COUNT(DISTINCT course_id) as course_count,
+                        MIN(quiz) as min_grade,
+                        MAX(quiz) as max_grade
+                    FROM course_student_scores
+                    WHERE quiz IS NOT NULL
+                    AND quiz >= 0 AND quiz <= 100
+                    AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%')
+                    {student_filter}{course_filter}
+                    GROUP BY student_id
+                    HAVING total_grades >= 1
+                    ORDER BY student_id
+                """
+
+                cursor.execute(grades_query, filter_ids + course_ids)
+                grade_results = cursor.fetchall()
+
+                students_grades = {}
+                for row in grade_results:
+                    student_id = row[0]
+                    students_grades[student_id] = {
+                        'average_grade': float(row[1]),
+                        'total_grades': row[2],
+                        'course_count': row[3],
+                        'min_grade': float(row[4]),
+                        'max_grade': float(row[5])
+                    }
+
+                logger.info(f"Retrieved grades for {len(students_grades)} students")
+                return students_grades
+
+        except Exception as e:
+            logger.error(f"Error getting student grades for correlation: {str(e)}")
+            return {}
+
+    @classmethod
+    def _calculate_time_spent_for_students(cls, student_ids: List[str], start_date: str, end_date: str) -> Dict[str, Dict]:
+        """
+        Calculate time spent for specific students using ClickHouse.
+        Based on the get_time_spent_distribution method but optimized for specific students.
+
+        Returns:
+            Dict[student_id, Dict] containing time spent data per student
+        """
+        try:
+            from django.conf import settings
+
+            # Get session duration settings (same as get_time_spent_distribution)
+            max_session_duration = getattr(settings, 'MAX_SESSION_DURATION', 5400)  # Default 1.5 hours
+            max_activity_duration = 1800  # 30 minutes cap per individual activity session
+
+            # Convert student IDs to actor account names for ClickHouse filtering
+            # Need to handle different formats: "1369@UUID", "Learner:2549", "2549"
+            actor_account_filters = []
+            for student_id in student_ids:
+                # Add multiple patterns to catch different actor_account_name formats
+                actor_account_filters.extend([
+                    f"'{student_id}@%'",  # For "1369@UUID" format
+                    f"'Learner:{student_id}'",  # For "Learner:2549" format
+                    f"'{student_id}'"  # For direct "2549" format
+                ])
+
+            # Build filter for ClickHouse - use LIKE for pattern matching
+            actor_filter_conditions = []
+            for i in range(0, len(actor_account_filters), 3):  # Process in groups of 3 (per student_id)
+                student_filters = actor_account_filters[i:i+3]
+                condition = " OR ".join([f"actor_account_name LIKE {pattern}" for pattern in student_filters])
+                actor_filter_conditions.append(f"({condition})")
+
+            actor_filter = " OR ".join(actor_filter_conditions)
+
+            with connections['clickhouse_db_pre_2025'].cursor() as cursor:
+                # Use the same three-tier query as get_time_spent_distribution but with student filtering
+                time_spent_query = f"""
+                    SELECT
+                        student_id,
+                        sum(minutes_spent) as total_minutes,
+                        count() as active_days,
+                        avg(minutes_spent) as average_daily_minutes
+                    FROM
+                    (
+                        SELECT
+                            student_id,
+                            day,
+                            round(sum(read_seconds) / 60, 2) AS minutes_spent
+                        FROM
+                        (
+                            SELECT
+                                actor_account_name AS student_id,
+                                toDate(timestamp) AS day,
+                                CASE
+                                    WHEN time_diff <= {max_session_duration} THEN greatest(0, least({max_activity_duration}, time_diff))
+                                    ELSE 0
+                                END AS read_seconds
+                            FROM
+                            (
+                                SELECT
+                                    actor_account_name,
+                                    timestamp,
+                                    dateDiff(
+                                        'second',
+                                        timestamp,
+                                        leadInFrame(timestamp) OVER (
+                                            PARTITION BY actor_account_name
+                                            ORDER BY timestamp
+                                            ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+                                        )
+                                    ) AS time_diff
+                                FROM statements_mv
+                                WHERE actor_name_role == 'student'
+                                    AND actor_account_name != ''
+                                    AND timestamp >= toDate('{start_date}')
+                                    AND timestamp <= toDate('{end_date}')
+                                    AND ({actor_filter})
+                            )
+                        )
+                        GROUP BY
+                            student_id,
+                            day
+                        HAVING minutes_spent > 0
+                    )
+                    GROUP BY student_id
+                    ORDER BY student_id
+                """
+
+                cursor.execute(time_spent_query)
+                time_results = cursor.fetchall()
+
+                students_time_data = {}
+                for row in time_results:
+                    actor_account_name = row[0]
+
+                    # Extract student_id from actor_account_name
+                    student_id = extract_student_id_from_actor_account_name(actor_account_name)
+
+                    if student_id and student_id in student_ids:
+                        students_time_data[student_id] = {
+                            'total_minutes': float(row[1]),
+                            'active_days': row[2],
+                            'average_daily_minutes': float(row[3]),
+                            'actor_account_name': actor_account_name  # For debugging
+                        }
+
+                logger.info(f"Calculated time spent for {len(students_time_data)} students")
+                return students_time_data
+
+        except Exception as e:
+            logger.error(f"Error calculating time spent for students: {str(e)}")
+            return {}
+
+    @classmethod
+    def _calculate_correlation_statistics(cls, correlation_data: List[Dict]) -> Dict[str, Any]:
+        """
+        Calculate correlation statistics for time spent vs grades.
+
+        Returns:
+            Dict containing correlation coefficient, regression data, and summary stats
+        """
+        try:
+            if not correlation_data:
+                return {}
+
+            import statistics
+            import math
+
+            # Extract data for correlation calculation
+            grades = [item['average_grade'] for item in correlation_data]
+            time_minutes = [item['total_time_spent_minutes'] for item in correlation_data]
+
+            if len(grades) < 2 or len(time_minutes) < 2:
+                return {}
+
+            # Calculate basic statistics
+            mean_grade = statistics.mean(grades)
+            mean_time = statistics.mean(time_minutes)
+            std_grade = statistics.stdev(grades) if len(grades) > 1 else 0
+            std_time = statistics.stdev(time_minutes) if len(time_minutes) > 1 else 0
+
+            # Calculate Pearson correlation coefficient
+            correlation_coefficient = 0
+            if std_grade > 0 and std_time > 0:
+                n = len(grades)
+                sum_xy = sum(g * t for g, t in zip(grades, time_minutes))
+                correlation_coefficient = (sum_xy - n * mean_grade * mean_time) / ((n - 1) * std_grade * std_time)
+
+            # Calculate linear regression (y = mx + b, where y = grade, x = time)
+            if std_time > 0:
+                slope = correlation_coefficient * (std_grade / std_time)
+                intercept = mean_grade - slope * mean_time
+            else:
+                slope = 0
+                intercept = mean_grade
+
+            # Generate regression line points for visualization
+            min_time = min(time_minutes)
+            max_time = max(time_minutes)
+            regression_line = []
+            for i in range(21):  # 21 points for smooth line
+                x = min_time + (max_time - min_time) * i / 20
+                y = slope * x + intercept
+                regression_line.append({'x': round(x, 2), 'y': round(y, 2)})
+
+            # Categorize correlation strength
+            correlation_strength = "No correlation"
+            if abs(correlation_coefficient) >= 0.7:
+                correlation_strength = "Strong"
+            elif abs(correlation_coefficient) >= 0.5:
+                correlation_strength = "Moderate"
+            elif abs(correlation_coefficient) >= 0.3:
+                correlation_strength = "Weak"
+
+            correlation_direction = "positive" if correlation_coefficient > 0 else "negative" if correlation_coefficient < 0 else "no"
+
+            return {
+                'correlation_coefficient': round(correlation_coefficient, 3),
+                'correlation_strength': correlation_strength,
+                'correlation_direction': correlation_direction,
+                'slope': round(slope, 3),
+                'intercept': round(intercept, 2),
+                'regression_line': regression_line,
+                'grade_stats': {
+                    'mean': round(mean_grade, 2),
+                    'std_dev': round(std_grade, 2),
+                    'min': round(min(grades), 2),
+                    'max': round(max(grades), 2),
+                    'median': round(statistics.median(grades), 2)
+                },
+                'time_stats': {
+                    'mean': round(mean_time, 2),
+                    'std_dev': round(std_time, 2),
+                    'min': round(min(time_minutes), 2),
+                    'max': round(max(time_minutes), 2),
+                    'median': round(statistics.median(time_minutes), 2)
+                },
+                'total_students': len(correlation_data),
+                'r_squared': round(correlation_coefficient ** 2, 3)
+            }
+
+        except Exception as e:
+            logger.error(f"Error calculating correlation statistics: {str(e)}")
+            return {}
+
+    @classmethod
+    def _get_students_with_time_data(cls, grade_student_ids: List[str], academic_year: int,
+                                   course_filter_data: Dict[str, List[str]] = None) -> Dict[str, Dict[str, Any]]:
+        """
+        Get time spent data for students from ClickHouse using proper database routing.
+
+        Uses different databases and student ID extraction logic based on academic year:
+        - Before 2025: Use 'clickhouse_db_pre_2025' with extract_student_id_from_actor_account_name()
+        - 2025 and after: Use 'clickhouse_db' with direct student ID matching
+
+        Args:
+            grade_student_ids: List of student IDs who have grades
+            academic_year: Academic year for filtering
+            course_filter_data: Optional dict mapping student_id to list of course_ids for filtering
+
+        Returns:
+            Dict mapping student_id to time data
+        """
+        # Get configuration values from settings
+        max_session_duration = getattr(settings, 'MAX_SESSION_DURATION', 5400)  # Default 1.5 hours
+        max_reading_time = getattr(settings, 'MAX_READING_TIME', 1800)  # Default 30 minutes
+
+        logger.debug(f"MAX_SESSION_DURATION: {max_session_duration}")
+        logger.debug(f"MAX_READING_TIME: {max_reading_time}")
+
+        # Determine which database to use based on academic year
+        db_alias = get_clickhouse_db_for_academic_year(academic_year)
+        logger.info(f"Using database '{db_alias}' for academic year {academic_year}")
+
+        try:
+            # Academic year date range
+            start_date = f"{academic_year}-04-01"
+            end_date = f"{academic_year + 1}-03-31"
+
+            # Convert grade_student_ids to set for faster lookup
+            grade_student_ids_set = set(str(sid) for sid in grade_student_ids)
+
+            # Course filtering logic
+            course_filter_sql = ""
+            if course_filter_data:
+                # Build course filter - collect all unique course IDs
+                all_course_ids = set()
+                for student_id, course_ids in course_filter_data.items():
+                    all_course_ids.update(course_ids)
+
+                if all_course_ids:
+                    course_ids_str = "', '".join(all_course_ids)
+                    course_filter_sql = f" AND context_id IN ('{course_ids_str}')"
+                    logger.debug(f"Applied course filter for {len(all_course_ids)} courses")
+
+            if academic_year >= 2025:
+                # For 2025+ database, use direct student ID matching
+                id_filter_conditions = []
+                for student_id in grade_student_ids:
+                    id_filter_conditions.append(f"actor_account_name = '{student_id}'")
+
+                if not id_filter_conditions:
+                    logger.warning("No student ID conditions generated for ClickHouse query")
+                    return {}
+
+                id_filter = " OR ".join(id_filter_conditions)
+
+                # ClickHouse query for 2025+ with direct matching
+                time_query = f"""
+                    SELECT
+                        actor_account_name AS student_id,
+                        sum(minutes_spent) as total_minutes,
+                        count() as active_days,
+                        avg(minutes_spent) as average_daily_minutes
+                    FROM
+                    (
+                        SELECT
+                            actor_account_name,
+                            day,
+                            round(sum(read_seconds) / 60, 2) AS minutes_spent
+                        FROM
+                        (
+                            SELECT
+                                actor_account_name,
+                                toDate(timestamp) AS day,
+                                CASE
+                                    WHEN time_diff <= {max_session_duration} THEN greatest(0, least({max_reading_time}, time_diff))
+                                    ELSE 0
+                                END AS read_seconds
+                            FROM
+                            (
+                                SELECT
+                                    actor_account_name,
+                                    timestamp,
+                                    dateDiff(
+                                        'second',
+                                        timestamp,
+                                        leadInFrame(timestamp) OVER (
+                                            PARTITION BY actor_account_name
+                                            ORDER BY timestamp
+                                            ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+                                        )
+                                    ) AS time_diff
+                                FROM statements_mv
+                                WHERE actor_account_name != ''
+                                    AND timestamp >= toDate('{start_date}')
+                                    AND timestamp <= toDate('{end_date}')
+                                    AND ({id_filter}){course_filter_sql}
+                            )
+                        )
+                        GROUP BY
+                            actor_account_name,
+                            day
+                        HAVING minutes_spent > 0
+                    )
+                    GROUP BY actor_account_name
+                    ORDER BY actor_account_name
+                """
+                logger.debug(f"Using direct ID matching for {academic_year} (post-2025)")
+            else:
+                # For pre-2025 database, build student ID filter based on the three known formats
+                id_filter_conditions = []
+                for student_id in grade_student_ids:
+                    # Handle the three patterns from extract_student_id_from_actor_account_name:
+                    # 1. "1369@UUID" format
+                    id_filter_conditions.append(f"actor_account_name LIKE '{student_id}@%'")
+                    # 2. "Learner:2549" format
+                    id_filter_conditions.append(f"actor_account_name = 'Learner:{student_id}'")
+                    # 3. Direct numeric ID "2549"
+                    id_filter_conditions.append(f"actor_account_name = '{student_id}'")
+
+                if not id_filter_conditions:
+                    logger.warning("No student ID conditions generated for ClickHouse query")
+                    return {}
+
+                id_filter = " OR ".join(id_filter_conditions)
+
+                # For pre-2025 database, use student ID filtering in SQL instead of Python
+                time_query = f"""
+                    SELECT
+                        actor_account_name,
+                        sum(minutes_spent) as total_minutes,
+                        count() as active_days,
+                        avg(minutes_spent) as average_daily_minutes
+                    FROM
+                    (
+                        SELECT
+                            actor_account_name,
+                            day,
+                            round(sum(read_seconds) / 60, 2) AS minutes_spent
+                        FROM
+                        (
+                            SELECT
+                                actor_account_name,
+                                toDate(timestamp) AS day,
+                                CASE
+                                    WHEN time_diff <= {max_session_duration} THEN greatest(0, least({max_reading_time}, time_diff))
+                                    ELSE 0
+                                END AS read_seconds
+                            FROM
+                            (
+                                SELECT
+                                    actor_account_name,
+                                    timestamp,
+                                    dateDiff(
+                                        'second',
+                                        timestamp,
+                                        leadInFrame(timestamp) OVER (
+                                            PARTITION BY actor_account_name
+                                            ORDER BY timestamp
+                                            ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+                                        )
+                                    ) AS time_diff
+                                FROM statements_mv
+                                WHERE actor_account_name != ''
+                                    AND timestamp >= toDate('{start_date}')
+                                    AND timestamp <= toDate('{end_date}')
+                                    AND ({id_filter}){course_filter_sql}
+                            )
+                        )
+                        GROUP BY
+                            actor_account_name,
+                            day
+                        HAVING minutes_spent > 0
+                    )
+                    GROUP BY actor_account_name
+                    ORDER BY actor_account_name
+                """
+                logger.debug(f"Using pattern-based ID filtering for {academic_year} (pre-2025)")
+
+            logger.debug(f"TIME QUERY for {db_alias}: {time_query}")
+
+            with connections[db_alias].cursor() as cursor:
+                cursor.execute(time_query)
+                time_results = cursor.fetchall()
+
+            logger.info(f"Raw query returned {len(time_results)} results from {db_alias}")
+
+            # Convert to dictionary with proper student ID extraction
+            time_data = {}
+            for actor_account_name, total_minutes, active_days, avg_daily_minutes in time_results:
+                if academic_year >= 2025:
+                    # For 2025+ database, actor_account_name should be direct student ID
+                    student_id = str(actor_account_name)
+                else:
+                    # For pre-2025 database, extract student ID from actor_account_name
+                    student_id = extract_student_id_from_actor_account_name(actor_account_name)
+
+                # Only include if we have a valid student ID and it's in our target list
+                if student_id and student_id in grade_student_ids_set:
+                    time_data[student_id] = {
+                        'total_minutes': float(total_minutes) if total_minutes else 0.0,
+                        'active_days': int(active_days) if active_days else 0,
+                        'average_daily_minutes': float(avg_daily_minutes) if avg_daily_minutes else 0.0,
+                        'actor_account_name': actor_account_name,  # For debugging
+                        'database_used': db_alias  # For debugging
+                    }
+                elif academic_year < 2025 and not student_id:
+                    # Log unrecognized formats for debugging (only for pre-2025)
+                    logger.debug(f"Could not extract student_id from actor_account_name: '{actor_account_name}'")
+
+            logger.info(f"Successfully processed {len(time_data)} students with time data from {db_alias}")
+            return time_data
+
+        except Exception as e:
+            logger.error(f"Error getting time data from {db_alias}: {e}")
+            return {}
+
+    @classmethod
+    def _get_students_grades_for_correlation(cls, academic_year: int) -> Dict[str, Dict[str, Any]]:
+        """
+        Get students who have grades for a specific academic year.
+
+        Args:
+            academic_year: The academic year to filter by
+
+        Returns:
+            Dict mapping student_id to grade information including course count
+        """
+        try:
+            # Get optimal student filtering approach
+            filter_config = PastYearCourseCategory.get_optimal_student_filter_for_academic_year(academic_year)
+            filter_type = filter_config['filter_type']
+            filter_ids = filter_config['filter_ids']
+
+            if not filter_ids:
+                logger.warning(f"No filter IDs found for academic year {academic_year}")
+                return {}
+
+            # Build student filter clause
+            filter_placeholders = ",".join(["%s"] * len(filter_ids))
+            if filter_type == 'NOT_IN':
+                student_filter = f" AND student_id NOT IN ({filter_placeholders}) AND student_id IS NOT NULL"
+            else:
+                student_filter = f" AND student_id IN ({filter_placeholders})"
+
+            # Find students with grades (Benesse grades) for this academic year
+            # Include course count to show actual number of courses per student
+            query = f"""
+                SELECT
+                    student_id,
+                    AVG(quiz) as average_grade,
+                    COUNT(*) as grade_count,
+                    COUNT(DISTINCT course_id) as course_count,
+                    GROUP_CONCAT(DISTINCT course_id) as course_ids
+                FROM course_student_scores
+                WHERE quiz IS NOT NULL
+                AND (name LIKE '%%Benesse%%' OR name LIKE '%%ベネッセ%%') {student_filter}
+                AND course_name LIKE '{academic_year}%%'
+                AND quiz >= 0 AND quiz <= 100
+                GROUP BY student_id
+                HAVING COUNT(*) > 0
+            """
+
+            with connections['analysis_db'].cursor() as cursor:
+                cursor.execute(query, filter_ids)
+                results = cursor.fetchall()
+
+            # Convert to dictionary
+            students_with_grades = {}
+            for student_id, avg_grade, grade_count, course_count, course_ids in results:
+                students_with_grades[str(student_id)] = {
+                    'average_grade': float(avg_grade),
+                    'grade_count': int(grade_count),
+                    'course_count': int(course_count),
+                    'course_ids': course_ids.split(',') if course_ids else []
+                }
+
+            logger.info(f"Retrieved grades for {len(students_with_grades)} students")
+            return students_with_grades
+
+        except Exception as e:
+            logger.error(f"Error getting students with grades: {e}")
+            return {}
+
+    @classmethod
+    def _generate_demo_correlation_data(cls, academic_year: int, num_students: int = 50) -> Dict[str, Any]:
+        """
+        Generate realistic demo correlation data for visualization purposes.
+
+        This is a temporary solution while we resolve student ID mapping issues.
+        The data simulates realistic patterns where higher time spent generally
+        correlates with better grades, but with realistic variance.
+
+        Args:
+            academic_year: The academic year to generate data for
+            num_students: Number of students to generate data for
+
+        Returns:
+            Dict with correlation data, statistics, and metadata
+        """
+        import random
+        import numpy as np
+
+        try:
+            # Set seed for reproducible demo data
+            random.seed(academic_year + 12345)
+            np.random.seed(academic_year + 12345)
+
+            # Generate realistic correlation data
+            correlation_data = []
+
+            for i in range(num_students):
+                student_id = f"demo_{academic_year}_{i+1:03d}"
+
+                # Generate minutes with realistic distribution (30 to 3000 minutes)
+                # Most students have 300-1200 minutes (5-20 hours), some outliers
+                if random.random() < 0.1:  # 10% outliers with high usage
+                    total_minutes = random.uniform(1500, 3000)  # 25-50 hours
+                elif random.random() < 0.2:  # 20% low usage
+                    total_minutes = random.uniform(30, 300)  # 0.5-5 hours
+                else:  # 70% normal usage
+                    total_minutes = random.uniform(300, 1500)  # 5-25 hours
+
+                # Generate grades with correlation to minutes but with realistic variance
+                # Base grade influenced by time spent, but with noise
+                base_grade_from_time = min(90, 40 + (total_minutes * 0.03))  # Minutes to grade conversion
+                noise = random.normalvariate(0, 12)  # Grade variance
+                average_grade = max(20, min(100, base_grade_from_time + noise))
+
+                # Add some completely random cases (students who study a lot but still struggle, or vice versa)
+                if random.random() < 0.05:  # 5% inverse correlation cases
+                    average_grade = 100 - average_grade + 40  # Flip the relationship
+
+                correlation_data.append({
+                    'student_id': student_id,
+                    'average_grade': round(average_grade, 2),
+                    'grade_count': random.randint(3, 8),  # Number of exams taken
+                    'total_time_spent_minutes': round(total_minutes, 2),
+                    'active_days': random.randint(10, 60),  # Days active on platform
+                    'average_daily_minutes': round(total_minutes / random.randint(15, 45), 2),
+                    'course_count': random.randint(2, 6)  # Realistic course count (2-6 courses)
+                })
+
+            # Calculate correlation statistics
+            grades = [item['average_grade'] for item in correlation_data]
+            minutes = [item['total_time_spent_minutes'] for item in correlation_data]
+
+            correlation_coefficient = float(np.corrcoef(grades, minutes)[0, 1])
+            if np.isnan(correlation_coefficient):
+                correlation_coefficient = 0.0
+
+            statistics = {
+                'correlation_coefficient': correlation_coefficient,
+                'average_grade': sum(grades) / len(grades),
+                'average_minutes': sum(minutes) / len(minutes),
+                'grade_range': [min(grades), max(grades)],
+                'minutes_range': [min(minutes), max(minutes)],
+                'sample_size': len(correlation_data)
+            }
+
+            return {
+                'correlation_data': correlation_data,
+                'statistics': statistics,
+                'metadata': {
+                    'academic_year': academic_year,
+                    'students_with_grades_only': num_students,
+                    'students_with_time_data': num_students,
+                    'total_data_points': num_students,
+                    'method': 'demo_synthetic_data',
+                    'is_demo': True,
+                    'demo_note': 'This is synthetic demo data. Real correlation will be available once student ID mapping is resolved.'
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Error generating demo correlation data: {e}")
+            return {
+                'error': f'Error generating demo data: {str(e)}',
+                'correlation_data': [],
+                'statistics': {},
+                'metadata': {
+                    'academic_year': academic_year,
+                    'students_with_grades_only': 0,
+                    'students_with_time_data': 0,
+                    'total_data_points': 0,
+                    'is_demo': True
+                }
+            }
+
 
 def extract_student_id_from_actor_account_name(actor_account_name: str) -> Optional[str]:
     """
@@ -3349,7 +4299,7 @@ class PastYearGradeAnalytics(CachedModelMixin, models.Model):
     @classmethod
     def get_grade_performance_summary_stats(cls) -> Dict[str, Any]:
         """
-        Get summary statistics for grade performance across all periods with Redis caching.
+        Get summary statistics for grade performance trends with Redis caching.
         """
         cache_key = generate_cache_key('grade_performance_summary_stats')
 
@@ -3881,3 +4831,28 @@ class PastYearGradeAnalytics(CachedModelMixin, models.Model):
         except Exception as e:
             logger.error(f"Error in debug_check_name_column_values: {str(e)}")
             return {'error': str(e)}
+
+    @classmethod
+    def get_time_spent_vs_grade_correlation(cls, academic_year: int) -> Dict[str, Any]:
+        """
+        Get time spent vs grade correlation data for a specific academic year with Redis caching.
+
+        This method provides correlation analysis between student time spent on platform
+        and their academic performance (grades) for visualization in scatter plots.
+
+        Args:
+            academic_year (int): The academic year to analyze (e.g., 2024 for 2024年度)
+
+        Returns:
+            Dict containing correlation data, statistics, and metadata
+        """
+        cache_key = generate_cache_key('time_spent_grade_correlation', academic_year)
+
+        def fetch_correlation_data():
+            return PastYearStudentGrades.get_time_spent_vs_grade_correlation(academic_year)
+
+        return cls.get_cached_data(
+            cache_key,
+            fetch_correlation_data,
+            ttl=CACHE_CONFIG['DEFAULT_TTL']
+        )
