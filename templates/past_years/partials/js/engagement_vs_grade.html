@@ -1,0 +1,486 @@
+{% load i18n %}
+
+<!-- Engagement vs Grade Analysis JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart variables
+    let engagementVsGradeChart;
+    let engagementVsGradeData = null;
+    let currentEngagementMetric = 'activities_hours'; // Default metric
+
+    // API endpoint for engagement vs grade data
+    const apiUrl = '{% url "past_years:api_engagement_vs_grade" %}';
+
+    // Chart translations
+    const engagementTranslations = {
+        highEngagement: "{% trans 'High Engagement (Top 25%)' %}",
+        lowEngagement: "{% trans 'Low Engagement (Bottom 25%)' %}",
+        academicYear: "{% trans 'Academic Year' %}",
+        averageGrade: "{% trans 'Average Grade' %}",
+        points: "{% trans 'points' %}",
+        students: "{% trans 'students' %}",
+        engagementScore: "{% trans 'Engagement Score' %}"
+    };
+
+    // Engagement metric configurations
+    const engagementMetrics = {
+        'activities_hours': {
+            name: '{% trans "Activities × Hours" %}',
+            short: '{% trans "Activities × Hours" %}',
+            calculate: (student) => student.total_activities * student.total_hours,
+            unit: '{% trans "Activity-Hours" %}',
+            tooltip: '{% trans "Activities × Hours" %}'
+        },
+        'activities': {
+            name: '{% trans "Activities Only" %}',
+            short: '{% trans "Activities" %}',
+            calculate: (student) => student.total_activities,
+            unit: '{% trans "Activities" %}',
+            tooltip: '{% trans "Total Activities" %}'
+        },
+        'hours': {
+            name: '{% trans "Hours Only" %}',
+            short: '{% trans "Hours" %}',
+            calculate: (student) => student.total_hours,
+            unit: '{% trans "Hours" %}',
+            tooltip: '{% trans "Total Hours" %}'
+        }
+    };
+
+    function createEngagementVsGradeChart(data, metric = 'activities_hours') {
+        console.log('Creating engagement vs grade chart with metric:', metric, 'data:', data);
+
+        // Clear any existing content first
+        const chartContainer = document.getElementById('engagementVsGradeChart');
+
+        if (!data || !data.yearly_data || data.yearly_data.length === 0) {
+            // Show no data message
+            chartContainer.innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-emotion-sad-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "No Engagement Data Available" %}</p>
+                    <p class="text-sm">{% trans "No students found with both engagement and grade data for analysis" %}</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Clear the container before creating new chart
+        chartContainer.innerHTML = '';
+
+        // Use the data directly since it was calculated with the correct metric by the backend
+        const yearlyData = data.yearly_data;
+        const labels = yearlyData.map(item => item.year_display || `${item.academic_year}年度`);
+        const metricConfig = engagementMetrics[metric];
+
+        // Prepare high engagement data
+        const highEngagementData = yearlyData.map((item, index) => ({
+            x: labels[index],
+            y: item.high_engagement_avg_grade || 0,
+            studentCount: item.high_engagement_count || 0,
+            engagementScore: item.high_engagement_avg_score || 0,
+            academicYear: item.academic_year,
+            metric: metric,
+            metricName: metricConfig.name
+        }));
+
+        // Prepare low engagement data
+        const lowEngagementData = yearlyData.map((item, index) => ({
+            x: labels[index],
+            y: item.low_engagement_avg_grade || 0,
+            studentCount: item.low_engagement_count || 0,
+            engagementScore: item.low_engagement_avg_score || 0,
+            academicYear: item.academic_year,
+            metric: metric,
+            metricName: metricConfig.name
+        }));
+
+        const options = {
+            series: [
+                {
+                    name: engagementTranslations.highEngagement,
+                    data: highEngagementData,
+                    color: '#10B981' // Green for high engagement
+                },
+                {
+                    name: engagementTranslations.lowEngagement,
+                    data: lowEngagementData,
+                    color: '#F59E0B' // Orange for low engagement
+                }
+            ],
+            chart: {
+                type: 'line',
+                height: 500,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                }
+            },
+            title: {
+                text: `{% trans "Engagement vs Grade Performance Analysis" %} (${metricConfig.name})`,
+                align: 'left'
+            },
+            subtitle: {
+                text: `{% trans "Comparison of average grades between high and low engagement student groups using" %} ${metricConfig.name.toLowerCase()}`,
+                align: 'left',
+                style: {
+                    fontSize: '14px',
+                    color: '#6B7280'
+                }
+            },
+            xaxis: {
+                type: 'category',
+                categories: labels,
+                title: {
+                    text: engagementTranslations.academicYear
+                }
+            },
+            yaxis: {
+                title: {
+                    text: engagementTranslations.averageGrade
+                },
+                min: 0,
+                max: 100,
+                labels: {
+                    formatter: function(value) {
+                        return value.toFixed(1);
+                    }
+                }
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 3
+            },
+            colors: ['#10B981', '#F59E0B'],
+            grid: {
+                borderColor: '#e7e7e7',
+                row: {
+                    colors: ['#f3f3f3', 'transparent'],
+                    opacity: 0.5
+                }
+            },
+            markers: {
+                size: 6,
+                strokeColors: '#fff',
+                strokeWidth: 2,
+                hover: {
+                    size: 8
+                }
+            },
+            tooltip: {
+                shared: true,
+                intersect: false,
+                custom: function({series, seriesIndex, dataPointIndex, w}) {
+                    const data = w.config.series[seriesIndex].data[dataPointIndex];
+                    const seriesName = w.config.series[seriesIndex].name;
+                    const academicYear = data.x || 'N/A';
+
+                    // Safely handle potentially undefined or non-numeric values
+                    const gradeValue = data.y;
+                    const grade = (typeof gradeValue === 'number' && !isNaN(gradeValue)) ? gradeValue.toFixed(1) : '0.0';
+
+                    const studentCount = data.studentCount || 0;
+
+                    const engagementValue = data.engagementScore;
+                    const engagementScore = (typeof engagementValue === 'number' && !isNaN(engagementValue)) ?
+                        engagementValue.toFixed(1) : '0.0';
+
+                    const metricName = data.metricName || metricConfig.name;
+                    const academicYearNum = data.academicYear || 'N/A';
+
+                    const color = seriesIndex === 0 ? '#10B981' : '#F59E0B';
+
+                    return `
+                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-[220px]">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-3 h-3 rounded-full" style="background-color: ${color}"></div>
+                                <span class="font-semibold text-gray-900 dark:text-white">${seriesName}</span>
+                            </div>
+                            <div class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                                <div><strong>${engagementTranslations.academicYear}:</strong> ${academicYear}</div>
+                                <div><strong>${engagementTranslations.averageGrade}:</strong> ${grade} ${engagementTranslations.points}</div>
+                                <div><strong>${engagementTranslations.students}:</strong> ${studentCount}</div>
+                                <div><strong>{% trans "Engagement" %} (${metricName}):</strong> ${engagementScore}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            legend: {
+                position: 'top',
+                horizontalAlign: 'right'
+            }
+        };
+
+        // Destroy existing chart if it exists
+        if (engagementVsGradeChart) {
+            engagementVsGradeChart.destroy();
+        }
+
+        try {
+            engagementVsGradeChart = new ApexCharts(chartContainer, options);
+            engagementVsGradeChart.render().then(() => {
+                console.log('Engagement vs grade chart rendered successfully');
+                updateEngagementVsGradeStatistics(data.summary_stats, metric);
+            }).catch((error) => {
+                console.error('Error rendering engagement vs grade chart:', error);
+                chartContainer.innerHTML = `
+                    <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <i class="ri-error-warning-line text-4xl mb-4"></i>
+                        <p class="text-lg font-medium mb-2">{% trans "Chart Rendering Error" %}</p>
+                        <p class="text-sm">{% trans "Unable to display the engagement vs grade chart. Please try refreshing the page." %}</p>
+                    </div>
+                `;
+            });
+        } catch (error) {
+            console.error('Error creating engagement vs grade chart:', error);
+            chartContainer.innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-error-warning-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "Chart Creation Error" %}</p>
+                    <p class="text-sm">{% trans "Unable to create the engagement vs grade chart. Please try refreshing the page." %}</p>
+                </div>
+            `;
+        }
+    }
+
+    function updateEngagementVsGradeStatistics(summaryStats, metric = 'activities_hours') {
+        if (!summaryStats) return;
+
+        console.log('Updating engagement vs grade statistics with:', summaryStats, 'metric:', metric);
+
+        // Convert values to numbers to handle Django Decimal objects
+        const avgGradeDiff = parseFloat(summaryStats.average_grade_difference || 0);
+        const totalStudents = parseInt(summaryStats.total_students_analyzed || 0);
+        const yearsCount = summaryStats.years_analyzed ? summaryStats.years_analyzed.length : 0;
+
+        // Calculate overall averages from yearly data if available
+        let overallHighEngagementAvg = 0;
+        let overallLowEngagementAvg = 0;
+
+        if (engagementVsGradeData && engagementVsGradeData.yearly_data && engagementVsGradeData.yearly_data.length > 0) {
+            const yearlyData = engagementVsGradeData.yearly_data;
+
+            // Calculate weighted averages based on student counts
+            let totalHighEngagementGradeSum = 0;
+            let totalHighEngagementStudents = 0;
+            let totalLowEngagementGradeSum = 0;
+            let totalLowEngagementStudents = 0;
+
+            yearlyData.forEach(year => {
+                if (year.high_engagement_avg_grade && year.high_engagement_count) {
+                    totalHighEngagementGradeSum += year.high_engagement_avg_grade * year.high_engagement_count;
+                    totalHighEngagementStudents += year.high_engagement_count;
+                }
+                if (year.low_engagement_avg_grade && year.low_engagement_count) {
+                    totalLowEngagementGradeSum += year.low_engagement_avg_grade * year.low_engagement_count;
+                    totalLowEngagementStudents += year.low_engagement_count;
+                }
+            });
+
+            if (totalHighEngagementStudents > 0) {
+                overallHighEngagementAvg = totalHighEngagementGradeSum / totalHighEngagementStudents;
+            }
+            if (totalLowEngagementStudents > 0) {
+                overallLowEngagementAvg = totalLowEngagementGradeSum / totalLowEngagementStudents;
+            }
+        }
+
+        // Update statistics cards with correct values
+        document.getElementById('highEngagementAvg').textContent = overallHighEngagementAvg.toFixed(1);
+        document.getElementById('lowEngagementAvg').textContent = overallLowEngagementAvg.toFixed(1);
+        document.getElementById('performanceGap').textContent = avgGradeDiff.toFixed(1) + ' pts';
+        document.getElementById('yearsAnalyzedEngagement').textContent = yearsCount;
+    }
+
+    function switchEngagementMetric(newMetric) {
+        if (newMetric === currentEngagementMetric) {
+            return;
+        }
+
+        console.log('Switching engagement metric from', currentEngagementMetric, 'to', newMetric);
+        currentEngagementMetric = newMetric;
+
+        // Update UI elements
+        updateToggleButtons(newMetric);
+
+        // Reload data from backend with new metric
+        loadEngagementVsGradeData();
+    }
+
+    function updateToggleButtons(activeMetric) {
+        const buttons = {
+            'activities_hours': document.getElementById('activitiesHoursToggle'),
+            'activities': document.getElementById('activitiesToggle'),
+            'hours': document.getElementById('hoursToggle')
+        };
+
+        // Reset all buttons
+        Object.values(buttons).forEach(btn => {
+            if (btn) {
+                btn.classList.remove('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+                btn.classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+            }
+        });
+
+        // Activate selected button
+        const activeButton = buttons[activeMetric];
+        if (activeButton) {
+            activeButton.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+            activeButton.classList.add('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+        }
+    }
+
+    function loadEngagementVsGradeData() {
+        // Show loading state
+        const chartContainer = document.getElementById('engagementVsGradeChart');
+        chartContainer.innerHTML = `
+            <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                <i class="ri-loader-4-line text-4xl animate-spin mb-4"></i>
+                <p class="text-lg font-medium mb-2">{% trans "Loading Engagement Analysis..." %}</p>
+                <p class="text-sm">{% trans "Calculating engagement scores and comparing with grade performance" %}</p>
+                <p class="text-xs mt-2 text-primary-600 dark:text-primary-400">{% trans "Using" %}: ${engagementMetrics[currentEngagementMetric].name}</p>
+            </div>
+        `;
+
+        // Construct API URL with engagement metric parameter
+        const urlParams = new URLSearchParams({
+            engagement_metric: currentEngagementMetric
+        });
+        const apiUrlWithParams = `${apiUrl}?${urlParams.toString()}`;
+
+        // Fetch engagement vs grade data via AJAX
+        console.log('Fetching engagement vs grade data from:', apiUrlWithParams, 'with metric:', currentEngagementMetric);
+
+        fetch(apiUrlWithParams, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            console.log('Engagement vs grade API response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Engagement vs grade API response data:', data);
+            engagementVsGradeData = data;
+
+            if (data.success) {
+                // Ensure we're using the data that was calculated with the correct metric
+                createEngagementVsGradeChart(data, data.engagement_metric_used || currentEngagementMetric);
+            } else {
+                // Show error message
+                document.getElementById('engagementVsGradeChart').innerHTML = `
+                    <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <i class="ri-error-warning-line text-4xl mb-4"></i>
+                        <p class="text-lg font-medium mb-2">{% trans "No Data Found" %}</p>
+                        <p class="text-sm">${data.error || '{% trans "No engagement vs grade data available" %}'}</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching engagement vs grade data:', error);
+            document.getElementById('engagementVsGradeChart').innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-error-warning-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "Error Loading Data" %}</p>
+                    <p class="text-sm">{% trans "Unable to load engagement vs grade data. Please try again." %}</p>
+                    <p class="text-xs mt-2 text-red-500">${error.message}</p>
+                </div>
+            `;
+        });
+    }
+
+    // Toggle button event listeners
+    document.getElementById('activitiesHoursToggle').addEventListener('click', () => {
+        switchEngagementMetric('activities_hours');
+    });
+
+    document.getElementById('activitiesToggle').addEventListener('click', () => {
+        switchEngagementMetric('activities');
+    });
+
+    document.getElementById('hoursToggle').addEventListener('click', () => {
+        switchEngagementMetric('hours');
+    });
+
+    // Refresh button handler
+    document.getElementById('refreshEngagementVsGradeBtn').addEventListener('click', function() {
+        const btn = this;
+        const originalContent = btn.innerHTML;
+
+        // Show loading state
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ri-loader-4-line animate-spin mr-2"></i>{% trans "Refreshing..." %}';
+
+        // Reload data
+        loadEngagementVsGradeData();
+
+        // Restore button after delay
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }, 2000);
+    });
+
+    // Explanation toggle functionality
+    const engagementExplanationToggleBtn = document.getElementById('toggleEngagementVsGradeExplanation');
+    const engagementExplanationContent = document.getElementById('engagementVsGradeExplanationContent');
+    const engagementExplanationToggleIcon = document.getElementById('engagementVsGradeExplanationToggleIcon');
+
+    if (engagementExplanationToggleBtn && engagementExplanationContent) {
+        engagementExplanationToggleBtn.addEventListener('click', function() {
+            const isHidden = engagementExplanationContent.classList.contains('hidden');
+
+            if (isHidden) {
+                // Show explanation
+                engagementExplanationContent.classList.remove('hidden');
+                engagementExplanationToggleIcon.style.transform = 'rotate(180deg)';
+            } else {
+                // Hide explanation
+                engagementExplanationContent.classList.add('hidden');
+                engagementExplanationToggleIcon.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Initialize toggle buttons and load data
+    updateToggleButtons(currentEngagementMetric);
+
+    // Initialize on page load
+    setTimeout(() => {
+        loadEngagementVsGradeData();
+    }, 500); // Small delay to ensure other charts load first
+});
+</script>

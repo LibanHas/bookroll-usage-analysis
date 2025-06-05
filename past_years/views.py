@@ -23,7 +23,8 @@ from .models import (
     PastYearGradeAnalytics,
     clear_all_past_years_cache
 )
-from .analytics import get_time_spent_by_school_vs_home, clear_time_spent_cache
+from .analytics import get_time_spent_by_school_vs_home, clear_time_spent_cache, get_engagement_vs_grade_performance
+from .utils import get_course_grades_by_year, get_available_academic_years_for_courses, clear_course_grades_cache
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +42,37 @@ class PastYearsOverviewView(LoginRequiredMixin, TemplateView):
         # If no years found in categories, fall back to default range
         if not available_years:
             current_year = datetime.now().year
-            start_year = 2019
+            start_year = 2018
             end_year = current_year - 1
             available_years = list(range(start_year, end_year + 1))
             available_years.reverse()
             logger.info(f"No years found in categories, using fallback years: {available_years}")
+
+        # Get course grades data
+        try:
+            # Get available years for course grades (might be different from other data)
+            course_available_years = get_available_academic_years_for_courses(
+                start_year=2018,
+                end_year=datetime.now().year
+            )
+            course_available_years.sort(reverse=True)  # Most recent first
+
+            # Get course grades for the most recent year with data (for initial display)
+            initial_course_year = course_available_years[0] if course_available_years else None
+            if initial_course_year:
+                initial_course_grades_data = get_course_grades_by_year(initial_course_year)
+                course_grades_chart_data = json.dumps(initial_course_grades_data.get('courses', []))
+            else:
+                initial_course_grades_data = {'courses': [], 'summary_stats': {}, 'metadata': {}}
+                course_grades_chart_data = '[]'
+
+            logger.info(f"Found course data for {len(course_available_years)} years: {course_available_years}")
+
+        except Exception as e:
+            logger.error(f"Error fetching course grades data: {str(e)}")
+            course_available_years = []
+            initial_course_grades_data = {'courses': [], 'summary_stats': {}, 'metadata': {}}
+            course_grades_chart_data = '[]'
 
         # Get log analytics data
         try:
@@ -176,8 +203,12 @@ class PastYearsOverviewView(LoginRequiredMixin, TemplateView):
             time_spent_yearly_chart_data = '[]'
             time_spent_monthly_chart_data = '[]'
 
+        # Update context with course grades data
         context.update({
             'available_years': available_years,
+            'course_available_years': course_available_years,
+            'initial_course_grades_data': initial_course_grades_data,
+            'course_grades_chart_data': course_grades_chart_data,
             'page_title': _('Past Years Analysis'),
             'page_description': _('Historical data analysis from previous academic years'),
             'monthly_log_data': monthly_log_data,
@@ -465,14 +496,14 @@ class YearStudentsView(LoginRequiredMixin, TemplateView):
             }
 
             # Cache the data with different TTL based on data freshness needs
-            # Main analytics: 2 hours (most expensive to generate)
-            cache.set(main_analytics_cache_key, student_analytics, 7200)
-            # Chart data: 2 hours
-            cache.set(chart_data_cache_key, chart_data, 7200)
-            # Engagement data: 2 hours
-            cache.set(engagement_cache_key, engagement_categories, 7200)
-            # Courses context: 1 hour (less expensive to regenerate)
-            cache.set(courses_context_cache_key, courses_context, 3600)
+            # Main analytics: 24 hours (most expensive to generate)
+            cache.set(main_analytics_cache_key, student_analytics, 86400)
+            # Chart data: 24 hours
+            cache.set(chart_data_cache_key, chart_data, 86400)
+            # Engagement data: 24 hours
+            cache.set(engagement_cache_key, engagement_categories, 86400)
+            # Courses context: 24 hours (less expensive to regenerate)
+            cache.set(courses_context_cache_key, courses_context, 86400)
 
             logger.info(f"CACHE SET: Cached student analytics data for year {year} (show_all_activities={show_all_activities})")
 
@@ -575,19 +606,33 @@ class ClearCacheView(LoginRequiredMixin, View):
             # Also clear time spent analysis cache
             time_spent_cache_cleared = clear_time_spent_cache()
 
+            # Also clear course grades cache
+            course_grades_cache_cleared = clear_course_grades_cache()
+
             if result['success']:
                 logger.info(f"Cache cleared successfully: {result['message']}")
                 if time_spent_cache_cleared:
                     logger.info("Time spent analysis cache also cleared successfully")
+                if course_grades_cache_cleared:
+                    logger.info("Course grades cache also cleared successfully")
+
+                cache_cleared_message = result['message']
+                if time_spent_cache_cleared and course_grades_cache_cleared:
+                    cache_cleared_message += ' (including time spent analysis and course grades caches)'
+                elif time_spent_cache_cleared:
+                    cache_cleared_message += ' (including time spent analysis cache)'
+                elif course_grades_cache_cleared:
+                    cache_cleared_message += ' (including course grades cache)'
 
                 return JsonResponse({
                     'success': True,
-                    'message': result['message'] + (' (including time spent analysis cache)' if time_spent_cache_cleared else ''),
+                    'message': cache_cleared_message,
                     'details': {
                         'method': result['method'],
                         'keys_cleared': result['keys_cleared'],
                         'patterns_cleared': result.get('patterns_cleared', []),
-                        'time_spent_cache_cleared': time_spent_cache_cleared
+                        'time_spent_cache_cleared': time_spent_cache_cleared,
+                        'course_grades_cache_cleared': course_grades_cache_cleared
                     }
                 })
             else:
@@ -632,54 +677,190 @@ class ClearCacheView(LoginRequiredMixin, View):
 
 
 class CourseGradeDistributionView(LoginRequiredMixin, View):
-    """AJAX view to get grade distribution data for a specific course."""
+    """API endpoint for getting detailed grade distribution for a specific course."""
 
     def get(self, request, year, course_id):
-        """Return grade distribution data for a course in JSON format."""
+        """Get detailed grade distribution for a specific course in a specific year."""
         try:
-            # Create cache key for this specific course distribution
-            cache_key = f'course_grade_distribution_{year}_{course_id}'
-
-            # Try to get cached data first
-            cached_distribution = cache.get(cache_key)
-
-            if cached_distribution:
-                logger.info(f"CACHE HIT: Using cached grade distribution for course {course_id} in year {year}")
-                return JsonResponse({
-                    'success': True,
-                    'data': cached_distribution,
-                    'cached': True
-                })
-
-            logger.info(f"CACHE MISS: Generating fresh grade distribution for course {course_id} in year {year}")
-
-            # Get the distribution data
-            distribution_data = PastYearCourseCategory.get_course_grade_distribution(
-                course_id=course_id,
-                academic_year=year
+            # Get the individual grade records for this course
+            grade_distribution_data = PastYearGradeAnalytics.get_individual_grades_for_course(
+                academic_year=int(year),
+                course_id=course_id
             )
 
-            if 'error' in distribution_data:
+            if grade_distribution_data and 'individual_grades' in grade_distribution_data:
+                # Convert decimal grades to regular floats for JSON serialization
+                grades_list = []
+                for grade in grade_distribution_data['individual_grades']:
+                    student_id, grade_value, created_at, course_name, grade_file_name = grade
+                    grades_list.append({
+                        'student_id': student_id,
+                        'grade': float(grade_value),
+                        'created_at': created_at.isoformat() if created_at else None,
+                        'course_name': course_name,
+                        'grade_file_name': grade_file_name
+                    })
+
+                distribution_data = grade_distribution_data.get('distribution_data', [])
+                stats = grade_distribution_data.get('stats', {})
+
+                return JsonResponse({
+                    'success': True,
+                    'individual_grades': grades_list,
+                    'distribution_data': distribution_data,
+                    'stats': stats,
+                    'course_id': course_id,
+                    'academic_year': year
+                })
+            else:
                 return JsonResponse({
                     'success': False,
-                    'error': distribution_data['error']
-                }, status=404)
-
-            # Cache the distribution data for 1 hour
-            # Course-specific distributions are less expensive to regenerate
-            cache.set(cache_key, distribution_data, 3600)
-
-            logger.info(f"CACHE SET: Cached grade distribution for course {course_id} in year {year}")
-
-            return JsonResponse({
-                'success': True,
-                'data': distribution_data,
-                'cached': False
-            })
+                    'error': f'No grade data found for course {course_id} in year {year}',
+                    'course_id': course_id,
+                    'academic_year': year
+                })
 
         except Exception as e:
-            logger.error(f"Error fetching distribution for course {course_id}: {str(e)}")
+            logger.error(f"Error getting grade distribution for course {course_id} in year {year}: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': str(e),
+                'course_id': course_id,
+                'academic_year': year
+            }, status=500)
+
+
+class CourseGradesDataView(LoginRequiredMixin, View):
+    """API endpoint for getting course grades data for a specific academic year."""
+
+    def get(self, request):
+        """Get course grades data for a specific academic year via AJAX."""
+        try:
+            academic_year = request.GET.get('year')
+            if not academic_year:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Academic year parameter is required'
+                }, status=400)
+
+            try:
+                academic_year = int(academic_year)
+            except ValueError:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid academic year format'
+                }, status=400)
+
+            # Get course grades data for the specified year
+            course_grades_data = get_course_grades_by_year(academic_year)
+
+            if course_grades_data and course_grades_data.get('courses'):
+                return JsonResponse({
+                    'success': True,
+                    'courses': course_grades_data['courses'],
+                    'summary_stats': course_grades_data['summary_stats'],
+                    'metadata': course_grades_data['metadata'],
+                    'academic_year': academic_year
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'No course data found for academic year {academic_year}',
+                    'academic_year': academic_year,
+                    'courses': [],
+                    'summary_stats': {
+                        'total_courses': 0,
+                        'total_students': 0,
+                        'total_grades': 0,
+                        'overall_average': 0
+                    }
+                })
+
+        except Exception as e:
+            logger.error(f"Error getting course grades data: {str(e)}")
             return JsonResponse({
                 'success': False,
                 'error': str(e)
+            }, status=500)
+
+
+class EngagementVsGradeDataView(LoginRequiredMixin, View):
+    """API endpoint for getting engagement vs grade performance data."""
+
+    def get(self, request):
+        """Get engagement vs grade performance data via AJAX."""
+        try:
+            # Import here to avoid circular imports
+            from .analytics import get_engagement_vs_grade_performance
+
+            start_year = request.GET.get('start_year', 2019)
+            end_year = request.GET.get('end_year')
+            engagement_metric = request.GET.get('engagement_metric', 'activities_hours')
+
+            try:
+                start_year = int(start_year)
+                if end_year:
+                    end_year = int(end_year)
+                else:
+                    end_year = datetime.now().year - 1
+            except ValueError:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid year format'
+                }, status=400)
+
+            # Validate engagement metric
+            valid_metrics = ['activities_hours', 'activities', 'hours']
+            if engagement_metric not in valid_metrics:
+                engagement_metric = 'activities_hours'
+
+            logger.info(f"Fetching engagement vs grade data for years {start_year}-{end_year}, metric: {engagement_metric}")
+
+            # Get engagement vs grade performance data
+            engagement_data = get_engagement_vs_grade_performance(
+                start_year=start_year,
+                end_year=end_year,
+                engagement_metric=engagement_metric,
+                cache_timeout=7200  # 2 hours cache
+            )
+
+            if engagement_data and engagement_data.get('yearly_data'):
+                return JsonResponse({
+                    'success': True,
+                    'yearly_data': engagement_data['yearly_data'],
+                    'summary_stats': engagement_data['summary_stats'],
+                    'metadata': engagement_data['metadata'],
+                    'years_processed': f"{start_year}-{end_year}",
+                    'engagement_metric_used': engagement_metric,
+                    'total_years_with_data': len(engagement_data['yearly_data'])
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'No engagement vs grade data found for years {start_year}-{end_year} with metric {engagement_metric}',
+                    'years_requested': f"{start_year}-{end_year}",
+                    'engagement_metric_requested': engagement_metric,
+                    'yearly_data': [],
+                    'summary_stats': {
+                        'total_students_analyzed': 0,
+                        'total_high_engagement': 0,
+                        'total_low_engagement': 0,
+                        'average_engagement_difference': 0,
+                        'average_grade_difference': 0
+                    }
+                })
+
+        except Exception as e:
+            logger.error(f"Error getting engagement vs grade data: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': str(e),
+                'yearly_data': [],
+                'summary_stats': {
+                    'total_students_analyzed': 0,
+                    'total_high_engagement': 0,
+                    'total_low_engagement': 0,
+                    'average_engagement_difference': 0,
+                    'average_grade_difference': 0
+                }
             }, status=500)

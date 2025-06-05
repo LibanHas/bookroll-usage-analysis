@@ -16,15 +16,6 @@
                 </div>
                 <!-- Header Right -->
                 <div class="flex items-center gap-5 md:gap-3">
-                    <div class="w-56 md:w-72 leading-none text-sm relative text-gray-900 dark:text-dark-text hidden sm:block">
-                        <span class="absolute top-1/2 -translate-y-[40%] left-3.5">
-                            <i class="ri-search-line text-gray-900 dark:text-dark-text text-[14px]"></i>
-                        </span>
-                        <input type="text" name="header-search" id="header-search" placeholder="Search..." class="form-input border-gray-200 dark:border-dark-border pl-[36px] pr-12 py-4 rounded-full dk-theme-card-square">
-                        <span class="absolute top-1/2 -translate-y-[40%] right-4 hidden lg:flex lg:items-center lg:gap-0.5 select-none">
-                            <i class="ri-command-line text-[12px]"></i><span>+</span><span>k</span>
-                        </span>
-                    </div>
                     <!-- Dark Light Button -->
                     <button type="button" class="themeMode size-8 hidden md:flex-center hover:bg-gray-200 dark:hover:bg-dark-icon rounded-md dk-theme-card-square" onclick="toggleThemeMode()">
                         <i class="ri-contrast-2-line text-[22px] group-[.dark]:before:!content-['\f1bf']"></i>
@@ -339,6 +330,44 @@
     </div>
     <!-- End App Settings Sidebar -->
     <div class="main-content group-data-[sidebar-size=lg]:xl:ml-[calc(theme('spacing.app-menu')_+_16px)] group-data-[sidebar-size=sm]:xl:ml-[calc(theme('spacing.app-menu-sm')_+_16px)] px-4 group-data-[theme-width=box]:xl:px-0 ac-transition">
+        <!-- Django Messages -->
+        {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                        <div class="flex items-center justify-between p-4 mb-4 text-sm rounded-lg
+                            {% if message.tags == 'success' %}text-green-800 bg-green-50 dark:bg-gray-800 dark:text-green-400{% endif %}
+                            {% if message.tags == 'error' %}text-red-800 bg-red-50 dark:bg-gray-800 dark:text-red-400{% endif %}
+                            {% if message.tags == 'warning' %}text-yellow-800 bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300{% endif %}
+                            {% if message.tags == 'info' %}text-blue-800 bg-blue-50 dark:bg-gray-800 dark:text-blue-400{% endif %}">
+                            <div class="flex items-center  btn-secondary-solid">
+                                {% if message.tags == 'success' %}
+                                    <i class="ri-check-line mr-2 text-success"></i>
+                                {% elif message.tags == 'error' %}
+                                    <i class="ri-error-warning-line mr-2 text-warning"></i>
+                                {% elif message.tags == 'warning' %}
+                                    <i class="ri-alert-line mr-2 text-warning"></i>
+                                {% else %}
+                                    <i class="ri-information-line mr-2"></i>
+                                {% endif %}
+                                <span>{{ message }}</span>
+                            </div>
+                            <button type="button" class="ml-auto -mx-1.5 -my-1.5 rounded-lg focus:ring-2 p-1.5 inline-flex h-8 w-8
+                                {% if message.tags == 'success' %}text-green-500 hover:bg-green-200 focus:ring-green-400 dark:text-green-400 dark:hover:bg-gray-700{% endif %}
+                                {% if message.tags == 'error' %}text-red-500 hover:bg-red-200 focus:ring-red-400 dark:text-red-400 dark:hover:bg-gray-700{% endif %}
+                                {% if message.tags == 'warning' %}text-yellow-500 hover:bg-yellow-200 focus:ring-yellow-400 dark:text-yellow-300 dark:hover:bg-gray-700{% endif %}
+                                {% if message.tags == 'info' %}text-blue-500 hover:bg-blue-200 focus:ring-blue-400 dark:text-blue-400 dark:hover:bg-gray-700{% endif %}"
+                                data-dismiss-target="#alert-{{ forloop.counter }}" aria-label="Close">
+                                <span class="sr-only">Close</span>
+                                <i class="ri-close-line"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <!-- End Django Messages -->
+
         {% block main_content %}{% endblock %}
     </div>
 

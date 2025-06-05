@@ -1731,8 +1731,8 @@ class CourseCategory(models.Model):
                     'created': course_created
                 })
 
-        # Cache the result for 30 minutes to reduce database load
-        cache.set(cache_key, hierarchy, 1800)  # 30 minutes = 1800 seconds
+        # Cache the result for 24 hours to reduce database load
+        cache.set(cache_key, hierarchy, 86400)  # 24 hours = 86400 seconds
 
         return hierarchy
 

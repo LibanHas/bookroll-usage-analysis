@@ -20,6 +20,10 @@ urlpatterns = [
     # Cache management
     path('clear-cache/', views.ClearCacheView.as_view(), name='clear_cache'),
 
+    # API endpoints
+    path('api/course-grades/', views.CourseGradesDataView.as_view(), name='api_course_grades'),
+    path('api/engagement-vs-grade/', views.EngagementVsGradeDataView.as_view(), name='api_engagement_vs_grade'),
+
     # Academic year specific pages (generic patterns)
     path('<int:year>/', views.YearAnalysisView.as_view(), name='year_detail'),
     path('<int:year>/courses/', views.YearCoursesView.as_view(), name='year_courses'),

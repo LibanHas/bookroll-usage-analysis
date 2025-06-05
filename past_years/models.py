@@ -67,11 +67,11 @@ def get_clickhouse_db_for_date_range(start_date: str = None, end_date: str = Non
 
 # Cache configuration for historical data
 CACHE_CONFIG = {
-    'DEFAULT_TTL': 3600 * 6,  # 6 hours for most data
-    'LONG_TTL': 3600 * 24,    # 24 hours for stable historical data
-    'SHORT_TTL': 3600,        # 1 hour for frequently changing data
-    'LOG_ANALYTICS_TTL': 3600 * 12,  # 12 hours for log analytics
-    'COURSE_DATA_TTL': 3600 * 8,     # 8 hours for course data
+    'DEFAULT_TTL': 3600 * 24,  # 24 hours for most data
+    'LONG_TTL': 3600 * 24,     # 24 hours for stable historical data
+    'SHORT_TTL': 3600 * 24,    # 24 hours for frequently changing data (increased from 1 hour)
+    'LOG_ANALYTICS_TTL': 3600 * 24,  # 24 hours for log analytics (increased from 12 hours)
+    'COURSE_DATA_TTL': 3600 * 24,    # 24 hours for course data (increased from 8 hours)
 }
 
 def generate_cache_key(*args, **kwargs) -> str:
@@ -678,8 +678,8 @@ class PastYearCourseCategory(CachedModelMixin, models.Model):
 
             logger.info(f"Found {len(non_student_user_ids)} non-students enrolled in academic year {academic_year} courses")
 
-            # Cache for 1 hour
-            cache.set(cache_key, non_student_user_ids, 3600)
+            # Cache for 24 hours (86400 seconds)
+            cache.set(cache_key, non_student_user_ids, 86400)
 
             return non_student_user_ids
 

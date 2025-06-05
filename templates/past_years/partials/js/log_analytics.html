@@ -1,0 +1,166 @@
+{% load i18n %}
+
+<!-- Log Analytics JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart data from Django context (properly escaped)
+    let monthlyData, yearlyData;
+    try {
+        monthlyData = JSON.parse('{{ monthly_chart_data|escapejs }}');
+        yearlyData = JSON.parse('{{ yearly_chart_data|escapejs }}');
+    } catch(e) {
+        console.error('Error parsing chart data:', e);
+        monthlyData = [];
+        yearlyData = [];
+    }
+
+    // Translations
+    const translations = {
+        monthlyLogCounts: "{% trans 'Monthly Log Counts' %}",
+        yearlyLogCounts: "{% trans 'Yearly Log Counts' %}",
+        logCountsByMonth: "{% trans 'Log Counts by Month' %}",
+        logCountsByYear: "{% trans 'Log Counts by Academic Year' %}"
+    };
+
+    // Chart configuration
+    let currentView = 'yearly';
+    let chart;
+
+    function createChart(data, viewType) {
+        const labels = data.map(item => {
+            if (viewType === 'monthly') {
+                return item.period; // YYYY-MM format
+            } else {
+                return item.period_display || `${item.period}年度`; // Academic year format
+            }
+        });
+
+        const counts = data.map(item => item.count);
+
+        const options = {
+            series: [{
+                name: viewType === 'monthly' ? translations.monthlyLogCounts : translations.yearlyLogCounts,
+                data: counts.map((count, index) => ({
+                    x: labels[index],
+                    y: count
+                }))
+            }],
+            chart: {
+                type: 'line',
+                height: 500,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                }
+            },
+            title: {
+                text: viewType === 'monthly' ? translations.logCountsByMonth : translations.logCountsByYear,
+                align: 'left'
+            },
+            xaxis: {
+                type: viewType === 'monthly' ? 'datetime' : 'category',
+                categories: labels,
+                title: {
+                    text: viewType === 'monthly' ? '{% trans "Month" %}' : '{% trans "Academic Year" %}'
+                }
+            },
+            yaxis: {
+                title: {
+                    text: '{% trans "Log Count" %}'
+                },
+                labels: {
+                    formatter: function(value) {
+                        return value.toLocaleString();
+                    }
+                }
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 3
+            },
+            fill: {
+                type: 'solid',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.3,
+                    opacityTo: 0.1,
+                    stops: [0, 90, 100]
+                }
+            },
+            colors: ['#101480'],
+            grid: {
+                borderColor: '#e7e7e7',
+                row: {
+                    colors: ['#f3f3f3', 'transparent'],
+                    opacity: 0.5
+                }
+            },
+            markers: {
+                size: 4,
+                colors: ['#101480'],
+                strokeColors: '#fff',
+                strokeWidth: 2,
+                hover: {
+                    size: 6
+                }
+            },
+            tooltip: {
+                shared: true,
+                intersect: false,
+                y: {
+                    formatter: function(value) {
+                        return value.toLocaleString() + ' {% trans "logs" %}';
+                    }
+                }
+            }
+        };
+
+        return new ApexCharts(document.querySelector("#logAnalyticsChart"), options);
+    }
+
+    // Initialize with yearly view
+    chart = createChart(yearlyData, 'yearly');
+    chart.render();
+
+    // Toggle button handlers
+    document.getElementById('monthlyToggle').addEventListener('click', function() {
+        if (currentView !== 'monthly') {
+            currentView = 'monthly';
+            chart.destroy();
+            chart = createChart(monthlyData, 'monthly');
+            chart.render();
+
+            // Update button styles - Monthly becomes active (blue), Yearly becomes inactive (gray)
+            this.classList.add('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            this.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+
+            document.getElementById('yearlyToggle').classList.remove('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            document.getElementById('yearlyToggle').classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+        }
+    });
+
+    document.getElementById('yearlyToggle').addEventListener('click', function() {
+        if (currentView !== 'yearly') {
+            currentView = 'yearly';
+            chart.destroy();
+            chart = createChart(yearlyData, 'yearly');
+            chart.render();
+
+            // Update button styles - Yearly becomes active (blue), Monthly becomes inactive (gray)
+            this.classList.add('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            this.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+
+            document.getElementById('monthlyToggle').classList.remove('bg-primary-500', 'hover:bg-primary-700', 'text-white', 'shadow-md');
+            document.getElementById('monthlyToggle').classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300', 'hover:bg-gray-300', 'dark:hover:bg-gray-500');
+        }
+    });
+});
+</script>
