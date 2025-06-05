@@ -1,0 +1,119 @@
+{% load i18n %}
+
+<!-- Cache Clear JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clearCacheBtn = document.getElementById('clear-cache-btn');
+
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', function() {
+            // Disable button and show loading state
+            clearCacheBtn.disabled = true;
+            const originalContent = clearCacheBtn.innerHTML;
+            clearCacheBtn.innerHTML = '<i class="ri-loader-4-line text-sm animate-spin"></i><span>{% trans "Clearing..." %}</span>';
+
+            // Make AJAX request to clear cache
+            fetch('{% url "past_years:clear_cache" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    showNotification('success', data.message);
+
+                    // Wait a moment then reload the page
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    // Show error message
+                    showNotification('error', data.message || '{% trans "Failed to clear cache" %}');
+
+                    // Restore button state
+                    clearCacheBtn.disabled = false;
+                    clearCacheBtn.innerHTML = originalContent;
+                }
+            })
+            .catch(error => {
+                console.error('Cache clear error:', error);
+                showNotification('error', '{% trans "An error occurred while clearing cache" %}');
+
+                // Restore button state
+                clearCacheBtn.disabled = false;
+                clearCacheBtn.innerHTML = originalContent;
+            });
+        });
+    }
+
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Helper function to show notifications
+    function showNotification(type, message) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+
+        if (type === 'success') {
+            notification.className += ' bg-green-600 text-white';
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="ri-check-circle-line text-xl"></i>
+                    <div>
+                        <div class="font-semibold">{% trans "Success" %}</div>
+                        <div class="text-sm">${message}</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            notification.className += ' bg-red-600 text-white';
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="ri-error-warning-line text-xl"></i>
+                    <div>
+                        <div class="font-semibold">{% trans "Error" %}</div>
+                        <div class="text-sm">${message}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Add to page
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 5000);
+    }
+});
+</script>

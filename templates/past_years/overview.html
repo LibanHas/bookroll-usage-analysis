@@ -391,6 +391,218 @@
     </div>
     <!-- End Grade Performance Analytics Section -->
 
+    <!-- Start Course Grades Analysis Section -->
+    <div class="col-span-full mt-6">
+        <div class="card">
+            <div class="card-header">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h5 class="card-title">{% trans "Course Grades Analysis" %}</h5>
+                        <p class="text-gray-500 dark:text-dark-text-two">{% trans "Average course grades per course for each academic year" %}</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <!-- Academic Year Selector -->
+                        <div class="flex bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                            <select id="courseGradesYearSelector" class="px-4 py-2 text-sm font-medium rounded-lg border-0 bg-transparent focus:ring-2 focus:ring-primary-500 text-gray-700 dark:text-gray-300">
+                                <option value="">{% trans "Select Academic Year" %}</option>
+                                {% for year in course_available_years %}
+                                <option value="{{ year }}">{{ year }}年度</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Summary Info Badge -->
+                        <div id="courseGradesSummaryBadge" class="bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-700 rounded-lg px-4 py-2" style="display: none;">
+                            <span class="text-sm font-semibold text-primary-700 dark:text-primary-300">
+                                <i class="ri-bar-chart-2-line mr-2"></i>
+                                <span id="coursesCount">-</span> {% trans "courses" %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Chart Container -->
+                <div class="h-auto w-full">
+                    <div id="courseGradesChart">
+                        <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                            <i class="ri-bar-chart-2-line text-4xl mb-4"></i>
+                            <p class="text-lg font-medium mb-2">{% trans "Select an Academic Year" %}</p>
+                            <p class="text-sm">{% trans "Choose an academic year from the dropdown above to view course grades analysis" %}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Course Statistics -->
+                <div id="courseGradesStats" class="mt-6 grid grid-cols-12 gap-4" style="display: none;">
+                    <!-- Total Courses Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-blue-50 dark:bg-blue-900/20 h-full">
+                        <div class="flex items-center justify-between">
+                            <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "Total Courses" %}</h6>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">Count</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-transparent to-blue-50 dark:to-blue-900/10 flex gap-4 mt-3">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div id="totalCourses" class="text-2xl font-bold text-blue-500">-</div>
+                                </div>
+                                <div class="text-xs mt-1">
+                                    <span class="text-blue-600 dark:text-blue-400">{% trans "Courses with grades" %}</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow self-center">
+                                <div class="w-12 h-12 flex items-center justify-center bg-blue-100 dark:bg-blue-900 rounded-lg ml-auto">
+                                    <i class="ri-book-line text-blue-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Students Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-green-50 dark:bg-green-900/20 h-full">
+                        <div class="flex items-center justify-between">
+                            <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "Total Students" %}</h6>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">Unique</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-transparent to-green-50 dark:to-green-900/10 flex gap-4 mt-3">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div id="totalStudentsInCourses" class="text-2xl font-bold text-green-500">-</div>
+                                </div>
+                                <div class="text-xs mt-1">
+                                    <span class="text-green-600 dark:text-green-400">{% trans "Students with grades" %}</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow self-center">
+                                <div class="w-12 h-12 flex items-center justify-center bg-green-100 dark:bg-green-900 rounded-lg ml-auto">
+                                    <i class="ri-user-line text-green-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Grades Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-purple-50 dark:bg-purple-900/20 h-full">
+                        <div class="flex items-center justify-between">
+                            <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "Total Grades" %}</h6>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">Records</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-transparent to-purple-50 dark:to-purple-900/10 flex gap-4 mt-3">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div id="totalGradeRecords" class="text-2xl font-bold text-purple-500">-</div>
+                                </div>
+                                <div class="text-xs mt-1">
+                                    <span class="text-purple-600 dark:text-purple-400">{% trans "Grade records" %}</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow self-center">
+                                <div class="w-12 h-12 flex items-center justify-center bg-purple-100 dark:bg-purple-900 rounded-lg ml-auto">
+                                    <i class="ri-file-list-line text-purple-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Overall Average Card -->
+                    <div class="col-span-full md:col-span-6 2xl:col-span-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-orange-50 dark:bg-orange-900/20 h-full">
+                        <div class="flex items-center justify-between">
+                            <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "Overall Average" %}</h6>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">Grade</div>
+                        </div>
+                        <div class="bg-gradient-to-r from-transparent to-orange-50 dark:to-orange-900/10 flex gap-4 mt-3">
+                            <div class="flex-shrink-0">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div id="overallAverage" class="text-2xl font-bold text-orange-500">-</div>
+                                </div>
+                                <div class="text-xs mt-1">
+                                    <span class="text-orange-600 dark:text-orange-400">{% trans "Average grade" %}</span>
+                                </div>
+                            </div>
+                            <div class="flex-grow self-center">
+                                <div class="w-12 h-12 flex items-center justify-center bg-orange-100 dark:bg-orange-900 rounded-lg ml-auto">
+                                    <i class="ri-award-line text-orange-500 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation Section -->
+                <div class="mt-6 border-t border-gray-200 dark:border-gray-600 pt-4">
+                    <div class="mb-3 bg-gray-200 dark:bg-gray-800 rounded-lg p-3">
+                        <button id="toggleCourseGradesExplanation" class="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+                            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>{% trans "How is this calculated?" %}</span>
+                            <svg id="courseGradesExplanationToggleIcon" class="w-3 h-3 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Explanation Content (Initially Hidden) -->
+                    <div id="courseGradesExplanationContent" class="hidden space-y-4">
+                        <!-- Data Source Information -->
+                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                            <h4 class="font-semibold text-blue-800 dark:text-blue-200 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                {% trans "Data Source & Methodology" %}
+                            </h4>
+                            <div class="text-sm text-blue-700 dark:text-blue-300 space-y-2">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <strong>{% trans "Grade Data:" %}</strong>
+                                        <ul class="mt-1 space-y-1 text-xs">
+                                            <li>• {% trans "Source: Benesse course assessment results from analysis_db" %}</li>
+                                            <li>• {% trans "Table: course_student_scores" %}</li>
+                                            <li>• {% trans "Filtering: Valid grades only (0-100 scale)" %}</li>
+                                            <li>• {% trans "Academic Year: Identified by course name pattern (e.g., '2024年度')" %}</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <strong>{% trans "Calculation:" %}</strong>
+                                        <ul class="mt-1 space-y-1 text-xs">
+                                            <li>• {% trans "Average Grade: AVG(quiz) per course" %}</li>
+                                            <li>• {% trans "Sorting: Alphabetical by course name" %}</li>
+                                            <li>• {% trans "Statistics: Min, max, standard deviation included" %}</li>
+                                            <li>• {% trans "Cache: 2 hours for performance" %}</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chart Interpretation -->
+                        <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                            <h4 class="font-semibold text-green-800 dark:text-green-200 mb-3 flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h4a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 00-2-2z"></path>
+                                </svg>
+                                {% trans "Chart Interpretation" %}
+                            </h4>
+                            <div class="text-sm text-green-700 dark:text-green-300 space-y-2">
+                                <div class="bg-green-100 dark:bg-green-800/30 rounded p-3">
+                                    <strong>{% trans "Key Insights:" %}</strong>
+                                    <ul class="mt-2 space-y-1 text-xs">
+                                        <li>• <strong>{% trans "X-axis:" %}</strong> {% trans "Course names sorted alphabetically" %}</li>
+                                        <li>• <strong>{% trans "Y-axis:" %}</strong> {% trans "Average grade (0-100 scale)" %}</li>
+                                        <li>• <strong>{% trans "Hover tooltips:" %}</strong> {% trans "Show detailed statistics including student count, grade range, and standard deviation" %}</li>
+                                        <li>• <strong>{% trans "Color coding:" %}</strong> {% trans "Visual indication of grade performance levels" %}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Course Grades Analysis Section -->
+
     <!-- Start Time Spent vs Grade Correlation Section -->
     <div class="col-span-full">
         <div class="card">
@@ -756,6 +968,10 @@
     </div>
     <!-- End School vs Home Time Analysis Section -->
 
+    <!-- Start Engagement vs Grade Performance Analysis Section -->
+    {% include 'past_years/partials/engagement_vs_grade.html' %}
+    <!-- End Engagement vs Grade Performance Analysis Section -->
+
     <!-- Start Course Transparency Section -->
     <div class="col-span-full mt-6">
         <div class="card">
@@ -787,15 +1003,23 @@
         </div>
     </div>
     <!-- End Course Transparency Section -->
+
 </div>
 
 <!-- ApexCharts Script -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Chart data from Django context
-    const monthlyData = {{ monthly_chart_data|safe }};
-    const yearlyData = {{ yearly_chart_data|safe }};
+    // Chart data from Django context (properly escaped)
+    let monthlyData, yearlyData;
+    try {
+        monthlyData = JSON.parse('{{ monthly_chart_data|escapejs }}');
+        yearlyData = JSON.parse('{{ yearly_chart_data|escapejs }}');
+    } catch(e) {
+        console.error('Error parsing chart data:', e);
+        monthlyData = [];
+        yearlyData = [];
+    }
 
     // Translations
     const translations = {
@@ -2685,5 +2909,401 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 100);
 });
 </script>
+
+<!-- Course Grades Analysis Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Course grades chart variables
+    let courseGradesChart;
+    let currentCourseYear = null;
+
+    // Year selector
+    const courseYearSelector = document.getElementById('courseGradesYearSelector');
+    const courseGradesSummaryBadge = document.getElementById('courseGradesSummaryBadge');
+    const courseGradesStats = document.getElementById('courseGradesStats');
+
+    function createCourseGradesChart(courseData) {
+        console.log('Creating course grades chart with:', courseData);
+
+        // Clear any existing content first
+        const chartContainer = document.getElementById('courseGradesChart');
+
+        if (!courseData || courseData.length === 0) {
+            // Show no data message
+            chartContainer.innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-emotion-sad-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "No Course Data Available" %}</p>
+                    <p class="text-sm">{% trans "No courses found with grade data for this academic year" %}</p>
+                </div>
+            `;
+            courseGradesStats.style.display = 'none';
+            courseGradesSummaryBadge.style.display = 'none';
+            return;
+        }
+
+        // Clear the container before creating new chart
+        chartContainer.innerHTML = '';
+
+        // Prepare data for chart
+        const courseNames = courseData.map(course => course.course_name || `Course ${course.course_id}`);
+        const averageGrades = courseData.map(course => course.avg_grade);
+
+        // Color coding based on grade levels
+        const colors = averageGrades.map(grade => {
+            if (grade >= 80) return '#10B981'; // Green for high grades
+            if (grade >= 70) return '#F59E0B'; // Orange for medium grades
+            return '#EF4444'; // Red for low grades
+        });
+
+        const options = {
+            series: [{
+                name: '{% trans "Average Grade" %}',
+                data: averageGrades.map((grade, index) => ({
+                    x: courseNames[index],
+                    y: grade,
+                    course_id: courseData[index].course_id,
+                    student_count: courseData[index].student_count,
+                    grade_count: courseData[index].grade_count,
+                    min_grade: courseData[index].min_grade,
+                    max_grade: courseData[index].max_grade,
+                    std_deviation: courseData[index].std_deviation
+                }))
+            }],
+            chart: {
+                type: 'bar',
+                height: 500,
+                toolbar: {
+                    show: true,
+                    tools: {
+                        download: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                }
+            },
+            title: {
+                text: `{% trans "Course Grades Analysis" %} (${currentCourseYear}年度)`,
+                align: 'left'
+            },
+            plotOptions: {
+                bar: {
+                    horizontal: false,
+                    columnWidth: '70%',
+                    borderRadius: 4,
+                    dataLabels: {
+                        position: 'top'
+                    }
+                }
+            },
+            dataLabels: {
+                enabled: true,
+                formatter: function(val) {
+                    return val.toFixed(1);
+                },
+                offsetY: -20,
+                style: {
+                    fontSize: '11px',
+                    colors: ['#333']
+                }
+            },
+            xaxis: {
+                type: 'category',
+                categories: courseNames,
+                title: {
+                    text: '{% trans "Courses" %}'
+                },
+                labels: {
+                    rotate: -45,
+                    style: {
+                        fontSize: '10px'
+                    }
+                }
+            },
+            yaxis: {
+                title: {
+                    text: '{% trans "Average Grade" %}'
+                },
+                min: 0,
+                max: 100,
+                labels: {
+                    formatter: function(value) {
+                        return value.toFixed(1);
+                    }
+                }
+            },
+            colors: colors,
+            fill: {
+                opacity: 0.8
+            },
+            tooltip: {
+                custom: function({series, seriesIndex, dataPointIndex, w}) {
+                    const data = w.config.series[seriesIndex].data[dataPointIndex];
+                    const courseName = data.x;
+                    const avgGrade = data.y.toFixed(1);
+                    const courseId = data.course_id;
+                    const studentCount = data.student_count;
+                    const gradeCount = data.grade_count;
+                    const minGrade = data.min_grade.toFixed(1);
+                    const maxGrade = data.max_grade.toFixed(1);
+                    const stdDev = data.std_deviation.toFixed(1);
+
+                    const color = avgGrade >= 80 ? '#10B981' : avgGrade >= 70 ? '#F59E0B' : '#EF4444';
+
+                    return `
+                        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 min-w-[250px]">
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-3 h-3 rounded-full" style="background-color: ${color}"></div>
+                                <span class="font-semibold text-gray-900 dark:text-white">${courseName}</span>
+                            </div>
+                            <div class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                                <div><strong>{% trans "Course ID" %}:</strong> ${courseId}</div>
+                                <div><strong>{% trans "Average Grade" %}:</strong> ${avgGrade} {% trans "points" %}</div>
+                                <div><strong>{% trans "Students" %}:</strong> ${studentCount}</div>
+                                <div><strong>{% trans "Grade Records" %}:</strong> ${gradeCount}</div>
+                                <div><strong>{% trans "Range" %}:</strong> ${minGrade} - ${maxGrade}</div>
+                                <div><strong>{% trans "Std Deviation" %}:</strong> ${stdDev}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            legend: {
+                show: false
+            }
+        };
+
+        // Destroy existing chart if it exists
+        if (courseGradesChart) {
+            courseGradesChart.destroy();
+        }
+
+        try {
+            courseGradesChart = new ApexCharts(chartContainer, options);
+            courseGradesChart.render().then(() => {
+                console.log('Course grades chart rendered successfully');
+            }).catch((error) => {
+                console.error('Error rendering course grades chart:', error);
+                chartContainer.innerHTML = `
+                    <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <i class="ri-error-warning-line text-4xl mb-4"></i>
+                        <p class="text-lg font-medium mb-2">{% trans "Chart Rendering Error" %}</p>
+                        <p class="text-sm">{% trans "Unable to display the course grades chart. Please try refreshing the page." %}</p>
+                    </div>
+                `;
+            });
+        } catch (error) {
+            console.error('Error creating course grades chart:', error);
+            chartContainer.innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-error-warning-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "Chart Creation Error" %}</p>
+                    <p class="text-sm">{% trans "Unable to create the course grades chart. Please try refreshing the page." %}</p>
+                </div>
+            `;
+        }
+
+        // Update summary badge
+        document.getElementById('coursesCount').textContent = courseData.length;
+        courseGradesSummaryBadge.style.display = 'block';
+    }
+
+    function updateCourseGradesStatistics(summaryStats) {
+        // Update statistics cards
+        document.getElementById('totalCourses').textContent = summaryStats.total_courses || 0;
+        document.getElementById('totalStudentsInCourses').textContent = summaryStats.total_students || 0;
+        document.getElementById('totalGradeRecords').textContent = summaryStats.total_grades || 0;
+        document.getElementById('overallAverage').textContent = summaryStats.overall_average || '0.0';
+
+        courseGradesStats.style.display = 'grid';
+    }
+
+    // Year selector change handler
+    courseYearSelector.addEventListener('change', function() {
+        const selectedYear = this.value;
+
+        if (!selectedYear) {
+            // Reset to default state
+            document.getElementById('courseGradesChart').innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-bar-chart-2-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "Select an Academic Year" %}</p>
+                    <p class="text-sm">{% trans "Choose an academic year from the dropdown above to view course grades analysis" %}</p>
+                </div>
+            `;
+            courseGradesStats.style.display = 'none';
+            courseGradesSummaryBadge.style.display = 'none';
+            currentCourseYear = null;
+            return;
+        }
+
+        currentCourseYear = parseInt(selectedYear);
+
+        // Show loading state
+        document.getElementById('courseGradesChart').innerHTML = `
+            <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                <i class="ri-loader-4-line text-4xl animate-spin mb-4"></i>
+                <p class="text-lg font-medium mb-2">{% trans "Loading Course Data..." %}</p>
+                <p class="text-sm">{% trans "Please wait while we load the course grades data" %}</p>
+            </div>
+        `;
+
+        // Fetch course grades data via AJAX
+        const apiUrl = `{% url 'past_years:api_course_grades' %}?year=${selectedYear}`;
+        console.log('Fetching course grades data from:', apiUrl);
+
+        fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            console.log('Course grades API response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Course grades API response data:', data);
+
+            // Clear the loading timeout since we got a response
+            if (courseYearSelector.dataset.loadingTimeout) {
+                clearTimeout(parseInt(courseYearSelector.dataset.loadingTimeout));
+                delete courseYearSelector.dataset.loadingTimeout;
+            }
+
+            if (data.success) {
+                createCourseGradesChart(data.courses);
+                updateCourseGradesStatistics(data.summary_stats);
+            } else {
+                // Show error message
+                document.getElementById('courseGradesChart').innerHTML = `
+                    <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <i class="ri-error-warning-line text-4xl mb-4"></i>
+                        <p class="text-lg font-medium mb-2">{% trans "No Data Found" %}</p>
+                        <p class="text-sm">${data.error || '{% trans "No course data available for this academic year" %}'}</p>
+                    </div>
+                `;
+                courseGradesStats.style.display = 'none';
+                courseGradesSummaryBadge.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching course grades data:', error);
+
+            // Clear the loading timeout since we got an error
+            if (courseYearSelector.dataset.loadingTimeout) {
+                clearTimeout(parseInt(courseYearSelector.dataset.loadingTimeout));
+                delete courseYearSelector.dataset.loadingTimeout;
+            }
+
+            document.getElementById('courseGradesChart').innerHTML = `
+                <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <i class="ri-error-warning-line text-4xl mb-4"></i>
+                    <p class="text-lg font-medium mb-2">{% trans "Error Loading Data" %}</p>
+                    <p class="text-sm">{% trans "Unable to load course grades data. Please try again." %}</p>
+                    <p class="text-xs mt-2 text-red-500">${error.message}</p>
+                </div>
+            `;
+            courseGradesStats.style.display = 'none';
+            courseGradesSummaryBadge.style.display = 'none';
+        });
+    });
+
+    // Explanation toggle functionality
+    const courseGradesExplanationToggleBtn = document.getElementById('toggleCourseGradesExplanation');
+    const courseGradesExplanationContent = document.getElementById('courseGradesExplanationContent');
+    const courseGradesExplanationToggleIcon = document.getElementById('courseGradesExplanationToggleIcon');
+
+    if (courseGradesExplanationToggleBtn && courseGradesExplanationContent) {
+        courseGradesExplanationToggleBtn.addEventListener('click', function() {
+            const isHidden = courseGradesExplanationContent.classList.contains('hidden');
+
+            if (isHidden) {
+                // Show explanation
+                courseGradesExplanationContent.classList.remove('hidden');
+                courseGradesExplanationToggleIcon.style.transform = 'rotate(180deg)';
+            } else {
+                // Hide explanation
+                courseGradesExplanationContent.classList.add('hidden');
+                courseGradesExplanationToggleIcon.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Initialize with empty state
+    courseGradesStats.style.display = 'none';
+    courseGradesSummaryBadge.style.display = 'none';
+
+    // Auto-select the first year with data (if available)
+    setTimeout(() => {
+        try {
+            const yearOptions = courseYearSelector.querySelectorAll('option');
+            console.log('Course grades auto-selection: Found', yearOptions.length, 'year options');
+
+            if (yearOptions.length >= 2) { // At least one real option besides the empty one
+                const firstYearOption = yearOptions[1]; // Skip the empty option at index 0
+                if (firstYearOption && firstYearOption.value) {
+                    console.log('Auto-selecting year:', firstYearOption.value);
+                    courseYearSelector.value = firstYearOption.value;
+
+                    // Set a timeout to ensure loading spinner doesn't get stuck
+                    const loadingTimeout = setTimeout(() => {
+                        console.warn('Course grades loading timed out, showing error message');
+                        document.getElementById('courseGradesChart').innerHTML = `
+                            <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                                <i class="ri-error-warning-line text-4xl mb-4"></i>
+                                <p class="text-lg font-medium mb-2">{% trans "Loading Timeout" %}</p>
+                                <p class="text-sm">{% trans "The request is taking longer than expected. Please try refreshing the page." %}</p>
+                            </div>
+                        `;
+                        courseGradesStats.style.display = 'none';
+                        courseGradesSummaryBadge.style.display = 'none';
+                    }, 15000); // 15 second timeout
+
+                    // Store timeout ID so we can clear it when successful
+                    courseYearSelector.dataset.loadingTimeout = loadingTimeout;
+
+                    // Trigger the change event to load the chart
+                    const changeEvent = new Event('change', { bubbles: true });
+                    courseYearSelector.dispatchEvent(changeEvent);
+                } else {
+                    console.log('No valid first year option found');
+                }
+            } else {
+                console.log('Not enough year options available for auto-selection');
+            }
+        } catch (error) {
+            console.error('Error in course grades auto-selection:', error);
+        }
+    }, 200); // Increased delay to ensure DOM is fully ready
+});
+</script>
+
+<!-- Engagement vs Grade Analysis Script -->
+{% include 'past_years/partials/js/engagement_vs_grade.html' %}
 
 {% endblock %}

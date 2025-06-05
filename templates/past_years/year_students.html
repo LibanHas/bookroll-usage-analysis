@@ -2248,7 +2248,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showLoading();
 
             // Fetch distribution data
-            const url = `/past-years/{{ year }}/students/course/${courseId}/distribution/`;
+            const url = `/dashboard/past-years/{{ year }}/students/course/${courseId}/distribution/`;
             console.log('📊 Fetching distribution data from:', url);
 
             fetch(url)

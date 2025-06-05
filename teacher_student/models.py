@@ -11,6 +11,59 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+class TeacherExclusion(models.Model):
+    """
+    Model to store teacher accounts that should be excluded from activity charts.
+    Used to filter out testing accounts and other non-production teacher accounts.
+    """
+    name = models.CharField(max_length=255, help_text="Teacher's full name for reference")
+    lms_id = models.IntegerField(unique=True, help_text="Teacher's LMS user ID from Moodle")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    reason = models.CharField(max_length=255, blank=True, null=True, help_text="Reason for exclusion (e.g., 'Testing account')")
+    is_active = models.BooleanField(default=True, help_text="Whether this exclusion is currently active")
+
+    class Meta:
+        db_table = 'teacher_exclusions'
+        verbose_name = 'Teacher Exclusion'
+        verbose_name_plural = 'Teacher Exclusions'
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} (ID: {self.lms_id})"
+
+    @classmethod
+    def get_excluded_teacher_ids(cls):
+        """
+        Get list of teacher IDs that should be excluded from activity charts.
+        Uses Redis caching to improve performance.
+
+        Returns:
+            list: List of teacher IDs (as strings) to exclude
+        """
+        cache_key = 'excluded_teacher_ids'
+        cached_result = cache.get(cache_key)
+
+        if cached_result is not None:
+            return cached_result
+
+        # Get excluded teacher IDs from database
+        excluded_ids = list(cls.objects.filter(is_active=True).values_list('lms_id', flat=True))
+
+        # Cache for 1 hour (3600 seconds)
+        cache.set(cache_key, excluded_ids, timeout=3600)
+
+        return excluded_ids
+
+    @classmethod
+    def clear_exclusion_cache(cls):
+        """
+        Clear the excluded teacher IDs cache.
+        Should be called when TeacherExclusion records are modified.
+        """
+        cache.delete('excluded_teacher_ids')
+        return True
+
 # Create your models here.
 class Teacher(models.Model):
     username = models.CharField(max_length=100, primary_key=True)
@@ -27,7 +80,27 @@ class Teacher(models.Model):
         app_label = 'moodle_app'
 
     @staticmethod
-    def get_teacher_data():
+    def get_teacher_data(sort_by=None, sort_order='asc', use_cache=True):
+        """
+        Retrieve teacher data from Moodle via raw SQL query with caching and sorting support.
+        Now filters out excluded teachers (testing accounts).
+
+        Args:
+            sort_by (str): Field to sort by ('active_courses', 'archived_courses', 'total_courses', 'name')
+            sort_order (str): Sort order ('asc' or 'desc')
+            use_cache (bool): Whether to use cached data
+
+        Returns:
+            list: List of teacher dictionaries (excluding blacklisted teachers)
+        """
+        # Create cache key based on sort parameters
+        cache_key = f'teacher_data_{sort_by}_{sort_order}_filtered'
+
+        if use_cache:
+            cached_result = cache.get(cache_key)
+            if cached_result is not None:
+                return cached_result
+
         query = """
             SELECT
                 u.id AS user_id,
@@ -61,12 +134,28 @@ class Teacher(models.Model):
                 AND u.deleted = 0
             GROUP BY
                 u.id, u.username, u.email, u.firstname, u.lastname
-            ORDER BY
-                total_courses, u.firstname, u.lastname;
         """
+
+        # Add ORDER BY clause based on sort parameters
+        if sort_by == 'active_courses':
+            query += f" ORDER BY active_courses {sort_order.upper()}, u.firstname, u.lastname"
+        elif sort_by == 'archived_courses':
+            query += f" ORDER BY archived_courses {sort_order.upper()}, u.firstname, u.lastname"
+        elif sort_by == 'total_courses':
+            query += f" ORDER BY total_courses {sort_order.upper()}, u.firstname, u.lastname"
+        elif sort_by == 'name':
+            if sort_order == 'desc':
+                query += " ORDER BY u.firstname DESC, u.lastname DESC"
+            else:
+                query += " ORDER BY u.firstname ASC, u.lastname ASC"
+        else:
+            # Default sorting
+            query += " ORDER BY total_courses, u.firstname, u.lastname"
+
         with connections['moodle_db'].cursor() as cursor:
             cursor.execute(query)
             rows = cursor.fetchall()
+
         teachers = [
             {
                 "user_id": row[0],
@@ -80,7 +169,248 @@ class Teacher(models.Model):
             }
             for row in rows
         ]
+
+        # Filter out excluded teachers
+        try:
+            excluded_teacher_ids = TeacherExclusion.get_excluded_teacher_ids()
+            excluded_teacher_ids_str = [str(tid) for tid in excluded_teacher_ids]
+
+            # Filter out excluded teachers
+            filtered_teachers = [
+                teacher for teacher in teachers
+                if str(teacher['user_id']) not in excluded_teacher_ids_str
+            ]
+
+            teachers = filtered_teachers
+
+        except Exception as e:
+            # If there's an error with exclusions, log it but don't break the functionality
+            logger.warning(f"Error filtering excluded teachers: {str(e)}")
+            # Continue with unfiltered teachers
+
+        # Cache the results for 1 hour (3600 seconds)
+        if use_cache:
+            cache.set(cache_key, teachers, timeout=3600)
+
         return teachers
+
+    @staticmethod
+    def clear_teacher_cache():
+        """
+        Clear all teacher-related cache entries including filtered data.
+        """
+        # Get all possible cache keys and clear them
+        sort_fields = ['active_courses', 'archived_courses', 'total_courses', 'name', None]
+        sort_orders = ['asc', 'desc']
+
+        for sort_by in sort_fields:
+            for sort_order in sort_orders:
+                # Clear old cache keys
+                cache_key = f'teacher_data_{sort_by}_{sort_order}'
+                cache.delete(cache_key)
+
+                # Clear new filtered cache keys
+                filtered_cache_key = f'teacher_data_{sort_by}_{sort_order}_filtered'
+                cache.delete(filtered_cache_key)
+
+        # Also clear the default cache key
+        cache.delete('teacher_data_None_asc')
+        cache.delete('teacher_data_None_asc_filtered')
+
+        # Clear exclusion cache as well
+        TeacherExclusion.clear_exclusion_cache()
+
+        return True
+
+    @staticmethod
+    def get_teacher_activity_data(time_filter='academic_year'):
+        """
+        Retrieve teacher activity data from ClickHouse for stacked chart visualization.
+        Groups activities by operation name for more detailed insights.
+
+        Args:
+            time_filter (str): Time period filter - 'academic_year', 'this_month', 'this_week', 'today'
+
+        Returns:
+            dict: Dictionary with teacher data and operation breakdown for stacked charts
+        """
+        import datetime
+        from django.utils import timezone
+
+        # Get current date
+        today = timezone.now().date()
+
+        # Calculate time filter based on selection
+        if time_filter == 'academic_year':
+            # Academic year: April 1 to March 31 (next year)
+            current_year = today.year
+            if today.month >= 4:
+                # We're in the academic year starting this calendar year
+                start_date = datetime.date(current_year, 4, 1)
+                end_date = datetime.date(current_year + 1, 3, 31)
+            else:
+                # We're in the academic year that started last calendar year
+                start_date = datetime.date(current_year - 1, 4, 1)
+                end_date = datetime.date(current_year, 3, 31)
+        elif time_filter == 'this_month':
+            # First day of current month to today
+            start_date = today.replace(day=1)
+            end_date = today
+        elif time_filter == 'this_week':
+            # Start of current week (Monday) to today
+            days_since_monday = today.weekday()
+            start_date = today - datetime.timedelta(days=days_since_monday)
+            end_date = today
+        elif time_filter == 'today':
+            # Just today
+            start_date = today
+            end_date = today
+        else:
+            # Default to academic year
+            current_year = today.year
+            if today.month >= 4:
+                start_date = datetime.date(current_year, 4, 1)
+                end_date = datetime.date(current_year + 1, 3, 31)
+            else:
+                start_date = datetime.date(current_year - 1, 4, 1)
+                end_date = datetime.date(current_year, 3, 31)
+
+        try:
+            # First get the teacher list from Moodle
+            teachers = Teacher.get_teacher_data(use_cache=True)
+
+            # Get excluded teacher IDs
+            excluded_teacher_ids = TeacherExclusion.get_excluded_teacher_ids()
+            excluded_teacher_ids_str = [str(tid) for tid in excluded_teacher_ids]
+
+            # Filter out excluded teachers
+            filtered_teachers = [
+                teacher for teacher in teachers
+                if str(teacher['user_id']) not in excluded_teacher_ids_str
+            ]
+
+            teacher_ids = [str(teacher['user_id']) for teacher in filtered_teachers]
+
+            if not teacher_ids:
+                return {'teachers': [], 'series': [], 'categories': [], 'top_operations': []}
+
+            # Create teacher lookup dictionary
+            teacher_lookup = {str(teacher['user_id']): f"{teacher['firstname']} {teacher['lastname']}"
+                            for teacher in filtered_teachers}
+
+            # Query ClickHouse for teacher activities grouped by operation name
+            with connections['clickhouse_db'].cursor() as cursor:
+                # Create parameterized query for teacher IDs
+                teacher_ids_str = "', '".join(teacher_ids)
+
+                # First, get all operation names to identify top operations
+                operations_query = f"""
+                    SELECT
+                        operation_name,
+                        uniqExact(_id) AS total_count
+                    FROM statements_mv
+                    WHERE actor_account_name IN ('{teacher_ids_str}')
+                        AND timestamp >= toDate('{start_date}')
+                        AND timestamp <= toDate('{end_date}')
+                        AND actor_account_name != ''
+                        AND operation_name != ''
+                        AND (actor_name_role = 'teacher' OR actor_name_role = 'editingteacher' OR actor_name_role = '')
+                    GROUP BY operation_name
+                    ORDER BY total_count DESC
+                """
+
+                cursor.execute(operations_query)
+                all_operations = cursor.fetchall()
+
+                # Get top 10 operations for legend and group others as "Other"
+                top_operations = [op[0] for op in all_operations[:10]]
+                top_operations_str = "', '".join(top_operations)
+
+                # Main query for detailed activity data
+                detailed_query = f"""
+                    SELECT
+                        actor_account_name,
+                        CASE
+                            WHEN operation_name IN ('{top_operations_str}') THEN operation_name
+                            ELSE 'Other'
+                        END AS grouped_operation,
+                        uniqExact(_id) AS activity_count
+                    FROM statements_mv
+                    WHERE actor_account_name IN ('{teacher_ids_str}')
+                        AND timestamp >= toDate('{start_date}')
+                        AND timestamp <= toDate('{end_date}')
+                        AND actor_account_name != ''
+                        AND operation_name != ''
+                        AND (actor_name_role = 'teacher' OR actor_name_role = 'editingteacher' OR actor_name_role = '')
+                    GROUP BY actor_account_name, grouped_operation
+                    ORDER BY actor_account_name, activity_count DESC
+                """
+
+                cursor.execute(detailed_query)
+                activity_rows = cursor.fetchall()
+
+                # Organize data by teacher and operation
+                teacher_activities = {}
+                all_operations_set = set()
+
+                for row in activity_rows:
+                    teacher_id = row[0]
+                    operation = row[1]
+                    count = row[2]
+
+                    if teacher_id not in teacher_activities:
+                        teacher_activities[teacher_id] = {}
+
+                    teacher_activities[teacher_id][operation] = count
+                    all_operations_set.add(operation)
+
+                # Calculate total activities per teacher for sorting
+                teacher_totals = {}
+                for teacher_id, operations in teacher_activities.items():
+                    teacher_totals[teacher_id] = sum(operations.values())
+
+                # Sort teachers by total activity count and get top 20
+                sorted_teachers = sorted(teacher_totals.items(), key=lambda x: x[1], reverse=True)[:20]
+                top_teacher_ids = [teacher_id for teacher_id, _ in sorted_teachers]
+
+                # Prepare data for stacked chart
+                # Ensure consistent operation order (top operations first, then "Other")
+                operation_order = top_operations + ['Other'] if 'Other' in all_operations_set else top_operations
+                operation_order = [op for op in operation_order if op in all_operations_set]
+
+                # Create series data for each operation
+                series_data = []
+                for operation in operation_order:
+                    operation_data = []
+                    for teacher_id in top_teacher_ids:
+                        count = teacher_activities.get(teacher_id, {}).get(operation, 0)
+                        operation_data.append(count)
+
+                    series_data.append({
+                        'name': operation,
+                        'data': operation_data
+                    })
+
+                # Create teacher names array
+                teacher_names = [teacher_lookup.get(teacher_id, f"Teacher {teacher_id}") for teacher_id in top_teacher_ids]
+
+                return {
+                    'teachers': [
+                        {
+                            'teacher_id': teacher_id,
+                            'teacher_name': teacher_lookup.get(teacher_id, f"Teacher {teacher_id}"),
+                            'total_activities': teacher_totals.get(teacher_id, 0)
+                        }
+                        for teacher_id in top_teacher_ids
+                    ],
+                    'series': series_data,
+                    'categories': teacher_names,
+                    'top_operations': operation_order
+                }
+
+        except Exception as e:
+            logger.error(f"Error fetching teacher activity data: {str(e)}")
+            return {'teachers': [], 'series': [], 'categories': [], 'top_operations': []}
 
 
 class TeacherDetails(models.Model):
@@ -272,8 +602,8 @@ class TeacherDetails(models.Model):
                     ]
                     results.extend(batch_results)
 
-            # Cache the results for 1 hour (3600 seconds)
-            cache.set(cache_key, results, timeout=3600)
+            # Cache the results for 24 hours (86400 seconds)
+            cache.set(cache_key, results, timeout=86400)
 
             return results
 
@@ -707,8 +1037,8 @@ class StudentDetails(models.Model):
                     ]
                     results.extend(batch_results)
             # print("course results----------",results)
-            # Cache the results for 1 hour (3600 seconds)
-            cache.set(cache_key, results, timeout=3600)
+            # Cache the results for 24 hours (86400 seconds)
+            cache.set(cache_key, results, timeout=86400)
 
             return results
 

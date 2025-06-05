@@ -13,6 +13,7 @@ class CourseAdmin(admin.ModelAdmin):
         'parent_category_name',
         'child_category_name',
         'subject_category',
+        'level_category',
         'course_visible',
         'is_active',
         'last_synced',
@@ -20,6 +21,7 @@ class CourseAdmin(admin.ModelAdmin):
 
     list_filter = [
         'subject_category',
+        'level_category',
         'course_visible',
         'parent_category_name',
         'child_category_name',
@@ -46,7 +48,7 @@ class CourseAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Basic Information', {
-            'fields': ('course_id', 'course_name', 'subject_category')
+            'fields': ('course_id', 'course_name', 'subject_category', 'level_category')
         }),
         ('Category Information', {
             'fields': (

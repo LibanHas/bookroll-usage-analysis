@@ -440,7 +440,7 @@ LEAF_API_CONFIG: Dict[str, Any] = {
     'TIMEOUT': int(os.getenv('LEAF_API_TIMEOUT', '30')),
     'MAX_CONNECTIONS': int(os.getenv('LEAF_API_MAX_CONNECTIONS', '10')),
     'MAX_KEEPALIVE_CONNECTIONS': int(os.getenv('LEAF_API_MAX_KEEPALIVE_CONNECTIONS', '5')),
-    'CACHE_TTL': int(os.getenv('LEAF_API_CACHE_TTL', '3600')),  # 1 hour default
+    'CACHE_TTL': int(os.getenv('LEAF_API_CACHE_TTL', '86400')),  # 24 hours default
     'TOKEN_CACHE_KEY': 'leaf_api_token',
     'CONTENT_CACHE_PREFIX': 'leaf_content',
 }
@@ -458,6 +458,12 @@ SCHOOL_END_TIME = os.getenv('SCHOOL_END_TIME', '16:00')
 COURSE_SUBJECT_CATEGORIES = [
     ('english', 'English'),
     ('mathematics', 'Mathematics'),
+]
+
+# Course level categories
+COURSE_LEVEL_CATEGORIES = [
+    ('high', 'High'),
+    ('junior', 'Junior'),
 ]
 
 # Course sync settings

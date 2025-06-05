@@ -35,6 +35,15 @@ class Course(models.Model):
         help_text="Subject category classification"
     )
 
+    # Level category (custom field)
+    level_category = models.CharField(
+        max_length=20,
+        choices=getattr(settings, 'COURSE_LEVEL_CATEGORIES', []),
+        null=True,
+        blank=True,
+        help_text="Level category classification"
+    )
+
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -50,6 +59,7 @@ class Course(models.Model):
             models.Index(fields=['parent_category_id']),
             models.Index(fields=['child_category_id']),
             models.Index(fields=['subject_category']),
+            models.Index(fields=['level_category']),
             models.Index(fields=['course_visible']),
         ]
 

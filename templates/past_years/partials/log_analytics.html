@@ -1,0 +1,112 @@
+{% load i18n %}
+
+<!-- Start Log Analytics Section -->
+<div class="col-span-full">
+    <div class="card">
+        <div class="card-header">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h5 class="card-title">{% trans "Log Analytics" %}</h5>
+                    <p class="text-gray-500 dark:text-dark-text-two">{% trans "Total unique log counts across all academic years" %}</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Toggle Button -->
+                    <div class="flex bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm">
+                        <button id="monthlyToggle" class="px-6 py-3 text-sm font-semibold rounded-l-lg transition-all duration-200 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500 border-r border-gray-300 dark:border-gray-600">
+                            <i class="ri-calendar-line mr-2"></i>
+                            {% trans "Monthly" %}
+                        </button>
+                        <button id="yearlyToggle" class="px-6 py-3 text-sm font-semibold rounded-r-lg transition-all duration-200 bg-primary-500 hover:bg-primary-700 text-white shadow-md">
+                            <i class="ri-calendar-2-line mr-2"></i>
+                            {% trans "Yearly" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Chart Container -->
+            <div class="h-auto w-full">
+                <div id="logAnalyticsChart"></div>
+            </div>
+
+            <!-- Database Info -->
+            <div class="mt-6 grid grid-cols-12 gap-4">
+                <!-- Total Logs Summary -->
+                <div class="col-span-full md:col-span-6 2xl:col-span-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-primary-50 dark:bg-primary-900/20 h-full">
+                    <div class="flex items-center justify-between">
+                        <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "Total Unique Logs" %}</h6>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">{% trans "Summary" %}</div>
+                    </div>
+                    <div class="pt-3 bg-gradient-to-r from-transparent to-primary-50 dark:to-primary-900/10 flex gap-4 mt-3">
+                        <div class="pb-8 flex-shrink-0">
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="text-2xl font-bold text-primary-500" data-value="{{ log_summary.total_unique_logs|default:0 }}">{{ log_summary.total_unique_logs|floatformat:0 }}</div>
+                            </div>
+                        </div>
+                        <div class="flex-grow self-center pb-3">
+                            <div class="w-12 h-12 flex items-center justify-center bg-primary-100 dark:bg-primary-900 rounded-lg ml-auto">
+                                <i class="ri-database-2-line text-primary-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pre-2025 Database -->
+                <div class="col-span-full md:col-span-6 2xl:col-span-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-blue-50 dark:bg-blue-900/20 h-full">
+                    <div class="flex items-center justify-between">
+                        <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "Pre-2025 Database" %}</h6>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">{% trans "Legacy" %}</div>
+                    </div>
+                    <div class="pt-3 bg-gradient-to-r from-transparent to-blue-50 dark:to-blue-900/10 flex gap-4 mt-3">
+                        <div class="pb-8 flex-shrink-0">
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="text-2xl font-bold text-blue-500" data-value="{{ log_summary.databases.pre_2025.logs|default:0 }}">{{ log_summary.databases.pre_2025.logs|floatformat:0 }}</div>
+                            </div>
+                            <div class="text-xs mt-1">
+                                {% if log_summary.databases.pre_2025.available %}
+                                    <span class="text-green-600 dark:text-green-400">{% trans "Available" %}</span>
+                                {% else %}
+                                    <span class="text-red-600 dark:text-red-400">{% trans "Unavailable" %}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="flex-grow self-center pb-3">
+                            <div class="w-12 h-12 flex items-center justify-center bg-blue-100 dark:bg-blue-900 rounded-lg ml-auto">
+                                <i class="ri-archive-line text-blue-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2025+ Database -->
+                <div class="col-span-full md:col-span-6 2xl:col-span-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-green-50 dark:bg-green-900/20 h-full">
+                    <div class="flex items-center justify-between">
+                        <h6 class="text-sm font-semibold text-gray-500 dark:text-white">{% trans "2025+ Database" %}</h6>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-full px-2 py-1 border border-gray-300 dark:border-gray-600">{% trans "Current" %}</div>
+                    </div>
+                    <div class="pt-3 bg-gradient-to-r from-transparent to-green-50 dark:to-green-900/10 flex gap-4 mt-3">
+                        <div class="pb-8 flex-shrink-0">
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="text-2xl font-bold text-green-500" data-value="{{ log_summary.databases.post_2025.logs|default:0 }}">{{ log_summary.databases.post_2025.logs|floatformat:0 }}</div>
+                            </div>
+                            <div class="text-xs mt-1">
+                                {% if log_summary.databases.post_2025.available %}
+                                    <span class="text-green-600 dark:text-green-400">{% trans "Available" %}</span>
+                                {% else %}
+                                    <span class="text-gray-600 dark:text-gray-400">{% trans "Not applicable" %}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="flex-grow self-center pb-3">
+                            <div class="w-12 h-12 flex items-center justify-center bg-green-100 dark:bg-green-900 rounded-lg ml-auto">
+                                <i class="ri-server-line text-green-500 text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- End Log Analytics Section -->

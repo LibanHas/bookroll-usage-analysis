@@ -5,6 +5,9 @@ from .models import Teacher, Student, StudentDetails, TeacherDetails
 from django.http import Http404, JsonResponse, HttpResponse
 from django.db import connections
 from django.utils import timezone
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.urls import reverse
 import logging
 import os
 import requests
@@ -18,7 +21,22 @@ class TeacherListView(ListView):
 
     def get_queryset(self):
         search_term = self.request.GET.get('search', '')
-        teachers = Teacher.get_teacher_data()
+        sort_by = self.request.GET.get('sort_by', '')
+        sort_order = self.request.GET.get('sort_order', 'asc')
+
+        # Validate sort parameters
+        valid_sort_fields = ['active_courses', 'archived_courses', 'total_courses', 'name']
+        if sort_by not in valid_sort_fields:
+            sort_by = None
+
+        if sort_order not in ['asc', 'desc']:
+            sort_order = 'asc'
+
+        teachers = Teacher.get_teacher_data(
+            sort_by=sort_by,
+            sort_order=sort_order,
+            use_cache=True
+        )
 
         # Apply search filter if search term is provided
         if search_term:
@@ -38,6 +56,46 @@ class TeacherListView(ListView):
         context = super().get_context_data(**kwargs)
         context['additional_info'] = "This is additional context data"
         context['search_term'] = self.request.GET.get('search', '')
+        context['current_sort_by'] = self.request.GET.get('sort_by', '')
+        context['current_sort_order'] = self.request.GET.get('sort_order', 'asc')
+
+        # Add breadcrumbs
+        context['breadcrumbs'] = [
+            {'name': 'Dashboard', 'url': 'index'},
+            {'name': 'Teacher List', 'url': None}
+        ]
+
+        # Get time filter for chart (default to academic_year)
+        chart_time_filter = self.request.GET.get('chart_filter', 'academic_year')
+
+        # Get teacher activity data for chart (now returns stacked data)
+        activity_data = Teacher.get_teacher_activity_data(time_filter=chart_time_filter)
+
+        # Prepare chart data for stacked bars
+        context['chart_time_filter'] = chart_time_filter
+        context['chart_series'] = json.dumps(activity_data.get('series', []))
+        context['chart_categories'] = json.dumps(activity_data.get('categories', []))
+        context['top_operations'] = activity_data.get('top_operations', [])
+
+        # Calculate max value for Y-axis
+        max_values = []
+        for teacher_idx in range(len(activity_data.get('categories', []))):
+            teacher_total = sum(
+                series.get('data', [])[teacher_idx] if teacher_idx < len(series.get('data', [])) else 0
+                for series in activity_data.get('series', [])
+            )
+            max_values.append(teacher_total)
+
+        context['chart_max_value'] = max(max_values) if max_values else 100
+
+        # Time filter options for dropdown
+        context['time_filter_options'] = [
+            {'value': 'academic_year', 'label': 'Current Academic Year'},
+            {'value': 'this_month', 'label': 'This Month'},
+            {'value': 'this_week', 'label': 'This Week'},
+            {'value': 'today', 'label': 'Today'}
+        ]
+
         return context
 
     def paginate_queryset(self, queryset, page_size):
@@ -53,6 +111,21 @@ class TeacherListView(ListView):
             self.kwargs[self.page_kwarg] = 1
             return super().paginate_queryset(queryset, page_size)
 
+
+class TeacherCacheClearView(View):
+    """
+    View to handle cache clearing for teacher data and exclusions.
+    """
+    def post(self, request, *args, **kwargs):
+        try:
+            Teacher.clear_teacher_cache()
+            messages.success(request, 'Teacher cache and exclusion filters cleared successfully!')
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error clearing teacher cache: {str(e)}")
+            messages.error(request, 'Failed to clear teacher cache.')
+
+        return redirect('teacher_list')
 
 class StudentListView(TemplateView):
     template_name = 'student_list.html'
