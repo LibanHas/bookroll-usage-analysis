@@ -430,55 +430,54 @@ document.addEventListener('DOMContentLoaded', function() {
         const maxSchoolActivity = hourlyHeatmapData.stats.max_school_activity || 0;
         const maxNonSchoolActivity = hourlyHeatmapData.stats.max_non_school_activity || 0;
 
-        // Debug: Log the max values and calculated ranges
-        console.log('Color range debugging:', {
-            maxSchoolActivity: maxSchoolActivity,
-            maxNonSchoolActivity: maxNonSchoolActivity,
-            schoolRanges: {
-                low: `0.1 to ${Math.max(1, Math.floor(maxSchoolActivity * 0.25))}`,
-                medium: `${Math.max(1, Math.floor(maxSchoolActivity * 0.25)) + 0.1} to ${Math.max(1, Math.floor(maxSchoolActivity * 0.5))}`,
-                high: `${Math.max(1, Math.floor(maxSchoolActivity * 0.5)) + 0.1} to ${Math.max(1, Math.floor(maxSchoolActivity * 0.75))}`,
-                veryHigh: `${Math.max(1, Math.floor(maxSchoolActivity * 0.75)) + 0.1} to ${maxSchoolActivity + 1000}`
-            },
-            nonSchoolRanges: {
-                veryHigh: `${-maxNonSchoolActivity} to ${-Math.max(1, Math.floor(maxNonSchoolActivity * 0.75))}`,
-                high: `${-Math.max(1, Math.floor(maxNonSchoolActivity * 0.75)) + 0.1} to ${-Math.max(1, Math.floor(maxNonSchoolActivity * 0.5))}`,
-                medium: `${-Math.max(1, Math.floor(maxNonSchoolActivity * 0.5)) + 0.1} to ${-Math.max(1, Math.floor(maxNonSchoolActivity * 0.25))}`,
-                low: `${-Math.max(1, Math.floor(maxNonSchoolActivity * 0.25)) + 0.1} to -0.1`
-            }
-        });
-
-        // Transform data to use different value ranges for school vs non-school time
-        // School time: positive values (1 to maxSchoolActivity)
-        // Non-school time: negative values (-1 to -maxNonSchoolActivity)
-        const transformedSeries = hourlyHeatmapData.combined_series.map(hourSeries => ({
-            ...hourSeries,
-            data: hourSeries.data.map(dataPoint => ({
-                ...dataPoint,
-                y: dataPoint.y === 0 ? 0 : (
-                    dataPoint.school_time
-                        ? dataPoint.y  // Keep positive for school time
-                        : -dataPoint.y // Make negative for non-school time
-                ),
-                originalValue: dataPoint.y // Store original value for tooltips
-            }))
-        }));
-
-        // Debug: Log sample transformed data
-        if (transformedSeries.length > 0 && transformedSeries[0].data.length > 0) {
-            const sampleData = transformedSeries[0].data.slice(0, 5).map(dp => ({
-                original: dp.originalValue,
-                transformed: dp.y,
-                isSchoolTime: dp.school_time,
-                studentCount: dp.student_count
-            }));
-            console.log('Sample transformed data points:', sampleData);
-        }
-
-        // Global helper function to apply colors consistently (keeping for potential edge cases)
+        // Global helper function to apply colors consistently
         window.applyHeatmapColors = function() {
-            // This is now mainly a backup - the colorScale should handle most cases
-            console.log('Backup color application called');
+            setTimeout(() => {
+                const heatmapElements = document.querySelectorAll('#combined-activity-heatmap .apexcharts-heatmap-rect');
+
+                heatmapElements.forEach((element, index) => {
+                    try {
+                        const seriesIndex = Math.floor(index / hourlyHeatmapData.combined_series[0].data.length);
+                        const dataPointIndex = index % hourlyHeatmapData.combined_series[0].data.length;
+
+                        if (hourlyHeatmapData.combined_series[seriesIndex] &&
+                            hourlyHeatmapData.combined_series[seriesIndex].data[dataPointIndex]) {
+
+                            const dataPoint = hourlyHeatmapData.combined_series[seriesIndex].data[dataPointIndex];
+                            const isSchoolTime = dataPoint.school_time;
+                            const activityValue = dataPoint.y;
+
+                            if (activityValue > 0) {
+                                let color;
+                                if (isSchoolTime) {
+                                    if (activityValue <= Math.floor(maxSchoolActivity * 0.25)) {
+                                        color = '#C6E48B';
+                                    } else if (activityValue <= Math.floor(maxSchoolActivity * 0.5)) {
+                                        color = '#7BC96F';
+                                    } else if (activityValue <= Math.floor(maxSchoolActivity * 0.75)) {
+                                        color = '#239A3B';
+                                    } else {
+                                        color = '#196127';
+                                    }
+                                } else {
+                                    if (activityValue <= Math.floor(maxNonSchoolActivity * 0.25)) {
+                                        color = '#FED7AA';
+                                    } else if (activityValue <= Math.floor(maxNonSchoolActivity * 0.5)) {
+                                        color = '#FDBA74';
+                                    } else if (activityValue <= Math.floor(maxNonSchoolActivity * 0.75)) {
+                                        color = '#FB923C';
+                                    } else {
+                                        color = '#EA580C';
+                                    }
+                                }
+                                element.setAttribute('fill', color);
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Error applying color to heatmap element:', error);
+                    }
+                });
+            }, 100);
         };
 
         // Calculate engagement thresholds based on actual data
@@ -573,7 +572,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateEngagementThresholdsDisplay();
 
         combinedHeatmapOptions = {
-            series: transformedSeries,
+            series: hourlyHeatmapData.combined_series,
             chart: {
                 height: 600, // Taller since it's a single comprehensive chart
                 type: 'heatmap',
@@ -628,64 +627,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     colorScale: {
                         inverse: false,
                         ranges: [
-                            // No activity
+                            // Default range - we'll override colors via events
                             {
                                 from: 0,
                                 to: 0,
                                 name: 'No Activity',
                                 color: '#F3F4F6'
-                            },
-                            // Non-school time (negative values = orange colors)
-                            // Most negative = highest activity = darkest orange
-                            {
-                                from: -maxNonSchoolActivity,
-                                to: -Math.max(1, Math.floor(maxNonSchoolActivity * 0.75)),
-                                name: 'Very High Non-School Activity',
-                                color: '#EA580C'
-                            },
-                            {
-                                from: -Math.max(1, Math.floor(maxNonSchoolActivity * 0.75)) + 0.1,
-                                to: -Math.max(1, Math.floor(maxNonSchoolActivity * 0.5)),
-                                name: 'High Non-School Activity',
-                                color: '#FB923C'
-                            },
-                            {
-                                from: -Math.max(1, Math.floor(maxNonSchoolActivity * 0.5)) + 0.1,
-                                to: -Math.max(1, Math.floor(maxNonSchoolActivity * 0.25)),
-                                name: 'Medium Non-School Activity',
-                                color: '#FDBA74'
-                            },
-                            {
-                                from: -Math.max(1, Math.floor(maxNonSchoolActivity * 0.25)) + 0.1,
-                                to: -0.1,
-                                name: 'Low Non-School Activity',
-                                color: '#FED7AA'
-                            },
-                            // School time (positive values = green colors)
-                            // Higher positive = higher activity = darker green
-                            {
-                                from: 0.1,
-                                to: Math.max(1, Math.floor(maxSchoolActivity * 0.25)),
-                                name: 'Low School Activity',
-                                color: '#C6E48B'
-                            },
-                            {
-                                from: Math.max(1, Math.floor(maxSchoolActivity * 0.25)) + 0.1,
-                                to: Math.max(1, Math.floor(maxSchoolActivity * 0.5)),
-                                name: 'Medium School Activity',
-                                color: '#7BC96F'
-                            },
-                            {
-                                from: Math.max(1, Math.floor(maxSchoolActivity * 0.5)) + 0.1,
-                                to: Math.max(1, Math.floor(maxSchoolActivity * 0.75)),
-                                name: 'High School Activity',
-                                color: '#239A3B'
-                            },
-                            {
-                                from: Math.max(1, Math.floor(maxSchoolActivity * 0.75)) + 0.1,
-                                to: maxSchoolActivity + 1000,
-                                name: 'Very High School Activity',
-                                color: '#196127'
                             }
                         ]
                     }
@@ -703,12 +650,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 custom: function({series, seriesIndex, dataPointIndex, w}) {
                     const hourName = w.globals.seriesNames[seriesIndex];
                     const dateValue = w.globals.categoryLabels[dataPointIndex];
-                    const transformedValue = series[seriesIndex][dataPointIndex];
+                    const value = series[seriesIndex][dataPointIndex];
 
                     // Get the original data point to check if it's school time
-                    const dataPoint = transformedSeries[seriesIndex].data[dataPointIndex];
+                    const dataPoint = hourlyHeatmapData.combined_series[seriesIndex].data[dataPointIndex];
                     const isSchoolTime = dataPoint.school_time;
-                    const originalValue = dataPoint.originalValue; // Use original value for display
 
                     // Format date nicely - handle different date formats
                     let dateStr = 'Invalid Date';
@@ -780,13 +726,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     tooltipHTML += `
                             <div class="text-sm text-gray-600 dark:text-gray-300 mt-1">Time: ${hourName}</div>
                             <div class="text-sm ${colorClass}">${timeType}</div>
-                            <div class="text-sm font-medium ${colorClass}">Activities: ${originalValue}</div>
+                            <div class="text-sm font-medium ${colorClass}">Activities: ${value}</div>
                     `;
 
                     // Add student count and per-student metrics if available
                     if (dataPoint.student_count !== undefined) {
                         const studentCount = dataPoint.student_count;
-                        const activitiesPerStudent = studentCount > 0 ? (originalValue / studentCount).toFixed(1) : '0';
+                        const activitiesPerStudent = studentCount > 0 ? (value / studentCount).toFixed(1) : '0';
 
                         tooltipHTML += `
                             <div class="text-sm font-medium text-blue-600 dark:text-blue-400">Students: ${studentCount}</div>
@@ -853,9 +799,21 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         // Apply custom coloring based on school vs non-school time
-        if (transformedSeries) {
-            // Colors are now handled automatically by colorScale ranges
-            console.log('Using colorScale for automatic color application');
+        if (hourlyHeatmapData.combined_series) {
+            // Create chart events to apply colors
+            combinedHeatmapOptions.chart.events = {
+                dataPointSelection: function(event, chartContext, config) {
+                    // Optional: handle data point selection
+                },
+                mounted: function(chartContext, config) {
+                    console.log('Heatmap mounted, applying custom colors...');
+                    window.applyHeatmapColors();
+                },
+                updated: function(chartContext, config) {
+                    console.log('Heatmap updated, reapplying custom colors...');
+                    window.applyHeatmapColors();
+                }
+            };
         }
 
         // Custom heatmap rendering to store chart reference
@@ -1054,18 +1012,18 @@ function toggleDetailedHeatmapView() {
                 colors: ['#000']
             },
             formatter: function(value, { seriesIndex, dataPointIndex, w }) {
-                if (!transformedSeries || !transformedSeries[seriesIndex]) {
+                if (!hourlyHeatmapData.combined_series || !hourlyHeatmapData.combined_series[seriesIndex]) {
                     return value || '';
                 }
 
-                const dataPoint = transformedSeries[seriesIndex].data[dataPointIndex];
-                if (!dataPoint || dataPoint.originalValue === 0) return '';
+                const dataPoint = hourlyHeatmapData.combined_series[seriesIndex].data[dataPointIndex];
+                if (!dataPoint || value === 0) return '';
 
                 const studentCount = dataPoint.student_count || 0;
-                if (studentCount === 0) return dataPoint.originalValue;
+                if (studentCount === 0) return value;
 
-                // Show format: "activities/students" using original values
-                return `${dataPoint.originalValue}/${studentCount}`;
+                // Show format: "activities/students"
+                return `${value}/${studentCount}`;
             }
         };
 
@@ -1082,16 +1040,16 @@ function toggleDetailedHeatmapView() {
     try {
         currentHeatmapChart = new ApexCharts(heatmapContainer, updatedOptions);
         currentHeatmapChart.render().then(() => {
-            console.log('Heatmap toggled to', isDetailedHeatmapView ? 'detailed' : 'simple', 'view - colors handled by colorScale');
+            console.log('Heatmap toggled to', isDetailedHeatmapView ? 'detailed' : 'simple', 'view');
 
             // Ensure engagement thresholds are available for tooltips
-            if (!engagementThresholds && transformedSeries) {
+            if (!engagementThresholds && hourlyHeatmapData.combined_series) {
                 // Recalculate thresholds if they weren't set initially
                 const activitiesPerStudentValues = [];
-                transformedSeries.forEach(hourSeries => {
+                hourlyHeatmapData.combined_series.forEach(hourSeries => {
                     hourSeries.data.forEach(dataPoint => {
-                        if (dataPoint.student_count > 0 && dataPoint.originalValue > 0) {
-                            const activitiesPerStudent = dataPoint.originalValue / dataPoint.student_count;
+                        if (dataPoint.student_count > 0 && dataPoint.y > 0) {
+                            const activitiesPerStudent = dataPoint.y / dataPoint.student_count;
                             activitiesPerStudentValues.push(activitiesPerStudent);
                         }
                     });
@@ -1111,6 +1069,12 @@ function toggleDetailedHeatmapView() {
                     };
                     console.log('Recalculated engagement thresholds in toggle:', engagementThresholds);
                 }
+            }
+
+            // Reapply custom colors after render
+            if (hourlyHeatmapData.combined_series && window.applyHeatmapColors) {
+                console.log('Toggle function: reapplying custom colors...');
+                window.applyHeatmapColors();
             }
         });
     } catch (error) {
