@@ -430,6 +430,56 @@ document.addEventListener('DOMContentLoaded', function() {
         const maxSchoolActivity = hourlyHeatmapData.stats.max_school_activity || 0;
         const maxNonSchoolActivity = hourlyHeatmapData.stats.max_non_school_activity || 0;
 
+        // Global helper function to apply colors consistently
+        window.applyHeatmapColors = function() {
+            setTimeout(() => {
+                const heatmapElements = document.querySelectorAll('#combined-activity-heatmap .apexcharts-heatmap-rect');
+
+                heatmapElements.forEach((element, index) => {
+                    try {
+                        const seriesIndex = Math.floor(index / hourlyHeatmapData.combined_series[0].data.length);
+                        const dataPointIndex = index % hourlyHeatmapData.combined_series[0].data.length;
+
+                        if (hourlyHeatmapData.combined_series[seriesIndex] &&
+                            hourlyHeatmapData.combined_series[seriesIndex].data[dataPointIndex]) {
+
+                            const dataPoint = hourlyHeatmapData.combined_series[seriesIndex].data[dataPointIndex];
+                            const isSchoolTime = dataPoint.school_time;
+                            const activityValue = dataPoint.y;
+
+                            if (activityValue > 0) {
+                                let color;
+                                if (isSchoolTime) {
+                                    if (activityValue <= Math.floor(maxSchoolActivity * 0.25)) {
+                                        color = '#C6E48B';
+                                    } else if (activityValue <= Math.floor(maxSchoolActivity * 0.5)) {
+                                        color = '#7BC96F';
+                                    } else if (activityValue <= Math.floor(maxSchoolActivity * 0.75)) {
+                                        color = '#239A3B';
+                                    } else {
+                                        color = '#196127';
+                                    }
+                                } else {
+                                    if (activityValue <= Math.floor(maxNonSchoolActivity * 0.25)) {
+                                        color = '#FED7AA';
+                                    } else if (activityValue <= Math.floor(maxNonSchoolActivity * 0.5)) {
+                                        color = '#FDBA74';
+                                    } else if (activityValue <= Math.floor(maxNonSchoolActivity * 0.75)) {
+                                        color = '#FB923C';
+                                    } else {
+                                        color = '#EA580C';
+                                    }
+                                }
+                                element.setAttribute('fill', color);
+                            }
+                        }
+                    } catch (error) {
+                        console.warn('Error applying color to heatmap element:', error);
+                    }
+                });
+            }, 100);
+        };
+
         // Calculate engagement thresholds based on actual data
         function calculateEngagementThresholds(heatmapData) {
             const activitiesPerStudentValues = [];
@@ -577,37 +627,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     colorScale: {
                         inverse: false,
                         ranges: [
-                            // No activity (both school and non-school)
+                            // Default range - we'll override colors via events
                             {
                                 from: 0,
                                 to: 0,
                                 name: 'No Activity',
                                 color: '#F3F4F6'
-                            },
-                            // School time colors (green gradient)
-                            {
-                                from: 0.1,
-                                to: Math.max(1, Math.floor(maxSchoolActivity * 0.25)),
-                                name: 'Low School Activity',
-                                color: '#C6E48B'
-                            },
-                            {
-                                from: Math.floor(maxSchoolActivity * 0.25) + 1,
-                                to: Math.max(1, Math.floor(maxSchoolActivity * 0.5)),
-                                name: 'Medium School Activity',
-                                color: '#7BC96F'
-                            },
-                            {
-                                from: Math.floor(maxSchoolActivity * 0.5) + 1,
-                                to: Math.max(1, Math.floor(maxSchoolActivity * 0.75)),
-                                name: 'High School Activity',
-                                color: '#239A3B'
-                            },
-                            {
-                                from: Math.floor(maxSchoolActivity * 0.75) + 1,
-                                to: maxSchoolActivity,
-                                name: 'Very High School Activity',
-                                color: '#196127'
                             }
                         ]
                     }
@@ -775,61 +800,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Apply custom coloring based on school vs non-school time
         if (hourlyHeatmapData.combined_series) {
-            // Create a custom color function for each data point
+            // Create chart events to apply colors
             combinedHeatmapOptions.chart.events = {
                 dataPointSelection: function(event, chartContext, config) {
                     // Optional: handle data point selection
                 },
                 mounted: function(chartContext, config) {
-                    // After chart is mounted, we can apply custom colors
-                    const chart = chartContext;
-
-                    // Apply colors based on school_time property
-                    setTimeout(() => {
-                        const heatmapElements = document.querySelectorAll('#combined-activity-heatmap .apexcharts-heatmap-rect');
-
-                        heatmapElements.forEach((element, index) => {
-                            // Calculate series and data point indices
-                            const seriesIndex = Math.floor(index / hourlyHeatmapData.combined_series[0].data.length);
-                            const dataPointIndex = index % hourlyHeatmapData.combined_series[0].data.length;
-
-                            if (hourlyHeatmapData.combined_series[seriesIndex] &&
-                                hourlyHeatmapData.combined_series[seriesIndex].data[dataPointIndex]) {
-
-                                const dataPoint = hourlyHeatmapData.combined_series[seriesIndex].data[dataPointIndex];
-                                const isSchoolTime = dataPoint.school_time;
-                                const activityValue = dataPoint.y;
-
-                                if (activityValue > 0) {
-                                    let color;
-                                    if (isSchoolTime) {
-                                        // Green colors for school time
-                                        if (activityValue <= Math.floor(maxSchoolActivity * 0.25)) {
-                                            color = '#C6E48B';
-                                        } else if (activityValue <= Math.floor(maxSchoolActivity * 0.5)) {
-                                            color = '#7BC96F';
-                                        } else if (activityValue <= Math.floor(maxSchoolActivity * 0.75)) {
-                                            color = '#239A3B';
-                                        } else {
-                                            color = '#196127';
-                                        }
-                                    } else {
-                                        // Orange colors for non-school time
-                                        if (activityValue <= Math.floor(maxNonSchoolActivity * 0.25)) {
-                                            color = '#FED7AA';
-                                        } else if (activityValue <= Math.floor(maxNonSchoolActivity * 0.5)) {
-                                            color = '#FDBA74';
-                                        } else if (activityValue <= Math.floor(maxNonSchoolActivity * 0.75)) {
-                                            color = '#FB923C';
-                                        } else {
-                                            color = '#EA580C';
-                                        }
-                                    }
-                                    element.setAttribute('fill', color);
-                                }
-                            }
-                        });
-                    }, 100);
+                    console.log('Heatmap mounted, applying custom colors...');
+                    window.applyHeatmapColors();
+                },
+                updated: function(chartContext, config) {
+                    console.log('Heatmap updated, reapplying custom colors...');
+                    window.applyHeatmapColors();
                 }
             };
         }
@@ -1090,51 +1072,9 @@ function toggleDetailedHeatmapView() {
             }
 
             // Reapply custom colors after render
-            if (hourlyHeatmapData.combined_series) {
-                setTimeout(() => {
-                    const heatmapElements = document.querySelectorAll('#combined-activity-heatmap .apexcharts-heatmap-rect');
-                    const maxSchoolActivity = hourlyHeatmapData.stats.max_school_activity || 0;
-                    const maxNonSchoolActivity = hourlyHeatmapData.stats.max_non_school_activity || 0;
-
-                    heatmapElements.forEach((element, index) => {
-                        const seriesIndex = Math.floor(index / hourlyHeatmapData.combined_series[0].data.length);
-                        const dataPointIndex = index % hourlyHeatmapData.combined_series[0].data.length;
-
-                        if (hourlyHeatmapData.combined_series[seriesIndex] &&
-                            hourlyHeatmapData.combined_series[seriesIndex].data[dataPointIndex]) {
-
-                            const dataPoint = hourlyHeatmapData.combined_series[seriesIndex].data[dataPointIndex];
-                            const isSchoolTime = dataPoint.school_time;
-                            const activityValue = dataPoint.y;
-
-                            if (activityValue > 0) {
-                                let color;
-                                if (isSchoolTime) {
-                                    if (activityValue <= Math.floor(maxSchoolActivity * 0.25)) {
-                                        color = '#C6E48B';
-                                    } else if (activityValue <= Math.floor(maxSchoolActivity * 0.5)) {
-                                        color = '#7BC96F';
-                                    } else if (activityValue <= Math.floor(maxSchoolActivity * 0.75)) {
-                                        color = '#239A3B';
-                                    } else {
-                                        color = '#196127';
-                                    }
-                                } else {
-                                    if (activityValue <= Math.floor(maxNonSchoolActivity * 0.25)) {
-                                        color = '#FED7AA';
-                                    } else if (activityValue <= Math.floor(maxNonSchoolActivity * 0.5)) {
-                                        color = '#FDBA74';
-                                    } else if (activityValue <= Math.floor(maxNonSchoolActivity * 0.75)) {
-                                        color = '#FB923C';
-                                    } else {
-                                        color = '#EA580C';
-                                    }
-                                }
-                                element.setAttribute('fill', color);
-                            }
-                        }
-                    });
-                }, 100);
+            if (hourlyHeatmapData.combined_series && window.applyHeatmapColors) {
+                console.log('Toggle function: reapplying custom colors...');
+                window.applyHeatmapColors();
             }
         });
     } catch (error) {
