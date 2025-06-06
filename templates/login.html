@@ -12,9 +12,9 @@
             <button type="button" data-popover-target="dropdownLanguage" data-popover-trigger="click" data-popover-placement="bottom-end" class="size-8 flex-center hover:bg-gray-200 dark:hover:bg-dark-icon rounded-md dk-theme-card-square">
                 {% get_current_language as LANGUAGE_CODE %}
                 {% if LANGUAGE_CODE == 'ja' %}
-                    <img id="header-lang-img" src="{% static 'images/flag/jp.svg' %}" alt="flag" class="size-5 rounded-sm border border-gray-200" title="Japanese">
+                    <img id="header-lang-img" src="{% static 'images/flag/jp.svg' %}" alt="flag" class="size-5 rounded-sm border border-gray-200" title="{% trans 'Japanese' %}">
                 {% else %}
-                    <img id="header-lang-img" src="{% static 'images/flag/us.svg' %}" alt="flag" class="size-5 rounded-sm border border-gray-200" title="English">
+                    <img id="header-lang-img" src="{% static 'images/flag/us.svg' %}" alt="flag" class="size-5 rounded-sm border border-gray-200" title="{% trans 'English' %}">
                 {% endif %}
             </button>
             <!-- Dropdown -->
@@ -25,9 +25,9 @@
                     <input type="hidden" name="language" value="en">
                     <a href="#" class="flex items-center gap-3 hover:bg-gray-200 px-4 py-2 dark:hover:bg-dark-icon relative after:absolute after:inset-0 after:size-full"
                        onclick="document.getElementById('language-form-en').submit(); return false;"
-                       data-lang="en" title="English">
+                       data-lang="en" title="{% trans 'English' %}">
                         <img src="{% static 'images/flag/us.svg' %}" alt="flag" class="object-cover size-4 rounded-50 dk-theme-card-square">
-                        <h6 class="font-medium text-gray-500 dark:text-white">English</h6>
+                        <h6 class="font-medium text-gray-500 dark:text-white">{% trans "English" %}</h6>
                     </a>
                 </form>
                 <form action="{% url 'set_language' %}" method="post" id="language-form-ja">
@@ -36,9 +36,9 @@
                     <input type="hidden" name="language" value="ja">
                     <a href="#" class="flex items-center gap-3 hover:bg-gray-200 px-4 py-2 dark:hover:bg-dark-icon relative after:absolute after:inset-0 after:size-full"
                        onclick="document.getElementById('language-form-ja').submit(); return false;"
-                       data-lang="ja" title="Japanese">
+                       data-lang="ja" title="{% trans 'Japanese' %}">
                         <img src="{% static 'images/flag/jp.svg' %}" alt="flag" class="object-cover size-4 rounded-50 dk-theme-card-square">
-                        <h6 class="font-medium text-gray-500 dark:text-white">Japanese</h6>
+                        <h6 class="font-medium text-gray-500 dark:text-white">{% trans "Japanese" %}</h6>
                     </a>
                 </form>
             </div>

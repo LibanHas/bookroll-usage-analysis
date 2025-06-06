@@ -55,6 +55,8 @@
 
 <script>
 
+// Translation strings
+const timeSpentText = "{% trans 'Time spent:' %}";
 
 function getIconSVG(type) {
         const icons = {
@@ -782,7 +784,7 @@ class ActivityTimeline {
                             <time class="event-time flex self-center">${formattedTime}</time>
                         </div>
                         <p class="event-type">${sanitizedType.replace('_', ' ')} |
-                        ${timeGap ? `<span class="time-gap lowercase">Time spent: ${timeGap}</span>` : ''}
+                        ${timeGap ? `<span class="time-gap lowercase">${timeSpentText} ${timeGap}</span>` : ''}
                         </p>
                     </div>
                 `;
