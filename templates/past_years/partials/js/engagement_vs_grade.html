@@ -95,17 +95,56 @@ document.addEventListener('DOMContentLoaded', function() {
             metricName: metricConfig.name
         }));
 
+        // Prepare median data for comparison (dashed lines)
+        const highEngagementMedianData = yearlyData.map((item, index) => ({
+            x: labels[index],
+            y: item.high_engagement_median_grade || 0,
+            studentCount: item.high_engagement_count || 0,
+            q1: item.high_engagement_q1_grade || 0,
+            q3: item.high_engagement_q3_grade || 0,
+            outliers: item.high_engagement_outliers || 0,
+            academicYear: item.academic_year,
+            metric: metric,
+            metricName: metricConfig.name
+        }));
+
+        const lowEngagementMedianData = yearlyData.map((item, index) => ({
+            x: labels[index],
+            y: item.low_engagement_median_grade || 0,
+            studentCount: item.low_engagement_count || 0,
+            q1: item.low_engagement_q1_grade || 0,
+            q3: item.low_engagement_q3_grade || 0,
+            outliers: item.low_engagement_outliers || 0,
+            academicYear: item.academic_year,
+            metric: metric,
+            metricName: metricConfig.name
+        }));
+
         const options = {
             series: [
                 {
-                    name: engagementTranslations.highEngagement,
+                    name: engagementTranslations.highEngagement + ' ({% trans "Mean" %})',
                     data: highEngagementData,
-                    color: '#10B981' // Green for high engagement
+                    color: '#10B981', // Green for high engagement
+                    type: 'line'
                 },
                 {
-                    name: engagementTranslations.lowEngagement,
+                    name: engagementTranslations.lowEngagement + ' ({% trans "Mean" %})',
                     data: lowEngagementData,
-                    color: '#F59E0B' // Orange for low engagement
+                    color: '#F59E0B', // Orange for low engagement
+                    type: 'line'
+                },
+                {
+                    name: engagementTranslations.highEngagement + ' ({% trans "Median" %})',
+                    data: highEngagementMedianData,
+                    color: '#059669', // Darker green for median
+                    type: 'line'
+                },
+                {
+                    name: engagementTranslations.lowEngagement + ' ({% trans "Median" %})',
+                    data: lowEngagementMedianData,
+                    color: '#D97706', // Darker orange for median
+                    type: 'line'
                 }
             ],
             chart: {
@@ -157,9 +196,10 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             stroke: {
                 curve: 'smooth',
-                width: 3
+                width: 3,
+                dashArray: [0, 0, 5, 5]  // Solid lines for mean, dashed for median
             },
-            colors: ['#10B981', '#F59E0B'],
+            colors: ['#10B981', '#F59E0B', '#059669', '#D97706'],
             grid: {
                 borderColor: '#e7e7e7',
                 row: {
@@ -196,7 +236,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     const metricName = data.metricName || metricConfig.name;
                     const academicYearNum = data.academicYear || 'N/A';
 
-                    const color = seriesIndex === 0 ? '#10B981' : '#F59E0B';
+                    const color = seriesIndex === 0 ? '#10B981' : seriesIndex === 1 ? '#F59E0B' : seriesIndex === 2 ? '#059669' : '#D97706';
+
+                    // Check if this is a median series (index 2 or 3)
+                    const isMedianSeries = seriesIndex >= 2;
+                    const statisticType = isMedianSeries ? 'Median' : 'Mean';
+
+                    let additionalInfo = '';
+                    if (isMedianSeries && data.q1 !== undefined && data.q3 !== undefined) {
+                        additionalInfo = `
+                            <div><strong>{% trans "Q1-Q3 Range" %}:</strong> ${data.q1.toFixed(1)} - ${data.q3.toFixed(1)}</div>
+                            <div><strong>{% trans "Outliers Detected" %}:</strong> ${data.outliers || 0}</div>
+                        `;
+                    }
 
                     return `
                         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-[220px]">
@@ -206,9 +258,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                             <div class="space-y-1 text-sm text-gray-600 dark:text-gray-300">
                                 <div><strong>${engagementTranslations.academicYear}:</strong> ${academicYear}</div>
-                                <div><strong>${engagementTranslations.averageGrade}:</strong> ${grade} ${engagementTranslations.points}</div>
+                                <div><strong>${statisticType} {% trans "Grade" %}:</strong> ${grade} ${engagementTranslations.points}</div>
                                 <div><strong>${engagementTranslations.students}:</strong> ${studentCount}</div>
-                                <div><strong>{% trans "Engagement" %} (${metricName}):</strong> ${engagementScore}</div>
+                                ${additionalInfo}
+                                ${!isMedianSeries ? `<div><strong>{% trans "Engagement" %} (${metricName}):</strong> ${engagementScore}</div>` : ''}
                             </div>
                         </div>
                     `;
@@ -259,12 +312,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Convert values to numbers to handle Django Decimal objects
         const avgGradeDiff = parseFloat(summaryStats.average_grade_difference || 0);
+        const medianGradeDiff = parseFloat(summaryStats.median_grade_difference || 0);
         const totalStudents = parseInt(summaryStats.total_students_analyzed || 0);
         const yearsCount = summaryStats.years_analyzed ? summaryStats.years_analyzed.length : 0;
 
         // Calculate overall averages from yearly data if available
         let overallHighEngagementAvg = 0;
         let overallLowEngagementAvg = 0;
+        let overallHighEngagementMedian = 0;
+        let overallLowEngagementMedian = 0;
+        let overallOutlierDistortion = 0;
+        let outlierImpactCounts = {high: 0, medium: 0, low: 0};
 
         if (engagementVsGradeData && engagementVsGradeData.yearly_data && engagementVsGradeData.yearly_data.length > 0) {
             const yearlyData = engagementVsGradeData.yearly_data;
@@ -275,7 +333,14 @@ document.addEventListener('DOMContentLoaded', function() {
             let totalLowEngagementGradeSum = 0;
             let totalLowEngagementStudents = 0;
 
+            // For median calculations, we'll use simple averages since we can't recalculate the actual median from summary data
+            let totalHighEngagementMedianSum = 0;
+            let totalLowEngagementMedianSum = 0;
+            let totalOutlierDistortionSum = 0;
+            let validYears = 0;
+
             yearlyData.forEach(year => {
+                // Traditional means
                 if (year.high_engagement_avg_grade && year.high_engagement_count) {
                     totalHighEngagementGradeSum += year.high_engagement_avg_grade * year.high_engagement_count;
                     totalHighEngagementStudents += year.high_engagement_count;
@@ -283,6 +348,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (year.low_engagement_avg_grade && year.low_engagement_count) {
                     totalLowEngagementGradeSum += year.low_engagement_avg_grade * year.low_engagement_count;
                     totalLowEngagementStudents += year.low_engagement_count;
+                }
+
+                // Median statistics (averaged across years)
+                if (year.high_engagement_median_grade !== undefined) {
+                    totalHighEngagementMedianSum += year.high_engagement_median_grade;
+                    validYears++;
+                }
+                if (year.low_engagement_median_grade !== undefined) {
+                    totalLowEngagementMedianSum += year.low_engagement_median_grade;
+                }
+                if (year.outlier_distortion !== undefined) {
+                    totalOutlierDistortionSum += year.outlier_distortion;
+                }
+
+                // Count outlier impact scores
+                if (year.outlier_impact_score) {
+                    outlierImpactCounts[year.outlier_impact_score]++;
                 }
             });
 
@@ -292,13 +374,84 @@ document.addEventListener('DOMContentLoaded', function() {
             if (totalLowEngagementStudents > 0) {
                 overallLowEngagementAvg = totalLowEngagementGradeSum / totalLowEngagementStudents;
             }
+            if (validYears > 0) {
+                overallHighEngagementMedian = totalHighEngagementMedianSum / validYears;
+                overallLowEngagementMedian = totalLowEngagementMedianSum / validYears;
+                overallOutlierDistortion = totalOutlierDistortionSum / validYears;
+            }
         }
 
-        // Update statistics cards with correct values
+        // Update traditional statistics cards
         document.getElementById('highEngagementAvg').textContent = overallHighEngagementAvg.toFixed(1);
         document.getElementById('lowEngagementAvg').textContent = overallLowEngagementAvg.toFixed(1);
         document.getElementById('performanceGap').textContent = avgGradeDiff.toFixed(1) + ' pts';
         document.getElementById('yearsAnalyzedEngagement').textContent = yearsCount;
+
+        // Update median-based statistics cards
+        document.getElementById('highEngagementMedian').textContent = overallHighEngagementMedian.toFixed(1);
+        document.getElementById('lowEngagementMedian').textContent = overallLowEngagementMedian.toFixed(1);
+        document.getElementById('medianPerformanceGap').textContent = medianGradeDiff.toFixed(1) + ' pts';
+        document.getElementById('outlierDistortion').textContent = overallOutlierDistortion.toFixed(1) + ' pts';
+
+        // Update quartile information (will be populated from individual year data)
+        updateQuartileDisplays();
+
+        // Determine overall outlier impact
+        const dominantImpact = Object.keys(outlierImpactCounts).reduce((a, b) =>
+            outlierImpactCounts[a] > outlierImpactCounts[b] ? a : b);
+
+        const impactText = {
+            'high': '{% trans "High Impact" %}',
+            'medium': '{% trans "Medium Impact" %}',
+            'low': '{% trans "Low Impact" %}'
+        };
+
+        document.getElementById('outlierImpactScore').textContent = impactText[dominantImpact] || '{% trans "Unknown" %}';
+
+        // Generate statistical insight
+        generateStatisticalInsight(avgGradeDiff, medianGradeDiff, overallOutlierDistortion, dominantImpact);
+    }
+
+    function updateQuartileDisplays() {
+        // This will show quartile ranges from the most recent year or aggregate data
+        if (engagementVsGradeData && engagementVsGradeData.yearly_data && engagementVsGradeData.yearly_data.length > 0) {
+            const mostRecentYear = engagementVsGradeData.yearly_data[engagementVsGradeData.yearly_data.length - 1];
+
+            if (mostRecentYear.high_engagement_q1_grade !== undefined) {
+                const highQ1 = mostRecentYear.high_engagement_q1_grade;
+                const highQ3 = mostRecentYear.high_engagement_q3_grade;
+                document.getElementById('highEngagementQuartiles').textContent =
+                    `{% trans "Q1-Q3" %}: ${highQ1.toFixed(1)}-${highQ3.toFixed(1)}`;
+            }
+
+            if (mostRecentYear.low_engagement_q1_grade !== undefined) {
+                const lowQ1 = mostRecentYear.low_engagement_q1_grade;
+                const lowQ3 = mostRecentYear.low_engagement_q3_grade;
+                document.getElementById('lowEngagementQuartiles').textContent =
+                    `{% trans "Q1-Q3" %}: ${lowQ1.toFixed(1)}-${lowQ3.toFixed(1)}`;
+            }
+        }
+    }
+
+    function generateStatisticalInsight(avgDiff, medianDiff, distortion, impact) {
+        let insight = '';
+
+        if (Math.abs(avgDiff - medianDiff) < 1) {
+            insight = `{% trans "The mean and median differences are very similar" %} (${Math.abs(avgDiff - medianDiff).toFixed(1)} {% trans "pts apart" %}), {% trans "indicating that outliers have minimal impact on the engagement-grade relationship. The analysis is statistically robust." %}`;
+        } else if (Math.abs(avgDiff - medianDiff) < 3) {
+            insight = `{% trans "There is a moderate difference between mean and median results" %} (${Math.abs(avgDiff - medianDiff).toFixed(1)} {% trans "pts apart" %}). {% trans "Some outliers may be influencing the average, but the overall pattern remains consistent." %}`;
+        } else {
+            insight = `{% trans "Significant difference detected between mean and median analysis" %} (${Math.abs(avgDiff - medianDiff).toFixed(1)} {% trans "pts apart" %}). {% trans "Outliers are substantially distorting the average-based results. The median-based analysis provides a more reliable picture of the typical student experience." %}`;
+        }
+
+        // Add impact assessment
+        if (impact === 'high') {
+            insight += ` <strong>{% trans "Recommendation: Focus on median results for decision-making." %}</strong>`;
+        } else if (impact === 'low') {
+            insight += ` {% trans "Both mean and median results can be trusted for decision-making." %}`;
+        }
+
+        document.getElementById('statisticalInsight').innerHTML = insight;
     }
 
     function switchEngagementMetric(newMetric) {
