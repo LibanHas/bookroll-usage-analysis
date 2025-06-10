@@ -22,6 +22,18 @@
         </div>
         <!-- Cache Controls -->
         <div class="flex items-center gap-2">
+            <!-- Show/Hide Names Toggle Button (Only for Staff/Admin) -->
+            {% if is_staff_or_admin %}
+            <button id="toggleNamesBtn" class="btn btn-info-solid btn-sm flex items-center gap-2 hover:bg-info-600 transition-colors duration-200" title="{% if show_names %}{% trans 'Hide Teacher Names' %}{% else %}{% trans 'Show Teacher Names' %}{% endif %}">
+                <i class="{% if show_names %}ri-eye-off-line{% else %}ri-eye-line{% endif %} mr-1 text-white"></i>
+                {% if show_names %}
+                    {% trans "Hide Names" %}
+                {% else %}
+                    {% trans "Show Names" %}
+                {% endif %}
+            </button>
+            {% endif %}
+
             <form method="POST" action="{% url 'teacher_clear_cache' %}" class="inline">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-secondary-solid btn-sm flex items-center gap-2 hover:bg-secondary-600 transition-colors duration-200" title="{% trans 'Clear Cache' %}">
@@ -74,7 +86,8 @@
                     <h6 class="card-title">{% trans "Teacher list" %}</h6>
                     <p class="card-description">{% trans "All Teacher Here" %}</p>
                 </div>
-                <!-- Search Form -->
+                <!-- Search Form (Only for Staff/Admin) -->
+                {% if is_staff_or_admin %}
                 <form method="GET" class="flex items-center gap-2">
                     <input
                         type="text"
@@ -90,10 +103,15 @@
                     {% if current_sort_order %}
                         <input type="hidden" name="sort_order" value="{{ current_sort_order }}">
                     {% endif %}
+                    <!-- Preserve show_names parameter in search -->
+                    {% if show_names %}
+                        <input type="hidden" name="show_names" value="true">
+                    {% endif %}
                     <button type="submit" class="btn b-solid btn-primary-solid">
                         {% trans "Search" %}
                     </button>
                 </form>
+                {% endif %}
             </div>
             <!-- Start All Instructor List Table -->
             <div class="p-3 sm:p-4">
@@ -106,11 +124,11 @@
                                     <div class="flex items-center gap-2">
                                         <span>{% trans "Name" %}</span>
                                         <div class="flex flex-col">
-                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}sort_by=name&sort_order=asc"
+                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}{% if is_staff_or_admin and show_names %}show_names=true&{% endif %}sort_by=name&sort_order=asc"
                                                class="text-gray-400 hover:text-primary-500 {% if current_sort_by == 'name' and current_sort_order == 'asc' %}text-primary-500{% endif %}">
                                                 <i class="ri-arrow-up-s-line text-xs"></i>
                                             </a>
-                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}sort_by=name&sort_order=desc"
+                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}{% if is_staff_or_admin and show_names %}show_names=true&{% endif %}sort_by=name&sort_order=desc"
                                                class="text-gray-400 hover:text-primary-500 {% if current_sort_by == 'name' and current_sort_order == 'desc' %}text-primary-500{% endif %}">
                                                 <i class="ri-arrow-down-s-line text-xs"></i>
                                             </a>
@@ -121,11 +139,11 @@
                                     <div class="flex items-center gap-2">
                                         <span>{% trans "Active Courses" %}</span>
                                         <div class="flex flex-col">
-                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}sort_by=active_courses&sort_order=asc"
+                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}{% if is_staff_or_admin and show_names %}show_names=true&{% endif %}sort_by=active_courses&sort_order=asc"
                                                class="text-gray-400 hover:text-primary-500 {% if current_sort_by == 'active_courses' and current_sort_order == 'asc' %}text-primary-500{% endif %}">
                                                 <i class="ri-arrow-up-s-line text-xs"></i>
                                             </a>
-                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}sort_by=active_courses&sort_order=desc"
+                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}{% if is_staff_or_admin and show_names %}show_names=true&{% endif %}sort_by=active_courses&sort_order=desc"
                                                class="text-gray-400 hover:text-primary-500 {% if current_sort_by == 'active_courses' and current_sort_order == 'desc' %}text-primary-500{% endif %}">
                                                 <i class="ri-arrow-down-s-line text-xs"></i>
                                             </a>
@@ -136,11 +154,11 @@
                                     <div class="flex items-center gap-2">
                                         <span>{% trans "Archived Courses" %}</span>
                                         <div class="flex flex-col">
-                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}sort_by=archived_courses&sort_order=asc"
+                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}{% if is_staff_or_admin and show_names %}show_names=true&{% endif %}sort_by=archived_courses&sort_order=asc"
                                                class="text-gray-400 hover:text-primary-500 {% if current_sort_by == 'archived_courses' and current_sort_order == 'asc' %}text-primary-500{% endif %}">
                                                 <i class="ri-arrow-up-s-line text-xs"></i>
                                             </a>
-                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}sort_by=archived_courses&sort_order=desc"
+                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}{% if is_staff_or_admin and show_names %}show_names=true&{% endif %}sort_by=archived_courses&sort_order=desc"
                                                class="text-gray-400 hover:text-primary-500 {% if current_sort_by == 'archived_courses' and current_sort_order == 'desc' %}text-primary-500{% endif %}">
                                                 <i class="ri-arrow-down-s-line text-xs"></i>
                                             </a>
@@ -151,11 +169,11 @@
                                     <div class="flex items-center gap-2">
                                         <span>{% trans "Total Course" %}</span>
                                         <div class="flex flex-col">
-                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}sort_by=total_courses&sort_order=asc"
+                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}{% if is_staff_or_admin and show_names %}show_names=true&{% endif %}sort_by=total_courses&sort_order=asc"
                                                class="text-gray-400 hover:text-primary-500 {% if current_sort_by == 'total_courses' and current_sort_order == 'asc' %}text-primary-500{% endif %}">
                                                 <i class="ri-arrow-up-s-line text-xs"></i>
                                             </a>
-                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}sort_by=total_courses&sort_order=desc"
+                                            <a href="?{% if search_term %}search={{ search_term }}&{% endif %}{% if is_staff_or_admin and show_names %}show_names=true&{% endif %}sort_by=total_courses&sort_order=desc"
                                                class="text-gray-400 hover:text-primary-500 {% if current_sort_by == 'total_courses' and current_sort_order == 'desc' %}text-primary-500{% endif %}">
                                                 <i class="ri-arrow-down-s-line text-xs"></i>
                                             </a>
@@ -174,7 +192,7 @@
                                         </a>
                                         <div>
                                             <h6 class="leading-none text-heading font-semibold">
-                                                <a href="{% url 'teacher_detail' teacher.user_id %}">{{ teacher.firstname }} {{ teacher.lastname }}</a>
+                                                <a href="{% url 'teacher_detail' teacher.user_id %}">{{ teacher.display_name }}</a>
                                             </h6>
                                         </div>
                                     </div>
@@ -194,7 +212,7 @@
                             <ul class="flex items-center space-x-2">
                                 {% if page_obj.has_previous %}
                                     <li>
-                                        <a href="?page={{ page_obj.previous_page_number }}{% if search_term %}&search={{ search_term }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_sort_order %}&sort_order={{ current_sort_order }}{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">
+                                        <a href="?page={{ page_obj.previous_page_number }}{% if search_term %}&search={{ search_term }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_sort_order %}&sort_order={{ current_sort_order }}{% endif %}{% if is_staff_or_admin and show_names %}&show_names=true{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">
                                             <span class="sr-only">{% trans "Previous" %}</span>
                                             <i class="fas fa-angle-left">&lt;</i>
                                         </a>
@@ -214,7 +232,7 @@
                                             {% if num == page_obj.number %}
                                                 <span class="flex items-center justify-center w-10 h-10 text-white bg-primary-500 rounded-md">{{ num }}</span>
                                             {% else %}
-                                                <a href="?page={{ num }}{% if search_term %}&search={{ search_term }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_sort_order %}&sort_order={{ current_sort_order }}{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">{{ num }}</a>
+                                                <a href="?page={{ num }}{% if search_term %}&search={{ search_term }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_sort_order %}&sort_order={{ current_sort_order }}{% endif %}{% if is_staff_or_admin and show_names %}&show_names=true{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">{{ num }}</a>
                                             {% endif %}
                                         </li>
                                     {% endfor %}
@@ -228,7 +246,7 @@
                                             {% if num|add:0 == page_obj.number %}
                                                 <span class="flex items-center justify-center w-10 h-10 text-white bg-primary-500 rounded-md">{{ num }}</span>
                                             {% else %}
-                                                <a href="?page={{ num }}{% if search_term %}&search={{ search_term }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_sort_order %}&sort_order={{ current_sort_order }}{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">{{ num }}</a>
+                                                <a href="?page={{ num }}{% if search_term %}&search={{ search_term }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_sort_order %}&sort_order={{ current_sort_order }}{% endif %}{% if is_staff_or_admin and show_names %}&show_names=true{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">{{ num }}</a>
                                             {% endif %}
                                         </li>
                                         {% endwith %}
@@ -270,7 +288,7 @@
                                                     {% if second_last == page_obj.number %}
                                                         <span class="flex items-center justify-center w-10 h-10 text-white bg-primary-500 rounded-md">{{ second_last }}</span>
                                                     {% else %}
-                                                        <a href="?page={{ second_last }}{% if search_term %}&search={{ search_term }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_sort_order %}&sort_order={{ current_sort_order }}{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">{{ second_last }}</a>
+                                                        <a href="?page={{ second_last }}{% if search_term %}&search={{ search_term }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_sort_order %}&sort_order={{ current_sort_order }}{% endif %}{% if is_staff_or_admin and show_names %}&show_names=true{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">{{ second_last }}</a>
                                                     {% endif %}
                                                 </li>
                                             {% else %}
@@ -279,7 +297,7 @@
                                                     {% if page_obj.paginator.num_pages == page_obj.number %}
                                                         <span class="flex items-center justify-center w-10 h-10 text-white bg-primary-500 rounded-md">{{ page_obj.paginator.num_pages }}</span>
                                                     {% else %}
-                                                        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_term %}&search={{ search_term }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_sort_order %}&sort_order={{ current_sort_order }}{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">{{ page_obj.paginator.num_pages }}</a>
+                                                        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_term %}&search={{ search_term }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_sort_order %}&sort_order={{ current_sort_order }}{% endif %}{% if is_staff_or_admin and show_names %}&show_names=true{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">{{ page_obj.paginator.num_pages }}</a>
                                                     {% endif %}
                                                 </li>
                                             {% endif %}
@@ -289,7 +307,7 @@
 
                                 {% if page_obj.has_next %}
                                     <li>
-                                        <a href="?page={{ page_obj.next_page_number }}{% if search_term %}&search={{ search_term }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_sort_order %}&sort_order={{ current_sort_order }}{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">
+                                        <a href="?page={{ page_obj.next_page_number }}{% if search_term %}&search={{ search_term }}{% endif %}{% if current_sort_by %}&sort_by={{ current_sort_by }}{% endif %}{% if current_sort_order %}&sort_order={{ current_sort_order }}{% endif %}{% if is_staff_or_admin and show_names %}&show_names=true{% endif %}" class="flex items-center justify-center w-10 h-10 text-gray-600 bg-white rounded-md hover:bg-primary-100 hover:text-primary-600 dark:bg-dark-card-two dark:text-dark-text dark:hover:bg-primary-900 dark:hover:text-primary-400">
                                             <span class="sr-only">{% trans "Next" %}</span>
                                             <i class="fas fa-angle-right">&gt;</i>
                                         </a>
@@ -329,17 +347,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Define colors for different operations
     const operationColors = [
-        '#3B82F6', // Blue
-        '#10B981', // Green
-        '#F59E0B', // Amber
-        '#EF4444', // Red
-        '#8B5CF6', // Purple
-        '#EC4899', // Pink
-        '#14B8A6', // Teal
-        '#F97316', // Orange
-        '#84CC16', // Lime
-        '#6366F1', // Indigo
-        '#6B7280'  // Gray for "Other"
+        '#3B82F6',
+        '#10B981',
+        '#F59E0B',
+        '#EF4444',
+        '#8B5CF6',
+        '#EC4899',
+        '#14B8A6',
+        '#F97316',
+        '#84CC16',
+        '#6366F1',
+        '#6B7280'
     ];
 
     // Chart options for stacked bar chart
@@ -370,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
         dataLabels: {
-            enabled: false  // Disable data labels for cleaner stacked view
+            enabled: false
         },
         stroke: {
             show: true,
@@ -416,7 +434,6 @@ document.addEventListener('DOMContentLoaded', function() {
             intersect: false,
             y: {
                 formatter: function (val, opts) {
-                    const seriesName = opts.series[opts.seriesIndex][opts.dataPointIndex];
                     return val + ' {% trans "activities" %}';
                 }
             },
@@ -426,20 +443,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 const count = series[seriesIndex][dataPointIndex];
                 const total = series.reduce((sum, s) => sum + (s[dataPointIndex] || 0), 0);
 
-                return `
-                    <div class="bg-white dark:bg-gray-800 p-3 border rounded shadow-lg">
-                        <div class="font-semibold text-gray-900 dark:text-white mb-1">${teacherName}</div>
-                        <div class="text-sm text-gray-600 dark:text-gray-300">
-                            <div class="flex items-center mb-1">
-                                <span class="w-3 h-3 rounded mr-2" style="background-color: ${w.globals.colors[seriesIndex]}"></span>
-                                ${operationName}: ${count} {% trans "activities" %}
-                            </div>
-                            <div class="border-t pt-1 font-medium">
-                                {% trans "Total" %}: ${total} {% trans "activities" %}
-                            </div>
-                        </div>
-                    </div>
-                `;
+                return '<div class="bg-white dark:bg-gray-800 p-3 border rounded shadow-lg">' +
+                       '<div class="font-semibold text-gray-900 dark:text-white mb-1">' + teacherName + '</div>' +
+                       '<div class="text-sm text-gray-600 dark:text-gray-300">' +
+                       '<div class="flex items-center mb-1">' +
+                       '<span class="w-3 h-3 rounded mr-2" style="background-color: ' + w.globals.colors[seriesIndex] + '"></span>' +
+                       operationName + ': ' + count + ' {% trans "activities" %}' +
+                       '</div>' +
+                       '<div class="border-t pt-1 font-medium">' +
+                       '{% trans "Total" %}: ' + total + ' {% trans "activities" %}' +
+                       '</div></div></div>';
             }
         },
         grid: {
@@ -463,12 +476,8 @@ document.addEventListener('DOMContentLoaded', function() {
 function updateChart() {
     const timeFilter = document.getElementById('chartTimeFilter').value;
     const currentUrl = new URL(window.location);
-
-    // Preserve existing query parameters
     const searchParams = new URLSearchParams(currentUrl.search);
     searchParams.set('chart_filter', timeFilter);
-
-    // Reload page with new filter
     window.location.href = currentUrl.pathname + '?' + searchParams.toString();
 }
 
@@ -498,6 +507,27 @@ observer.observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['class']
 });
+
+// Toggle Names functionality for staff users
+{% if is_staff_or_admin %}
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('toggleNamesBtn');
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            const currentUrl = new URL(window.location);
+            const searchParams = new URLSearchParams(currentUrl.search);
+
+            // Toggle the show_names parameter
+            const currentShowNames = searchParams.get('show_names') === 'true';
+            searchParams.set('show_names', (!currentShowNames).toString());
+
+            // Reload page with new parameter
+            window.location.href = currentUrl.pathname + '?' + searchParams.toString();
+        });
+    }
+});
+{% endif %}
 </script>
 
 {% endblock %}

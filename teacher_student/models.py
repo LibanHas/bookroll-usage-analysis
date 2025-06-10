@@ -20,7 +20,7 @@ class TeacherExclusion(models.Model):
     lms_id = models.IntegerField(unique=True, help_text="Teacher's LMS user ID from Moodle")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    reason = models.CharField(max_length=255, blank=True, null=True, help_text="Reason for exclusion (e.g., 'Testing account')")
+    reason = models.CharField(max_length=255, blank=True, null=True, help_text="Reason for exclusion (e.g., 'Testing account' )")
     is_active = models.BooleanField(default=True, help_text="Whether this exclusion is currently active")
 
     class Meta:

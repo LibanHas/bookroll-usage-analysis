@@ -1,5 +1,6 @@
 import logging
 import datetime
+import statistics
 from typing import Dict, List, Any, Optional
 from django.db import connections
 from django.conf import settings
@@ -44,7 +45,7 @@ def get_time_spent_by_school_vs_home(start_year: int = 2018, end_year: int = Non
     Args:
         start_year (int): Starting academic year (default: 2019)
         end_year (int): Ending academic year (default: current year - 1)
-        cache_timeout (int): Cache timeout in seconds (default: 24 hours)
+        cache_timeout (int): Cache timeout in seconds (default: 24 hours for historical data)
 
     Returns:
         Dict containing:
@@ -395,7 +396,7 @@ def clear_time_spent_cache(start_year: int = None, end_year: int = None) -> bool
 
 def get_engagement_vs_grade_performance(start_year: int = 2018, end_year: int = None,
                                        engagement_metric: str = 'activities_hours',
-                                       cache_timeout: int = 7200) -> Dict[str, Any]:
+                                       cache_timeout: int = 86400) -> Dict[str, Any]:
     """
     Calculate engagement vs grade performance by comparing top 25% and bottom 25%
     of students based on their platform engagement (log activity) and their academic performance.
@@ -406,16 +407,17 @@ def get_engagement_vs_grade_performance(start_year: int = 2018, end_year: int = 
     3. Gets academic performance (average grades) from analysis_db
     4. Segments students into top 25% vs bottom 25% based on engagement
     5. Compares average grades between high and low engagement groups
+    6. Now includes median-based statistics and quartile ranges for robust analysis
 
     Args:
         start_year (int): Starting academic year (default: 2019)
         end_year (int): Ending academic year (default: current year - 1)
         engagement_metric (str): How to calculate engagement ('activities_hours', 'activities', 'hours')
-        cache_timeout (int): Cache timeout in seconds (default: 2 hours)
+        cache_timeout (int): Cache timeout in seconds (default: 24 hours for historical data)
 
     Returns:
         Dict containing:
-        - yearly_data: List of yearly engagement vs grade comparisons
+        - yearly_data: List of yearly engagement vs grade comparisons (with both mean and median stats)
         - summary_stats: Overall statistics
         - metadata: Configuration and analysis info
     """
@@ -449,19 +451,25 @@ def get_engagement_vs_grade_performance(start_year: int = 2018, end_year: int = 
             'total_low_engagement': 0,
             'years_analyzed': list(range(start_year, end_year + 1)),
             'average_engagement_difference': 0,
-            'average_grade_difference': 0
+            'average_grade_difference': 0,
+            # Add median-based summary stats
+            'median_grade_difference': 0,
+            'quartile_consistency_score': 0  # How consistent the pattern is across quartiles
         },
         'metadata': {
             'date_range': {'start': f"{start_year}-04-01", 'end': f"{end_year + 1}-03-31"},
             'engagement_percentiles': {'top': 25, 'bottom': 25},
             'engagement_metric': engagement_metric,
             'grade_metric': 'average_course_grade',
-            'cache_timeout': cache_timeout
+            'cache_timeout': cache_timeout,
+            'includes_median_analysis': True,  # Flag to indicate enhanced analysis
+            'statistical_methods': ['mean', 'median', 'quartiles', 'iqr']
         }
     }
 
     total_engagement_differences = []
     total_grade_differences = []
+    total_median_grade_differences = []
     all_students_count = 0
 
     # Process each academic year
@@ -481,6 +489,9 @@ def get_engagement_vs_grade_performance(start_year: int = 2018, end_year: int = 
                 total_engagement_differences.append(year_data['engagement_difference'])
             if year_data.get('grade_difference') is not None:
                 total_grade_differences.append(year_data['grade_difference'])
+            # Track median differences
+            if year_data.get('median_grade_difference') is not None:
+                total_median_grade_differences.append(year_data['median_grade_difference'])
 
     # Calculate summary averages
     result['summary_stats']['total_students_analyzed'] = all_students_count
@@ -490,10 +501,20 @@ def get_engagement_vs_grade_performance(start_year: int = 2018, end_year: int = 
     result['summary_stats']['average_grade_difference'] = round(
         sum(total_grade_differences) / len(total_grade_differences), 2
     ) if total_grade_differences else 0
+    # Calculate median-based summary
+    result['summary_stats']['median_grade_difference'] = round(
+        sum(total_median_grade_differences) / len(total_median_grade_differences), 2
+    ) if total_median_grade_differences else 0
 
-    # Cache the result
+    # Calculate quartile consistency score (how often high engagement beats low engagement)
+    consistency_count = sum(1 for diff in total_median_grade_differences if diff > 0)
+    result['summary_stats']['quartile_consistency_score'] = round(
+        (consistency_count / len(total_median_grade_differences)) * 100, 1
+    ) if total_median_grade_differences else 0
+
+    # Cache the result for 24 hours
     cache.set(cache_key, result, cache_timeout)
-    logger.info(f"Cached engagement vs grade data for {len(result['yearly_data'])} years with metric {engagement_metric}")
+    logger.info(f"Cached engagement vs grade data for {len(result['yearly_data'])} years with metric {engagement_metric} (24hr cache)")
 
     return result
 
@@ -684,20 +705,25 @@ def _get_engagement_data_for_students(academic_year: int, student_user_ids: List
                 student_id, total_activities, active_days, total_hours, avg_duration, first_date, last_date = row
 
                 if student_id and student_id in student_user_ids:
+                    # Convert values to float to avoid Decimal multiplication issues
+                    total_activities_float = float(total_activities)
+                    total_hours_float = float(total_hours)
+                    avg_duration_float = float(avg_duration)
+
                     # Calculate engagement score based on the selected metric
                     if engagement_metric == 'activities':
-                        engagement_score = total_activities
+                        engagement_score = total_activities_float
                     elif engagement_metric == 'hours':
-                        engagement_score = total_hours
+                        engagement_score = total_hours_float
                     else:  # 'activities_hours' (default)
-                        engagement_score = total_activities * total_hours
+                        engagement_score = total_activities_float * total_hours_float
 
                     engagement_data[student_id] = {
                         'student_id': student_id,
-                        'total_activities': total_activities,
-                        'active_days': active_days,
-                        'total_hours': total_hours,
-                        'avg_activity_duration': avg_duration,
+                        'total_activities': total_activities_float,
+                        'active_days': int(active_days),
+                        'total_hours': total_hours_float,
+                        'avg_activity_duration': avg_duration_float,
                         'first_activity_date': str(first_date),
                         'last_activity_date': str(last_date),
                         'engagement_score': engagement_score,
@@ -761,12 +787,12 @@ def _get_grade_data_for_students(academic_year: int, student_user_ids: List[str]
 
                 grade_data[student_id] = {
                     'student_id': student_id,
-                    'total_grades': total_grades,
-                    'average_grade': avg_grade,
-                    'min_grade': min_grade,
-                    'max_grade': max_grade,
-                    'grade_stddev': grade_stddev or 0,
-                    'course_count': course_count
+                    'total_grades': int(total_grades),
+                    'average_grade': float(avg_grade),
+                    'min_grade': float(min_grade),
+                    'max_grade': float(max_grade),
+                    'grade_stddev': float(grade_stddev or 0),
+                    'course_count': int(course_count)
                 }
 
         logger.info(f"Found grade data for {len(grade_data)} students in academic year {academic_year}")
@@ -823,6 +849,7 @@ def _combine_engagement_and_grade_data(engagement_data: Dict[str, Dict], grade_d
 def _analyze_engagement_vs_performance(academic_year: int, combined_data: List[Dict[str, Any]], engagement_metric: str = 'activities_hours') -> Dict[str, Any]:
     """
     Analyze engagement vs performance by comparing top 25% and bottom 25% engagement groups.
+    Now includes both mean and median-based statistics with quartile analysis.
 
     Args:
         academic_year (int): Academic year
@@ -830,7 +857,7 @@ def _analyze_engagement_vs_performance(academic_year: int, combined_data: List[D
         engagement_metric (str): How engagement was calculated ('activities_hours', 'activities', 'hours')
 
     Returns:
-        Dict containing analysis results
+        Dict containing analysis results with both traditional and robust statistics
     """
     # Sort by engagement score (descending)
     sorted_by_engagement = sorted(combined_data, key=lambda x: x['engagement_score'], reverse=True)
@@ -843,6 +870,11 @@ def _analyze_engagement_vs_performance(academic_year: int, combined_data: List[D
     high_engagement_students = sorted_by_engagement[:top_25_count]
     low_engagement_students = sorted_by_engagement[-bottom_25_count:]
 
+    # Extract grade lists for statistical analysis
+    high_engagement_grades = [s['average_grade'] for s in high_engagement_students]
+    low_engagement_grades = [s['average_grade'] for s in low_engagement_students]
+
+    # ===== TRADITIONAL MEAN-BASED ANALYSIS =====
     # Calculate averages for high engagement group
     high_engagement_avg_grade = sum(s['average_grade'] for s in high_engagement_students) / len(high_engagement_students)
     high_engagement_avg_activities = sum(s['total_activities'] for s in high_engagement_students) / len(high_engagement_students)
@@ -859,13 +891,58 @@ def _analyze_engagement_vs_performance(academic_year: int, combined_data: List[D
     grade_difference = high_engagement_avg_grade - low_engagement_avg_grade
     engagement_difference = high_engagement_avg_score - low_engagement_avg_score
 
+    # ===== ROBUST MEDIAN-BASED ANALYSIS =====
+    # High engagement group - median and quartiles
+    high_engagement_median_grade = statistics.median(high_engagement_grades)
+    high_engagement_q1 = statistics.quantiles(high_engagement_grades, n=4)[0] if len(high_engagement_grades) >= 4 else high_engagement_grades[0]
+    high_engagement_q3 = statistics.quantiles(high_engagement_grades, n=4)[2] if len(high_engagement_grades) >= 4 else high_engagement_grades[-1]
+    high_engagement_iqr = high_engagement_q3 - high_engagement_q1
+
+    # Low engagement group - median and quartiles
+    low_engagement_median_grade = statistics.median(low_engagement_grades)
+    low_engagement_q1 = statistics.quantiles(low_engagement_grades, n=4)[0] if len(low_engagement_grades) >= 4 else low_engagement_grades[0]
+    low_engagement_q3 = statistics.quantiles(low_engagement_grades, n=4)[2] if len(low_engagement_grades) >= 4 else low_engagement_grades[-1]
+    low_engagement_iqr = low_engagement_q3 - low_engagement_q1
+
+    # Median difference
+    median_grade_difference = high_engagement_median_grade - low_engagement_median_grade
+
+    # ===== ADDITIONAL ROBUST STATISTICS =====
+    # Standard deviations for spread analysis
+    high_engagement_std = statistics.stdev(high_engagement_grades) if len(high_engagement_grades) > 1 else 0
+    low_engagement_std = statistics.stdev(low_engagement_grades) if len(low_engagement_grades) > 1 else 0
+
+    # Outlier detection using IQR method
+    def count_outliers(grades, q1, q3):
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        return sum(1 for grade in grades if grade < lower_bound or grade > upper_bound)
+
+    high_engagement_outliers = count_outliers(high_engagement_grades, high_engagement_q1, high_engagement_q3)
+    low_engagement_outliers = count_outliers(low_engagement_grades, low_engagement_q1, low_engagement_q3)
+
+    # Trimmed means (remove top and bottom 10% if enough data)
+    def calculate_trimmed_mean(grades, trim_percent=0.1):
+        if len(grades) < 10:  # Need at least 10 students for meaningful trimming
+            return statistics.mean(grades)
+
+        sorted_grades = sorted(grades)
+        trim_count = max(1, int(len(sorted_grades) * trim_percent))
+        trimmed = sorted_grades[trim_count:-trim_count] if trim_count > 0 else sorted_grades
+        return statistics.mean(trimmed)
+
+    high_engagement_trimmed_mean = calculate_trimmed_mean(high_engagement_grades)
+    low_engagement_trimmed_mean = calculate_trimmed_mean(low_engagement_grades)
+    trimmed_grade_difference = high_engagement_trimmed_mean - low_engagement_trimmed_mean
+
     year_data = {
         'academic_year': academic_year,
         'year_display': f"{academic_year}年度",
         'total_students': total_students,
         'engagement_metric_used': engagement_metric,
 
-        # High engagement group
+        # ===== HIGH ENGAGEMENT GROUP - TRADITIONAL STATS =====
         'high_engagement_count': len(high_engagement_students),
         'high_engagement_avg_grade': round(high_engagement_avg_grade, 2),
         'high_engagement_avg_activities': round(high_engagement_avg_activities, 1),
@@ -873,7 +950,16 @@ def _analyze_engagement_vs_performance(academic_year: int, combined_data: List[D
         'high_engagement_avg_score': round(high_engagement_avg_score, 2),
         'high_engagement_percentage': 25,  # Always 25% for consistency
 
-        # Low engagement group
+        # ===== HIGH ENGAGEMENT GROUP - ROBUST STATS =====
+        'high_engagement_median_grade': round(high_engagement_median_grade, 2),
+        'high_engagement_q1_grade': round(high_engagement_q1, 2),
+        'high_engagement_q3_grade': round(high_engagement_q3, 2),
+        'high_engagement_iqr': round(high_engagement_iqr, 2),
+        'high_engagement_std': round(high_engagement_std, 2),
+        'high_engagement_outliers': high_engagement_outliers,
+        'high_engagement_trimmed_mean': round(high_engagement_trimmed_mean, 2),
+
+        # ===== LOW ENGAGEMENT GROUP - TRADITIONAL STATS =====
         'low_engagement_count': len(low_engagement_students),
         'low_engagement_avg_grade': round(low_engagement_avg_grade, 2),
         'low_engagement_avg_activities': round(low_engagement_avg_activities, 1),
@@ -881,21 +967,45 @@ def _analyze_engagement_vs_performance(academic_year: int, combined_data: List[D
         'low_engagement_avg_score': round(low_engagement_avg_score, 2),
         'low_engagement_percentage': 25,  # Always 25% for consistency
 
-        # Differences and insights
+        # ===== LOW ENGAGEMENT GROUP - ROBUST STATS =====
+        'low_engagement_median_grade': round(low_engagement_median_grade, 2),
+        'low_engagement_q1_grade': round(low_engagement_q1, 2),
+        'low_engagement_q3_grade': round(low_engagement_q3, 2),
+        'low_engagement_iqr': round(low_engagement_iqr, 2),
+        'low_engagement_std': round(low_engagement_std, 2),
+        'low_engagement_outliers': low_engagement_outliers,
+        'low_engagement_trimmed_mean': round(low_engagement_trimmed_mean, 2),
+
+        # ===== COMPARATIVE ANALYSIS =====
+        # Traditional differences
         'grade_difference': round(grade_difference, 2),
         'engagement_difference': round(engagement_difference, 2),
         'correlation_strength': 'positive' if grade_difference > 0 else 'negative' if grade_difference < 0 else 'neutral',
 
-        # Additional stats
+        # Robust differences
+        'median_grade_difference': round(median_grade_difference, 2),
+        'trimmed_grade_difference': round(trimmed_grade_difference, 2),
+        'median_correlation_strength': 'positive' if median_grade_difference > 0 else 'negative' if median_grade_difference < 0 else 'neutral',
+
+        # Outlier impact analysis
+        'outlier_distortion': round(abs(grade_difference - median_grade_difference), 2),
+        'outlier_impact_score': 'high' if abs(grade_difference - median_grade_difference) > 5 else 'medium' if abs(grade_difference - median_grade_difference) > 2 else 'low',
+
+        # ===== ADDITIONAL STATS =====
         'middle_students_count': total_students - len(high_engagement_students) - len(low_engagement_students),
         'overall_avg_grade': round(sum(s['average_grade'] for s in combined_data) / len(combined_data), 2),
         'overall_avg_activities': round(sum(s['total_activities'] for s in combined_data) / len(combined_data), 1),
         'overall_avg_hours': round(sum(s['total_hours'] for s in combined_data) / len(combined_data), 2),
-        'overall_avg_engagement_score': round(sum(s['engagement_score'] for s in combined_data) / len(combined_data), 2)
+        'overall_avg_engagement_score': round(sum(s['engagement_score'] for s in combined_data) / len(combined_data), 2),
+
+        # ===== STATISTICAL RELIABILITY INDICATORS =====
+        'has_sufficient_data': total_students >= 20,  # Flag for reliable analysis
+        'quartile_overlap': high_engagement_q1 <= low_engagement_q3,  # True if quartiles overlap (less clear separation)
+        'statistical_confidence': 'high' if total_students >= 50 else 'medium' if total_students >= 20 else 'low'
     }
 
-    logger.info(f"Academic year {academic_year} ({engagement_metric}): Grade difference {grade_difference:.2f} points, "
-                f"Engagement difference {engagement_difference:.2f}")
+    logger.info(f"Academic year {academic_year} ({engagement_metric}): Mean difference {grade_difference:.2f} points, "
+                f"Median difference {median_grade_difference:.2f} points, Outlier impact: {year_data['outlier_impact_score']}")
 
     return year_data
 

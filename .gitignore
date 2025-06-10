@@ -57,3 +57,6 @@ yarn-error.log
 .cursor/
 .cursorrules
 .cursorignore
+
+
+*.sql

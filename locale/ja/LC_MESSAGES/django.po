@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-21 02:29+0000\n"
+"POT-Creation-Date: 2025-06-06 04:40+0000\n"
 "PO-Revision-Date: 2024-04-21 02:30+0000\n"
 "Last-Translator: LEAF School Team <team@leafschool.org>\n"
 "Language-Team: Japanese <ja@li.org>\n"
@@ -15,405 +15,4375 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
+#: holiday/admin.py:17
+#, fuzzy
+#| msgid "Course title"
+msgid "Holiday Information"
+msgstr "祝日情報"
+
+#: holiday/admin.py:20
+msgid "Timestamps"
+msgstr "タイムスタンプ"
+
+#: holiday/models.py:16
+msgid "Holiday Date"
+msgstr "祝日の日付"
+
+#: holiday/models.py:17
+msgid "The date of the holiday"
+msgstr "祝日の日付"
+
+#: holiday/models.py:22
+msgid "Holiday Name"
+msgstr "祝日名"
+
+#: holiday/models.py:23
+msgid "The name of the holiday in Japanese"
+msgstr "祝日の日本語名"
+
+#: holiday/models.py:30
+msgid "Holiday Name (English)"
+msgstr "祝日名（英語）"
+
+#: holiday/models.py:31
+msgid "The name of the holiday in English"
+msgstr "祝日の英語名"
+
+#: holiday/models.py:35
+#, fuzzy
+#| msgid "This Year"
+msgid "Year"
+msgstr "年"
+
+#: holiday/models.py:36
+msgid "The year this holiday occurs"
+msgstr "この祝日が発生する年"
+
+#: holiday/models.py:42
+#, fuzzy
+#| msgid "Created:"
+msgid "Created At"
+msgstr "作成日時"
+
+#: holiday/models.py:47
+msgid "Updated At"
+msgstr "更新日時"
+
+#: past_years/views.py:212
+#, fuzzy
+#| msgid "Past Years"
+msgid "Past Years Analysis"
+msgstr "過去年度分析"
+
+#: past_years/views.py:213
+msgid "Historical data analysis from previous academic years"
+msgstr "過去の学年度からの履歴データ分析"
+
+#: past_years/views.py:243
+#, python-brace-format
+msgid "Analysis for {year}"
+msgstr "{year}年度の分析"
+
+#: past_years/views.py:244
+#, python-brace-format
+msgid "Comprehensive analysis and statistics for the year {year}"
+msgstr "{year}年度の包括的な分析と統計"
+
+#: past_years/views.py:246 past_years/views.py:277 past_years/views.py:377
+#: past_years/views.py:535 past_years/views.py:566 past_years/views.py:587
+#: templates/main.html:170 templates/past_years/overview.html:19
+#: templates/past_years/partials/breadcrumb.html:14
+msgid "Past Years"
+msgstr "過去年度"
+
+#: past_years/views.py:274 past_years/views.py:374
+#, python-brace-format
+msgid "Courses Analysis - {year}"
+msgstr "コース分析 - {year}年度"
+
+#: past_years/views.py:275 past_years/views.py:375
+#, python-brace-format
+msgid "Course statistics and analysis for {year}"
+msgstr "{year}年度のコース統計と分析"
+
+#: past_years/views.py:279 past_years/views.py:379
+#: templates/course_categories.html:25 templates/main.html:145
+#: templates/past_years/overview.html:2299
+#: templates/past_years/overview.html:3017
+#: templates/past_years/year_analysis.html:43
+msgid "Courses"
+msgstr "コース"
+
+#: past_years/views.py:532
+#, fuzzy, python-brace-format
+#| msgid "Students list"
+msgid "Students Analysis - {year}"
+msgstr "生徒分析 - {year}年度"
+
+#: past_years/views.py:533
+#, python-brace-format
+msgid "Student activity and performance analysis for {year}"
+msgstr "{year}年度の生徒活動とパフォーマンス分析"
+
+#: past_years/views.py:537 templates/main.html:155
+#: templates/past_years/overview.html:3065
+#: templates/past_years/year_analysis.html:57
+#: templates/past_years/year_courses.html:240
+#: templates/past_years/year_students.html:707
+#: templates/past_years/year_students.html:950
+#: templates/past_years/year_students.html:2179
+msgid "Students"
+msgstr "生徒"
+
+#: past_years/views.py:563
+#, python-brace-format
+msgid "Teachers Analysis - {year}"
+msgstr "教師分析 - {year}年度"
+
+#: past_years/views.py:564
+#, python-brace-format
+msgid "Teacher activity and course management analysis for {year}"
+msgstr "{year}年度の教師活動とコース管理分析"
+
+#: past_years/views.py:568 templates/main.html:150
+#: templates/past_years/year_analysis.html:71 templates/teacher_detail.html:16
+msgid "Teachers"
+msgstr "教師"
+
+#: past_years/views.py:584
+#, python-brace-format
+msgid "Advanced Analytics - {year}"
+msgstr "高度な分析 - {year}年度"
+
+#: past_years/views.py:585
+#, python-brace-format
+msgid "Detailed analytics and insights for {year}"
+msgstr "{year}年度の詳細な分析と洞察"
+
+#: past_years/views.py:589 templates/most_active_students.html:56
+#: templates/most_active_students.html:76
+#: templates/most_active_students.html:96
+#: templates/most_active_students.html:116
+#: templates/past_years/year_analysis.html:85
+#: templates/past_years/year_courses.html:55
+#: templates/past_years/year_courses.html:75
+#: templates/past_years/year_courses.html:95
+#: templates/past_years/year_courses.html:115
+#: templates/past_years/year_students.html:82
+#: templates/past_years/year_students.html:102
+#: templates/past_years/year_students.html:158
+msgid "Analytics"
+msgstr "分析"
+
+#: templates/base.html:9
 msgid "LEAF School & Dashboard"
 msgstr "LEAF スクール & ダッシュボード"
 
+#: templates/course_categories.html:9 templates/course_categories.html:15
+#: templates/course_detail.html:37 templates/past_years/year_courses.html:189
 #, fuzzy
 #| msgid "Course title"
 msgid "Course Categories"
 msgstr "コースカテゴリー"
 
+#: templates/course_categories.html:12 templates/course_detail.html:34
+#: templates/index.html:12 templates/most_active_contents.html:12
+#: templates/most_active_students.html:20
+#: templates/most_highlighted_content.html:12
+#: templates/most_memoed_content.html:12 templates/past_years/overview.html:16
+#: templates/past_years/partials/breadcrumb.html:11
+#: templates/student_detail.html:13 templates/teacher_detail.html:13
 msgid "Home"
 msgstr "ホーム"
 
-msgid "Courses"
-msgstr "コース"
-
+#: templates/course_categories.html:26
 msgid "Browse courses organized by categories"
 msgstr "カテゴリー別にコースを閲覧する"
 
+#: templates/course_categories.html:33
 #, fuzzy
 #| msgid "Search..."
 msgid "Search courses..."
 msgstr "コースを検索..."
 
+#: templates/course_categories.html:37
 msgid "Clear"
 msgstr "クリア"
 
-msgid "Details"
-msgstr "詳細"
-
+#: templates/course_categories.html:71
 msgid "Moodle"
 msgstr "Moodle"
 
+#: templates/course_categories.html:80
 msgid "No courses in this category"
 msgstr "このカテゴリーにコースがありません"
 
+#: templates/course_categories.html:88
 #, fuzzy
 #| msgid "No teachers found"
 msgid "No course categories found"
 msgstr "コースカテゴリーが見つかりません"
 
+#: templates/course_categories.html:95
 msgid "No courses match your search"
 msgstr "検索に一致するコースがありません"
 
+#: templates/course_detail.html:27
 #, fuzzy
 #| msgid "Course title"
 msgid "Course Details:"
 msgstr "コース詳細："
 
+#: templates/course_detail.html:29
 msgid "Course Not Found"
 msgstr "コースが見つかりません"
 
+#: templates/course_detail.html:44
 #, fuzzy
 #| msgid "No students found"
 msgid "Not Found"
 msgstr "見つかりません"
 
+#: templates/course_detail.html:55
+msgid "From:"
+msgstr "開始日："
+
+#: templates/course_detail.html:60
+msgid "To:"
+msgstr "終了日："
+
+#: templates/course_detail.html:66 templates/most_active_contents.html:47
+msgid "Filter"
+msgstr "フィルター"
+
+#: templates/course_detail.html:78
+msgid "Today"
+msgstr "今日"
+
+#: templates/course_detail.html:79
+#, fuzzy
+#| msgid "07 Days"
+msgid "Last 7 Days"
+msgstr "7日間"
+
+#: templates/course_detail.html:80
+#, fuzzy
+#| msgid "07 Days"
+msgid "Last 30 Days"
+msgstr "7日間"
+
+#: templates/course_detail.html:81
+#, fuzzy
+#| msgid "07 Days"
+msgid "Last 90 Days"
+msgstr "7日間"
+
+#: templates/course_detail.html:82
+#, fuzzy
+#| msgid "07 Days"
+msgid "Last 180 Days"
+msgstr "7日間"
+
+#: templates/course_detail.html:97
 msgid "The requested course could not be found."
 msgstr "リクエストされたコースが見つかりませんでした。"
 
+#: templates/course_detail.html:99
 msgid "Return to Course Categories"
 msgstr "コースカテゴリーに戻る"
 
+#: templates/course_detail.html:109
 #, fuzzy
 #| msgid "Course title"
 msgid "Course Information"
 msgstr "コース情報"
 
+#: templates/course_detail.html:110
 msgid "Basic details about the course"
 msgstr "コースの基本情報"
 
+#: templates/course_detail.html:114
 msgid "Open in Moodle"
 msgstr "Moodleで開く"
 
+#: templates/course_detail.html:126
 #, fuzzy
 #| msgid "Category"
 msgid "Category:"
 msgstr "カテゴリー："
 
+#: templates/course_detail.html:131
 msgid "Start Date:"
 msgstr "開始日："
 
+#: templates/course_detail.html:138
 msgid "End Date:"
 msgstr "終了日："
 
+#: templates/course_detail.html:144
 #, fuzzy
 #| msgid "Enrolled Courses"
 msgid "Enrolled Students:"
 msgstr "登録済み生徒："
 
+#: templates/course_detail.html:149
 msgid "Created:"
 msgstr "作成日："
 
+#: templates/course_detail.html:155
 #, fuzzy
 #| msgid "Course title"
 msgid "Course Description"
 msgstr "コース説明"
 
+#: templates/course_detail.html:168
 #, fuzzy
 #| msgid "Course title"
 msgid "Course Statistics"
 msgstr "コース統計"
 
+#: templates/course_detail.html:169
 msgid "Activity metrics for this course"
 msgstr "このコースのアクティビティ指標"
 
+#: templates/course_detail.html:182
 msgid "Some statistics may be unavailable at the moment."
 msgstr "一部の統計情報は現在利用できない場合があります。"
 
-#, fuzzy
-#| msgid "Teachers"
-msgid "Course Teachers"
-msgstr "コース教師"
-
-msgid "Instructors for this course"
-msgstr "このコースの講師"
-
-#, fuzzy
-#| msgid "All Teacher Here"
-msgid "Show All Teachers"
-msgstr "すべての教師を表示"
-
-msgid "No teachers assigned to this course"
-msgstr "このコースに割り当てられた教師はいません"
-
-msgid "Keywords"
-msgstr "キーワード"
-
-msgid "Top keywords from student highlights in this course"
-msgstr "このコースの学生のハイライトからのトップキーワード"
-
-msgid "Keyword Cloud"
-msgstr "キーワードクラウド"
-
-msgid "Frequency"
-msgstr "頻度"
-
-msgid "Keyword"
-msgstr "キーワード"
-
-msgid "Relevance Score"
-msgstr "関連性スコア"
-
-msgid "About Keyword Extraction"
-msgstr "キーワード抽出について"
-
-msgid ""
-"These keywords are extracted from student highlights using natural language "
-"processing. The system analyzes what students highlight to identify "
-"important concepts and terms."
-msgstr ""
-"これらのキーワードは、自然言語処理を使用して学生のハイライトから抽出されます。"
-"システムは学生がハイライトした内容を分析して、重要な概念や用語を特定します。"
-
-msgid "Frequency: Number of times this keyword appears in student highlights"
-msgstr "頻度：学生のハイライトでこのキーワードが出現する回数"
-
-msgid ""
-"Relevance Score: How relevant the keyword is to the course content (higher "
-"is better)"
-msgstr "関連性スコア：キーワードがコースの内容にどれだけ関連しているか（高いほど良い）"
-
-msgid ""
-"No keywords found for this course. Students may not have highlighted content "
-"yet."
-msgstr "このコースのキーワードが見つかりません。学生がまだコンテンツをハイライトしていない可能性があります。"
-
+#: templates/course_detail.html:193
 #, fuzzy
 #| msgid "Students list"
 msgid "Student Highlights"
 msgstr "学生のハイライト"
 
+#: templates/course_detail.html:194
 msgid ""
 "Most active to least active students based on highlights and interactions"
-msgstr "ハイライトと相互作用に基づく最もアクティブな学生から最も非アクティブな学生まで"
+msgstr ""
+"ハイライトと相互作用に基づく最もアクティブな学生から最も非アクティブな学生ま"
+"で"
 
+#: templates/course_detail.html:199 templates/course_detail.html:280
+msgid "Chart Type:"
+msgstr "チャートタイプ："
+
+#: templates/course_detail.html:201
+#, fuzzy
+#| msgid "Total Students"
+msgid "Individual Students"
+msgstr "生徒総数"
+
+#: templates/course_detail.html:202
+#, fuzzy
+#| msgid "Student Activity Distribution"
+msgid "Statistical Distribution"
+msgstr "生徒アクティビティ分布"
+
+#: templates/course_detail.html:203
+msgid "Normal Distribution"
+msgstr ""
+
+#: templates/course_detail.html:207 templates/course_detail.html:290
+msgid "Privacy:"
+msgstr "プライバシー："
+
+#: templates/course_detail.html:209 templates/course_detail.html:292
+#, fuzzy
+#| msgid "Show Details"
+msgid "Show Names"
+msgstr "詳細を表示"
+
+#: templates/course_detail.html:231
 msgid "About Student Activity Metrics"
 msgstr "学生活動指標について"
 
+#: templates/course_detail.html:238
+#, fuzzy
+#| msgid ""
+#| "This chart shows student engagement levels based on their interactions "
+#| "with course content. Students are classified as active (with "
+#| "interactions) or absent (enrolled but no interactions)."
 msgid ""
-"This chart shows student engagement levels based on their interactions with "
-"course content. Students are classified as active (with interactions) or "
-"absent (enrolled but no interactions)."
+"This section provides three different views of student engagement levels "
+"based on their interactions with course content. Use the Chart Type selector "
+"to switch between views."
 msgstr ""
-"このチャートは、コースのコンテンツとの相互作用に基づいて学生の関与レベルを示しています。"
-"学生はアクティブ（相互作用あり）または欠席（登録済みだが相互作用なし）に分類されます。"
+"このチャートは、コースのコンテンツとの相互作用に基づいて学生の関与レベルを示"
+"しています。学生はアクティブ（相互作用あり）または欠席（登録済みだが相互作用"
+"なし）に分類されます。"
 
-msgid "Activity Count: Total number of tracked interactions per student"
-msgstr "アクティビティ数：学生ごとの追跡された相互作用の総数"
+#: templates/course_detail.html:244
+msgid "Individual Students Chart"
+msgstr "個別学生チャート"
 
+#: templates/course_detail.html:246
 msgid ""
-"A count of zero indicates a student who is enrolled but has not accessed "
-"course content"
-msgstr "ゼロのカウントは、登録済みだがコースのコンテンツにアクセスしていない学生を示します"
+"Shows each student's activity count individually. Students are color-coded "
+"by status: Active (blue), Absent/No Activity (red), Not Currently Enrolled "
+"(yellow), Unknown (gray)."
+msgstr ""
 
+#: templates/course_detail.html:251
+#, fuzzy
+#| msgid "Statistical Comparison Insight"
+msgid "Statistical Distribution Chart"
+msgstr "統計比較洞察"
+
+#: templates/course_detail.html:253
+msgid ""
+"Groups students into activity ranges (0, 1-10, 11-25, etc.) showing how many "
+"students fall into each engagement level. Useful for understanding overall "
+"class participation patterns."
+msgstr ""
+
+#: templates/course_detail.html:258
+msgid "Normal Distribution Chart"
+msgstr "正規分布チャート"
+
+#: templates/course_detail.html:260
+msgid ""
+"Displays a statistical bell curve analysis with standard deviations (σ). "
+"Shows both the theoretical normal distribution and actual student data "
+"distribution. Helps identify if engagement follows normal patterns."
+msgstr ""
+
+#: templates/course_detail.html:274
+#, fuzzy
+#| msgid "Student Activity Distribution"
+msgid "Student Activity Time Analysis"
+msgstr "生徒アクティビティ分布"
+
+#: templates/course_detail.html:275
+msgid "Analysis of student activities during school time vs non-school time"
+msgstr ""
+
+#: templates/course_detail.html:282
+msgid "School vs Non-School Comparison"
+msgstr "学校時間 vs 非学校時間の比較"
+
+#: templates/course_detail.html:283
+msgid "School Time Only"
+msgstr "学校時間のみ"
+
+#: templates/course_detail.html:284
+msgid "Non-School Time Only"
+msgstr "非学校時間のみ"
+
+#: templates/course_detail.html:285
+#, fuzzy
+#| msgid "Student Activity Distribution"
+msgid "Percentage Distribution"
+msgstr "生徒アクティビティ分布"
+
+#: templates/course_detail.html:286
+msgid "Time Preference Distribution"
+msgstr "時間の好み分布"
+
+#: templates/course_detail.html:314
+#, fuzzy
+#| msgid "View Analytics"
+msgid "About Time Analysis"
+msgstr "分析を表示"
+
+#: templates/course_detail.html:321
+msgid ""
+"This analysis categorizes student activities based on when they occur, "
+"helping understand learning patterns and engagement outside traditional "
+"school hours."
+msgstr ""
+
+#: templates/course_detail.html:327
+msgid "School Time"
+msgstr "学校時間"
+
+#: templates/course_detail.html:329
+#, fuzzy
+#| msgid "Activities & Hours"
+msgid "Activities during school hours"
+msgstr "アクティビティ & 時間"
+
+#: templates/course_detail.html:329
+msgid ""
+"on weekdays, excluding Japanese national holidays. Times are converted from "
+"UTC to Japan Standard Time (JST)."
+msgstr ""
+
+#: templates/course_detail.html:334
+msgid "Non-School Time"
+msgstr "非学校時間"
+
+#: templates/course_detail.html:336
+msgid ""
+"Activities during weekends, Japanese national holidays, and outside school "
+"hours (before"
+msgstr ""
+
+#: templates/course_detail.html:336
+msgid "or after"
+msgstr ""
+
+#: templates/course_detail.html:336
+msgid "This includes self-directed learning and homework time."
+msgstr ""
+
+#: templates/course_detail.html:341
+msgid "Timezone Handling"
+msgstr "タイムゾーン処理"
+
+#: templates/course_detail.html:343
+msgid ""
+"All activity timestamps are stored in UTC and converted to Japan Standard "
+"Time (JST) for accurate time categorization. Japanese holidays are "
+"automatically considered as non-school time."
+msgstr ""
+
+#: templates/course_detail.html:350
+msgid "Chart Types:"
+msgstr "チャートタイプ："
+
+#: templates/course_detail.html:352
+msgid "School vs Non-School Comparison:"
+msgstr "学校時間 vs 非学校時間の比較："
+
+#: templates/course_detail.html:352
+msgid "Side-by-side comparison of activities in both time categories"
+msgstr "両方の時間カテゴリでのアクティビティの並列比較"
+
+#: templates/course_detail.html:353
+msgid "School Time Only:"
+msgstr "学校時間のみ："
+
+#: templates/course_detail.html:353
+msgid "Focus on activities during official school hours"
+msgstr "公式の学校時間中のアクティビティに焦点"
+
+#: templates/course_detail.html:354
+msgid "Non-School Time Only:"
+msgstr "非学校時間のみ："
+
+#: templates/course_detail.html:354
+msgid "Focus on self-directed learning outside school hours"
+msgstr "学校時間外の自主学習に焦点"
+
+#: templates/course_detail.html:355
+#, fuzzy
+#| msgid "Student Activity Distribution"
+msgid "Percentage Distribution:"
+msgstr "生徒アクティビティ分布"
+
+#: templates/course_detail.html:355
+msgid "Shows the proportion of each student's activities in each time category"
+msgstr "各時間カテゴリでの各学生のアクティビティの割合を表示"
+
+#: templates/course_detail.html:356
+msgid "Time Preference Distribution:"
+msgstr "時間の好み分布："
+
+#: templates/course_detail.html:356
+msgid "Overview of how many students prefer each time category"
+msgstr "各時間カテゴリを好む学生数の概要"
+
+#: templates/course_detail.html:367
+#, fuzzy
+#| msgid "Teachers"
+msgid "Course Teachers"
+msgstr "コース教師"
+
+#: templates/course_detail.html:368
+msgid "Instructors for this course"
+msgstr "このコースの講師"
+
+#: templates/course_detail.html:396
+#, fuzzy
+#| msgid "All Teacher Here"
+msgid "Show All Teachers"
+msgstr "すべての教師を表示"
+
+#: templates/course_detail.html:402
+msgid "No teachers assigned to this course"
+msgstr "このコースに割り当てられた教師はいません"
+
+#: templates/course_detail.html:412
+msgid "Keywords"
+msgstr "キーワード"
+
+#: templates/course_detail.html:413
+msgid "Top keywords from student highlights in this course"
+msgstr "このコースの学生のハイライトからのトップキーワード"
+
+#: templates/course_detail.html:510
+msgid "Keyword Cloud"
+msgstr "キーワードクラウド"
+
+#: templates/course_detail.html:578 templates/course_detail.html:600
+#: templates/course_detail.html:634
+msgid "Frequency"
+msgstr "頻度"
+
+#: templates/course_detail.html:631
+msgid "Keyword"
+msgstr "キーワード"
+
+#: templates/course_detail.html:637
+msgid "Relevance Score"
+msgstr "関連性スコア"
+
+#: templates/course_detail.html:663
+msgid "About Keyword Extraction"
+msgstr "キーワード抽出について"
+
+#: templates/course_detail.html:670
+msgid ""
+"These keywords are extracted from student highlights using natural language "
+"processing. The system analyzes what students highlight to identify "
+"important concepts and terms."
+msgstr ""
+"これらのキーワードは、自然言語処理を使用して学生のハイライトから抽出されま"
+"す。システムは学生がハイライトした内容を分析して、重要な概念や用語を特定しま"
+"す。"
+
+#: templates/course_detail.html:673
+msgid "Frequency: Number of times this keyword appears in student highlights"
+msgstr "頻度：学生のハイライトでこのキーワードが出現する回数"
+
+#: templates/course_detail.html:674
+msgid ""
+"Relevance Score: How relevant the keyword is to the course content (higher "
+"is better)"
+msgstr ""
+"関連性スコア：キーワードがコースの内容にどれだけ関連しているか（高いほど良"
+"い）"
+
+#: templates/course_detail.html:680
+msgid ""
+"No keywords found for this course. Students may not have highlighted content "
+"yet."
+msgstr ""
+"このコースのキーワードが見つかりません。学生がまだコンテンツをハイライトして"
+"いない可能性があります。"
+
+#: templates/course_detail.html:787
+msgid "Please select valid dates"
+msgstr "有効な日付を選択してください"
+
+#: templates/course_detail.html:793
+msgid "Start date cannot be after end date"
+msgstr "開始日は終了日より後にできません"
+
+#: templates/index.html:9
 msgid "Saikyo Junior high school"
 msgstr "最強中学校"
 
+#: templates/index.html:15 templates/main.html:101 templates/main.html:138
 msgid "Dashboard"
 msgstr "ダッシュボード"
 
+#: templates/index.html:25 templates/index.html:319
+#: templates/past_years/overview.html:464
+#: templates/past_years/overview.html:1438
+#: templates/past_years/overview.html:1592
 msgid "Total Students"
 msgstr "生徒総数"
 
+#: templates/index.html:29 templates/index.html:62 templates/index.html:93
+#: templates/index.html:124
 msgid "07 Days"
 msgstr "7日間"
 
+#: templates/index.html:58 templates/past_years/overview.html:441
+#: templates/past_years/year_courses.html:54 templates/student_list.html:39
+#: templates/teacher_detail.html:112
 msgid "Total Courses"
 msgstr "コース総数"
 
+#: templates/index.html:89
 msgid "Total Contents"
 msgstr "コンテンツ総数"
 
+#: templates/index.html:123 templates/index.html:315
+#: templates/past_years/year_courses.html:94
+#: templates/past_years/year_courses.html:366
+#: templates/past_years/year_courses.html:449
 msgid "Active Students"
 msgstr "アクティブな生徒"
 
+#: templates/index.html:154
 msgid "Daily Active Students"
 msgstr "日別アクティブ生徒"
 
+#: templates/index.html:156 templates/index.html:169
+#: templates/most_active_students.html:33 templates/student_detail.html:131
 msgid "This Year"
 msgstr "今年"
 
+#: templates/index.html:157 templates/index.html:170
+#: templates/most_active_students.html:31 templates/student_detail.html:132
 msgid "This Month"
 msgstr "今月"
 
+#: templates/index.html:167 templates/student_detail.html:129
 msgid "Daily Activities"
 msgstr "日々のアクティビティ"
 
+#: templates/index.html:183 templates/most_active_contents.html:9
+#: templates/most_active_contents.html:15
+#: templates/most_active_contents.html:26
 msgid "Most Active Contents"
 msgstr "最もアクティブなコンテンツ"
 
+#: templates/index.html:184 templates/index.html:225 templates/index.html:266
 msgid "See all"
 msgstr "すべて表示"
 
+#: templates/index.html:192 templates/index.html:233 templates/index.html:274
+#: templates/most_active_contents.html:59
+#: templates/most_highlighted_content.html:48
+#: templates/most_memoed_content.html:48
 msgid "Content Name"
 msgstr "コンテンツ名"
 
+#: templates/index.html:193 templates/most_active_contents.html:61
+#: templates/past_years/partials/engagement_vs_grade.html:21
+#: templates/past_years/partials/js/engagement_vs_grade.html:36
+#: templates/past_years/partials/js/engagement_vs_grade.html:38
+#: templates/past_years/year_courses.html:243
+#: templates/past_years/year_courses.html:399
 msgid "Activities"
 msgstr "アクティビティ"
 
+#: templates/index.html:224 templates/most_highlighted_content.html:9
+#: templates/most_highlighted_content.html:15
+#: templates/most_highlighted_content.html:25
 msgid "Most Highlighted Content"
 msgstr "最もハイライトされたコンテンツ"
 
+#: templates/index.html:234 templates/most_highlighted_content.html:49
 msgid "# of Highlights"
 msgstr "ハイライト数"
 
+#: templates/index.html:265 templates/most_memoed_content.html:9
+#: templates/most_memoed_content.html:15 templates/most_memoed_content.html:25
 msgid "Most Memoed Content"
 msgstr "最もメモされたコンテンツ"
 
+#: templates/index.html:275 templates/most_memoed_content.html:49
 msgid "# of Memos"
 msgstr "メモ数"
 
-msgid "Most Active Students"
-msgstr "最もアクティブな生徒"
+#: templates/index.html:308 templates/most_active_students.html:17
+#: templates/most_active_students.html:23
+msgid "Student Learning Analytics"
+msgstr "生徒学習分析"
 
-msgid "Student Name"
-msgstr "生徒名"
+#: templates/index.html:309
+msgid "View Analytics"
+msgstr "分析を表示"
 
+#: templates/index.html:324
+msgid "Comprehensive learning analytics available"
+msgstr "包括的な学習分析が利用可能です"
+
+#: templates/index.html:328
+msgid "View Full Analytics"
+msgstr "詳細分析を表示"
+
+#: templates/login.html:15 templates/login.html:39 templates/login.html:41
+#: templates/main.html:51 templates/main.html:75 templates/main.html:77
+msgid "Japanese"
+msgstr "日本語"
+
+#: templates/login.html:17 templates/login.html:28 templates/login.html:30
+#: templates/main.html:53 templates/main.html:64 templates/main.html:66
+msgid "English"
+msgstr "英語"
+
+#: templates/login.html:52 templates/login.html:53
 msgid "login image"
 msgstr "ログイン画像"
 
+#: templates/login.html:57
 msgid "Welcome back!"
 msgstr "おかえりなさい！"
 
-msgid "All students activity dashboard."
-msgstr "すべての生徒のアクティビティダッシュボード。"
+#: templates/login.html:60
+msgid "School dashboard"
+msgstr "学校ダッシュボード"
 
+#: templates/login.html:70 templates/login.html:115
 msgid "Sign In"
 msgstr "サインイン"
 
+#: templates/login.html:73
 msgid "Welcome Back! Log in to your account"
 msgstr "おかえりなさい！アカウントにログインしてください"
 
+#: templates/login.html:119
 msgid "OR"
 msgstr "または"
 
+#: templates/login.html:122 templates/login.html:126
 msgid "icon"
 msgstr "アイコン"
 
+#: templates/login.html:123
 msgid "Sign in with Google"
 msgstr "Googleでサインイン"
 
+#: templates/login.html:127
 msgid "Continue with Apple"
 msgstr "Appleで続ける"
 
+#: templates/login.html:133
 msgid "Don't have an account yet?"
 msgstr "アカウントをお持ちでない方"
 
+#: templates/login.html:134
 msgid "Sign Up"
 msgstr "サインアップ"
 
-msgid "Teachers"
-msgstr "教師"
+#: templates/main.html:36
+#, fuzzy
+#| msgid "Known Limitations"
+msgid "Notifications"
+msgstr "既知の制限事項"
 
-msgid "Students"
-msgstr "生徒"
+#: templates/main.html:42
+#, fuzzy
+#| msgid "See all"
+msgid "View all"
+msgstr "すべて表示"
 
+# New translations that were missing
+#: templates/main.html:95
+msgid "Guest! You are not logged in."
+msgstr "ゲスト！ログインしていません。"
+
+#: templates/main.html:104
+msgid "Settings"
+msgstr "設定"
+
+#: templates/main.html:108
+msgid "Sign out"
+msgstr "サインアウト"
+
+#: templates/main.html:177
+msgid "Overview"
+msgstr "概要"
+
+#: templates/main.html:194
 msgid "Help"
 msgstr "ヘルプ"
 
+#: templates/main.html:206
 msgid "Documentation"
 msgstr "ドキュメント"
 
+#: templates/main.html:218 templates/past_years/year_students.html:487
 msgid "Support"
 msgstr "サポート"
 
+#: templates/main.html:225
 msgid "All Support"
 msgstr "全てのサポート"
 
+#: templates/main.html:230
 msgid "Create Support"
 msgstr "サポートを作成"
 
+#: templates/main.html:243
 msgid "Logout"
 msgstr "ログアウト"
 
+#: templates/main.html:258
 msgid "Adjust Configurations"
 msgstr "設定を調整"
 
+#: templates/main.html:260
 msgid "Transform your space to reflect your personality!"
 msgstr "あなたの個性を反映するスペースに変更しましょう！"
 
+#: templates/main.html:267
 msgid "Theme Mode"
 msgstr "テーマモード"
 
+#: templates/main.html:270
 msgid "Light"
 msgstr "ライト"
 
+#: templates/main.html:277
 msgid "Dark"
 msgstr "ダーク"
 
+#: templates/main.html:287
 msgid "Theme Card Style"
 msgstr "テーマカードスタイル"
 
+#: templates/main.html:290
 msgid "Square"
 msgstr "四角"
 
+#: templates/main.html:297
 msgid "Round"
 msgstr "丸"
 
+#: templates/main.html:307
 msgid "Theme Layout Width"
 msgstr "テーマレイアウト幅"
 
+#: templates/main.html:310
 msgid "Full Width"
 msgstr "全幅"
 
+#: templates/main.html:317
 msgid "Container"
 msgstr "コンテナ"
 
+#: templates/main.html:328 templates/past_years/year_students.html:291
 msgid "Reset"
 msgstr "リセット"
 
+#: templates/most_active_contents.html:27
 msgid "Search and view contents by activity"
 msgstr "アクティビティによるコンテンツの検索と表示"
 
+#: templates/most_active_contents.html:35
+#: templates/most_highlighted_content.html:33
+#: templates/most_memoed_content.html:33
 msgid "Search by content name..."
 msgstr "コンテンツ名で検索..."
 
-msgid "Search"
-msgstr "検索"
+#: templates/most_active_contents.html:60
+msgid "Activity Breakdown"
+msgstr "アクティビティの内訳"
 
+#: templates/most_active_contents.html:85
+msgid "No activity breakdown available"
+msgstr "アクティビティの内訳がありません"
+
+#: templates/most_active_contents.html:93
 #, fuzzy
 #| msgid "No students found"
 msgid "No active contents found"
 msgstr "アクティブなコンテンツが見つかりません"
 
+#: templates/most_active_contents.html:108
+#: templates/most_highlighted_content.html:86
+#: templates/most_memoed_content.html:86 templates/student_list.html:103
+#: templates/teacher_list.html:198
 msgid "Previous"
 msgstr "前へ"
 
+#: templates/most_active_contents.html:203
+#: templates/most_highlighted_content.html:181
+#: templates/most_memoed_content.html:181 templates/student_list.html:198
+#: templates/teacher_list.html:293
 msgid "Next"
 msgstr "次へ"
 
-msgid "Search and view students by activity frequency"
-msgstr "アクティビティ頻度による生徒の検索と表示"
-
-msgid "Search by student name..."
-msgstr "生徒名で検索..."
-
+#: templates/most_active_students.html:28
 #, fuzzy
-#| msgid "No students found"
-msgid "No active students found"
-msgstr "アクティブな生徒が見つかりません"
+#| msgid "Time spent:"
+msgid "Time Frame:"
+msgstr "費やした時間："
 
+#: templates/most_active_students.html:30
+msgid "This Week"
+msgstr "今週"
+
+#: templates/most_active_students.html:32
+#, fuzzy
+#| msgid "This Month"
+msgid "Last 3 Months"
+msgstr "今月"
+
+#: templates/most_active_students.html:34
+#: templates/past_years/overview.html:1079
+#: templates/past_years/overview.html:1310
+#: templates/past_years/overview.html:1378
+#: templates/past_years/overview.html:1435
+#: templates/past_years/overview.html:1529
+#: templates/past_years/overview.html:1589
+#: templates/past_years/overview.html:2499
+#: templates/past_years/overview.html:2763
+#: templates/past_years/partials/js/engagement_vs_grade.html:18
+#: templates/past_years/partials/js/log_analytics.html:72
+msgid "Academic Year"
+msgstr "学年度"
+
+#: templates/most_active_students.html:40
+msgid "Toggle detailed view with numbers in cells"
+msgstr "セル内の数値を含む詳細ビューを切り替え"
+
+#: templates/most_active_students.html:43
+#: templates/past_years/year_students.html:428
+#: templates/past_years/year_students.html:1892
+msgid "Show Details"
+msgstr "詳細を表示"
+
+#: templates/most_active_students.html:55
+msgid "Total Active Students"
+msgstr "アクティブ生徒総数"
+
+#: templates/most_active_students.html:75
+#: templates/past_years/partials/js/engagement_vs_grade.html:39
+#: templates/past_years/year_courses.html:114
+#: templates/past_years/year_courses.html:372
+#: templates/past_years/year_courses.html:452
+#: templates/past_years/year_students.html:121
+msgid "Total Activities"
+msgstr "総アクティビティ数"
+
+#: templates/most_active_students.html:95
+msgid "Average Activities"
+msgstr "平均アクティビティ数"
+
+#: templates/most_active_students.html:115
+msgid "Standard Deviation"
+msgstr "標準偏差"
+
+#: templates/most_active_students.html:136
+msgid "Student Activity Distribution"
+msgstr "生徒アクティビティ分布"
+
+#: templates/most_active_students.html:138
+msgid "Number of students by activity range"
+msgstr "アクティビティ範囲別の生徒数"
+
+#: templates/most_active_students.html:142
+msgid "Dynamic ranges based on data:"
+msgstr "データに基づく動的範囲："
+
+#: templates/most_active_students.html:142 templates/teacher_list.html:420
+#: templates/teacher_list.html:435 templates/teacher_list.html:438
+#, fuzzy
+#| msgid "Activities"
+msgid "activities"
+msgstr "アクティビティ"
+
+#: templates/most_active_students.html:153
+#, fuzzy
+#| msgid "Low Engagement Avg"
+msgid "Student Engagement Levels"
+msgstr "低エンゲージメント平均"
+
+#: templates/most_active_students.html:155
+msgid "Distribution by engagement categories"
+msgstr "エンゲージメントカテゴリ別の分布"
+
+#: templates/most_active_students.html:164
+#, fuzzy
+#| msgid "Student Activity Distribution"
+msgid "Student Activity Patterns by Time Type"
+msgstr "生徒アクティビティ分布"
+
+#: templates/most_active_students.html:166
+msgid "Activity volume and student participation by hour (JST)"
+msgstr "時間別のアクティビティ量と学生参加（JST）"
+
+#: templates/most_active_students.html:186
+msgid "Legend & Time Type Explanation"
+msgstr "凡例と時間タイプの説明"
+
+#: templates/most_active_students.html:196
+msgid "School Time (Green)"
+msgstr "学校時間（緑）"
+
+#: templates/most_active_students.html:198
+#: templates/most_active_students.html:231
+#, fuzzy
+#| msgid "Activities"
+msgid "Activity Level:"
+msgstr "アクティビティ"
+
+#: templates/most_active_students.html:203
+#: templates/most_active_students.html:236
+#: templates/past_years/overview.html:2356
+msgid "None"
+msgstr "なし"
+
+#: templates/most_active_students.html:207
+#: templates/most_active_students.html:240
+msgid "Low"
+msgstr "低"
+
+#: templates/most_active_students.html:211
+#: templates/most_active_students.html:244
+#, fuzzy
+#| msgid "Median"
+msgid "Medium"
+msgstr "中央値"
+
+#: templates/most_active_students.html:215
+#: templates/most_active_students.html:248
+msgid "High"
+msgstr ""
+
+#: templates/most_active_students.html:219
+#: templates/most_active_students.html:252
+msgid "Very High"
+msgstr "非常に高い"
+
+#: templates/most_active_students.html:223
+msgid "Weekdays"
+msgstr "平日"
+
+#: templates/most_active_students.html:223
+msgid "(excluding holidays)"
+msgstr "（祝日を除く）"
+
+#: templates/most_active_students.html:229
+msgid "Non-School Time (Orange)"
+msgstr "非学校時間（橙）"
+
+#: templates/most_active_students.html:256
+msgid "Weekends, holidays, outside school hours"
+msgstr "週末、祝日、学校時間外"
+
+#: templates/most_active_students.html:264
+#, fuzzy
+#| msgid "School dashboard"
+msgid "School hours: "
+msgstr "学校ダッシュボード"
+
+#: templates/most_active_students.html:266
+msgid "Holidays from Japanese national holiday database"
+msgstr "日本の国民の祝日データベースからの祝日"
+
+#: templates/most_active_students.html:268
+msgid "Green = School Time, Orange = Non-School Time"
+msgstr "緑 = 学校時間、橙 = 非学校時間"
+
+#: templates/most_active_students.html:272
+msgid ""
+"Hover over any cell to see activity count, student count, and engagement "
+"quality (calculated from data quartiles)"
+msgstr ""
+"任意のセルにマウスを置くと、アクティビティ数、学生数、エンゲージメント品質"
+"（データの四分位数から計算）が表示されます"
+
+#: templates/most_active_students.html:275
+msgid "Current engagement thresholds:"
+msgstr "現在のエンゲージメント閾値："
+
+#: templates/most_active_students.html:277
+msgid "High:"
+msgstr "高："
+
+#: templates/most_active_students.html:277
+#: templates/most_active_students.html:278
+#: templates/most_active_students.html:279
+#: templates/most_active_students.html:280
+#, fuzzy
+#| msgid "Active Students"
+msgid "activities/student"
+msgstr "アクティブな生徒"
+
+#: templates/most_active_students.html:278
+msgid "Moderate:"
+msgstr "中程度："
+
+#: templates/most_active_students.html:279
+#, fuzzy
+#| msgid "Light"
+msgid "Light:"
+msgstr "ライト"
+
+#: templates/most_active_students.html:280
+msgid "Minimal:"
+msgstr "最小："
+
+#: templates/most_active_students.html:292
+msgid "Daily Time Spent Distribution"
+msgstr "日次時間消費分布"
+
+#: templates/most_active_students.html:294
+msgid "Normal distribution of daily hours spent on the system by students"
+msgstr "学生によるシステムでの日次時間消費の正規分布"
+
+#: templates/most_active_students.html:310
+#: templates/past_years/partials/js/engagement_vs_grade.html:126
+#: templates/past_years/partials/js/engagement_vs_grade.html:132
+#: templates/past_years/year_students.html:859
+msgid "Mean"
+msgstr "平均"
+
+#: templates/most_active_students.html:316
+#: templates/past_years/year_students.html:899
+msgid "Std Dev"
+msgstr "標準偏差"
+
+#: templates/most_active_students.html:322
+#: templates/past_years/partials/js/engagement_vs_grade.html:138
+#: templates/past_years/partials/js/engagement_vs_grade.html:144
+#: templates/past_years/year_students.html:711
+#: templates/past_years/year_students.html:879
+msgid "Median"
+msgstr "中央値"
+
+#: templates/most_active_students.html:328
+msgid "Mode"
+msgstr "最頻値"
+
+#: templates/most_active_students.html:336
+#, fuzzy
+#| msgid "Median"
+msgid "Min"
+msgstr "中央値"
+
+#: templates/most_active_students.html:342
+msgid "Max"
+msgstr "最大"
+
+#: templates/most_active_students.html:348
+msgid "Data Points"
+msgstr "データポイント"
+
+#: templates/most_active_students.html:354
+msgid "Max Session"
+msgstr "最大セッション"
+
+#: templates/most_active_students.html:369
+msgid "Interpretation Guide"
+msgstr "解釈ガイド"
+
+#: templates/most_active_students.html:377
+msgid "Normal Distribution:"
+msgstr "正規分布："
+
+#: templates/most_active_students.html:377
+msgid "Shows how daily study hours are distributed across students"
+msgstr "学生間での日次学習時間の分布を表示"
+
+#: templates/most_active_students.html:378
+msgid "Red Curve:"
+msgstr "赤い曲線："
+
+#: templates/most_active_students.html:378
+msgid ""
+"Theoretical normal distribution based on calculated mean and standard "
+"deviation"
+msgstr "計算された平均と標準偏差に基づく理論的正規分布"
+
+#: templates/most_active_students.html:379
+msgid "Blue Bars:"
+msgstr "青いバー："
+
+#: templates/most_active_students.html:379
+msgid "Actual frequency of students spending time in each hour range"
+msgstr "各時間範囲で時間を消費する学生の実際の頻度"
+
+#: templates/most_active_students.html:380
+msgid "Session Calculation:"
+msgstr "セッション計算："
+
+#: templates/most_active_students.html:380
+msgid "Two-level time filtering system:"
+msgstr "2段階時間フィルタリングシステム："
+
+#: templates/most_active_students.html:384
+msgid "Session Boundary:"
+msgstr "セッション境界："
+
+#: templates/most_active_students.html:384
+msgid "Gaps longer than"
+msgstr "次より長い間隔"
+
+#: templates/most_active_students.html:384
+msgid "are treated as separate sessions (time not counted)"
+msgstr "は別セッションとして扱われます（時間はカウントされません）"
+
+#: templates/most_active_students.html:388
+#, fuzzy
+#| msgid "Activities"
+msgid "Activity Cap:"
+msgstr "アクティビティ"
+
+#: templates/most_active_students.html:388
+msgid "Individual activities capped at"
+msgstr "個別アクティビティの上限"
+
+#: templates/most_active_students.html:388
+msgid "min to exclude idle browser time"
+msgstr "分でアイドル時間を除外"
+
+#: templates/most_active_students.html:393
+#: templates/past_years/partials/engagement_vs_grade.html:333
+msgid "Example:"
+msgstr "例："
+
+#: templates/most_active_students.html:393
+msgid ""
+"Student does activity at 9:00 AM, closes app, returns at 2:00 PM (5h gap) → "
+"no time counted. Student active from 9:00-9:45 AM → counted as 30min max per "
+"activity transition."
+msgstr ""
+"学生が午前9時にアクティビティを行い、アプリを閉じて午後2時に戻る（5時間の間"
+"隔）→ 時間はカウントされません。学生が午前9時～9時45分に活動 → アクティビティ"
+"遷移あたり最大30分としてカウント。"
+
+#: templates/most_active_students.html:403
+msgid "Daily Activity Trends (Last 30 Days)"
+msgstr "日次アクティビティトレンド（過去30日間）"
+
+#: templates/most_active_students.html:405
+msgid "Active students and total activities over time"
+msgstr "時間経過に伴うアクティブな学生と総アクティビティ"
+
+#: templates/most_active_students.html:414
+msgid "Most Popular Learning Activities"
+msgstr "最も人気の学習アクティビティ"
+
+#: templates/most_active_students.html:416
+#, fuzzy
+#| msgid "Activities = Count of platform interactions"
+msgid "Top activities by total interactions"
+msgstr "アクティビティ = プラットフォーム相互作用の数"
+
+#: templates/most_active_students.html:423
+#: templates/past_years/year_students.html:1066
+#, fuzzy
+#| msgid "Activities"
+msgid "Activity Type"
+msgstr "アクティビティ"
+
+#: templates/most_active_students.html:424
+#, fuzzy
+#| msgid "Total Contents"
+msgid "Total Interactions"
+msgstr "コンテンツ総数"
+
+#: templates/most_active_students.html:425
+#, fuzzy
+#| msgid "Students list"
+msgid "Students Involved"
+msgstr "生徒一覧"
+
+#: templates/most_active_students.html:426
+#, fuzzy
+#| msgid "Active Students"
+msgid "Avg per Student"
+msgstr "アクティブな生徒"
+
+#: templates/most_active_students.html:427
+msgid "Popularity"
+msgstr "人気度"
+
+#: templates/most_active_students.html:472
+msgid "Learning Insights"
+msgstr "学習洞察"
+
+#: templates/most_active_students.html:478
+#: templates/past_years/year_students.html:278
+#, fuzzy
+#| msgid "Activities"
+msgid "Activity Range"
+msgstr "アクティビティ"
+
+#: templates/most_active_students.html:480
+msgid "Min:"
+msgstr "最小："
+
+#: templates/most_active_students.html:481
+msgid "Max:"
+msgstr "最大："
+
+#: templates/most_active_students.html:482
+#, fuzzy
+#| msgid "Median"
+msgid "Median:"
+msgstr "中央値"
+
+#: templates/most_active_students.html:487
+#, fuzzy
+#| msgid "Course title"
+msgid "Content Interactions"
+msgstr "コース情報"
+
+#: templates/most_active_students.html:492
+#, fuzzy
+#| msgid "Accessed Contents"
+msgid "contents"
+msgstr "アクセスしたコンテンツ"
+
+#: templates/most_active_students.html:499
+#, fuzzy
+#| msgid "Engagement Score Calculation"
+msgid "Engagement Distribution"
+msgstr "エンゲージメントスコア計算"
+
+#: templates/most_active_students.html:504
+#: templates/past_years/overview.html:1781
+#: templates/past_years/overview.html:1865
+#: templates/past_years/overview.html:2498
+#: templates/past_years/partials/js/engagement_vs_grade.html:21
+msgid "students"
+msgstr "生徒"
+
+#: templates/most_highlighted_content.html:26
 msgid "Search and view contents by highlighting frequency"
 msgstr "ハイライト頻度によるコンテンツの検索と表示"
 
+#: templates/most_highlighted_content.html:38
+#: templates/most_memoed_content.html:38 templates/student_list.html:22
+#: templates/teacher_list.html:94
+msgid "Search"
+msgstr "検索"
+
+#: templates/most_highlighted_content.html:71
 #, fuzzy
 #| msgid "Most Highlighted Content"
 msgid "No highlighted content found"
 msgstr "ハイライトされたコンテンツが見つかりません"
 
+#: templates/most_memoed_content.html:26
 msgid "Search and view contents by memo frequency"
 msgstr "メモ頻度によるコンテンツの検索と表示"
 
+#: templates/most_memoed_content.html:71
 #, fuzzy
 #| msgid "Most Memoed Content"
 msgid "No memoed content found"
 msgstr "メモされたコンテンツが見つかりません"
 
+#: templates/past_years/overview.html:31
+#: templates/past_years/partials/breadcrumb.html:26
+msgid "Clear all cached data and reload page"
+msgstr "すべてのキャッシュデータをクリアしてページを再読み込み"
+
+#: templates/past_years/overview.html:36
+#: templates/past_years/partials/breadcrumb.html:31
+#: templates/past_years/year_courses.html:40
+#: templates/past_years/year_students.html:67 templates/teacher_list.html:27
+#: templates/teacher_list.html:29
+#, fuzzy
+#| msgid "Clear"
+msgid "Clear Cache"
+msgstr "クリア"
+
+#: templates/past_years/overview.html:49
+#: templates/past_years/partials/log_analytics.html:9
+#, fuzzy
+#| msgid "Analytics"
+msgid "Log Analytics"
+msgstr "分析"
+
+#: templates/past_years/overview.html:50
+#: templates/past_years/partials/log_analytics.html:10
+msgid "Total unique log counts across all academic years"
+msgstr "全学年度にわたる総ユニークログ数"
+
+#: templates/past_years/overview.html:57 templates/past_years/overview.html:832
+#: templates/past_years/partials/log_analytics.html:17
+msgid "Monthly"
+msgstr "月別"
+
+#: templates/past_years/overview.html:61 templates/past_years/overview.html:828
+#: templates/past_years/partials/log_analytics.html:21
+#, fuzzy
+#| msgid "Years Analyzed"
+msgid "Yearly"
+msgstr "年別"
+
+#: templates/past_years/overview.html:78
+#: templates/past_years/partials/log_analytics.html:38
+#, fuzzy
+#| msgid "Total Courses"
+msgid "Total Unique Logs"
+msgstr "コース総数"
+
+#: templates/past_years/overview.html:79
+#: templates/past_years/partials/log_analytics.html:39
+msgid "Summary"
+msgstr "概要"
+
+#: templates/past_years/overview.html:98
+#: templates/past_years/partials/log_analytics.html:58
+msgid "Pre-2025 Database"
+msgstr "2025年以前のデータベース"
+
+#: templates/past_years/overview.html:99
+#: templates/past_years/partials/log_analytics.html:59
+msgid "Legacy"
+msgstr "レガシー"
+
+#: templates/past_years/overview.html:108
+#: templates/past_years/overview.html:135
+#: templates/past_years/partials/log_analytics.html:68
+#: templates/past_years/partials/log_analytics.html:95
+msgid "Available"
+msgstr "利用可能"
+
+#: templates/past_years/overview.html:110
+#: templates/past_years/partials/log_analytics.html:70
+msgid "Unavailable"
+msgstr "利用不可"
+
+#: templates/past_years/overview.html:125
+#: templates/past_years/partials/log_analytics.html:85
+msgid "2025+ Database"
+msgstr "2025年以降のデータベース"
+
+#: templates/past_years/overview.html:126
+#: templates/past_years/partials/log_analytics.html:86
+msgid "Current"
+msgstr "現在"
+
+#: templates/past_years/overview.html:137
+#: templates/past_years/partials/log_analytics.html:97
+msgid "Not applicable"
+msgstr "該当なし"
+
+#: templates/past_years/overview.html:160
+#, fuzzy
+#| msgid "Engagement vs Grade Performance Analysis"
+msgid "Grade Performance Analytics"
+msgstr "エンゲージメント対成績パフォーマンス分析"
+
+#: templates/past_years/overview.html:161
+#, python-format
+msgid ""
+"Compare percentile-based analysis (top/bottom 25%%) with statistical "
+"distribution analysis (mean ± standard deviation)"
+msgstr ""
+"パーセンタイル分析（上位/下位25%%）と統計分布分析（平均±標準偏差）の比較"
+
+#: templates/past_years/overview.html:168
+msgid "Percentile"
+msgstr "パーセンタイル"
+
+#: templates/past_years/overview.html:172
+#, fuzzy
+#| msgid "Course title"
+msgid "Statistical"
+msgstr "コース統計"
+
+#: templates/past_years/overview.html:180
+#, fuzzy
+#| msgid "Academic Year"
+msgid "Academic Year Analysis"
+msgstr "学年度"
+
+#: templates/past_years/overview.html:199
+#: templates/past_years/overview.html:538
+#: templates/past_years/overview.html:727
+#: templates/past_years/partials/engagement_vs_grade.html:264
+msgid "How is this calculated?"
+msgstr "これはどのように計算されますか？"
+
+#: templates/past_years/overview.html:215
+msgid "Percentile-Based Analysis"
+msgstr "パーセンタイル分析"
+
+#: templates/past_years/overview.html:220
+#: templates/past_years/overview.html:259
+msgid "How it works:"
+msgstr "仕組み："
+
+#: templates/past_years/overview.html:222
+msgid ""
+"All students in each academic year are ranked by their individual average "
+"grade"
+msgstr "各学年度のすべての学生を個別の平均成績でランク付け"
+
+#: templates/past_years/overview.html:223
+#, python-format
+msgid "Top 25%% = 25%% of students with highest individual grades"
+msgstr "上位25%% = 個別成績が最も高い学生の25%%"
+
+#: templates/past_years/overview.html:224
+#, python-format
+msgid "Bottom 25%% = 25%% of students with lowest individual grades"
+msgstr "下位25%% = 個別成績が最も低い学生の25%%"
+
+#: templates/past_years/overview.html:225
+msgid "Y-axis shows the average grade of each student group"
+msgstr "Y軸は各学生グループの平均成績を示す"
+
+#: templates/past_years/overview.html:226
+#, python-format
+msgid "Fixed group sizes (always 25%% of total students per year)"
+msgstr "固定グループサイズ（年間総学生数の常に25%%）"
+
+#: templates/past_years/overview.html:230
+#, fuzzy
+#| msgid "Engagement Score Calculation"
+msgid "Example calculation:"
+msgstr "エンゲージメントスコア計算"
+
+#: templates/past_years/overview.html:232
+msgid "355 students total in 2020年度"
+msgstr "2020年度の総学生数355人"
+
+#: templates/past_years/overview.html:233
+#, python-format
+msgid "Top 25%% = 88 highest-scoring students"
+msgstr "上位25%% = 最高得点の学生88人"
+
+#: templates/past_years/overview.html:234
+msgid "Their individual grades: 95, 94, 92, 90, 89..."
+msgstr "彼らの個別成績：95, 94, 92, 90, 89..."
+
+#: templates/past_years/overview.html:235
+msgid "→ Average: 84.11 points"
+msgstr "→ 平均：84.11ポイント"
+
+#: templates/past_years/overview.html:236
+#, python-format
+msgid "Bottom 25%% = 88 lowest-scoring students"
+msgstr "下位25%% = 最低得点の学生88人"
+
+#: templates/past_years/overview.html:237
+msgid "Their individual grades: 65, 63, 60, 58, 55..."
+msgstr "彼らの個別成績：65, 63, 60, 58, 55..."
+
+#: templates/past_years/overview.html:238
+msgid "→ Average: 57.85 points"
+msgstr "→ 平均：57.85ポイント"
+
+#: templates/past_years/overview.html:243
+msgid "Key insight:"
+msgstr "主要な洞察："
+
+#: templates/past_years/overview.html:243
+msgid ""
+"The chart shows the average performance level of the highest and lowest "
+"performing student groups, allowing you to track how the academic gap "
+"changes over years."
+msgstr ""
+"チャートは最高パフォーマンスと最低パフォーマンスの学生グループの平均パフォー"
+"マンスレベルを示し、学習格差が年々どのように変化するかを追跡できます。"
+
+#: templates/past_years/overview.html:254
+#, fuzzy
+#| msgid "Statistical Comparison Insight"
+msgid "Statistical Distribution Analysis"
+msgstr "統計比較洞察"
+
+#: templates/past_years/overview.html:261
+msgid ""
+"Calculate statistical mean (μ) and standard deviation (σ) for all student "
+"grades in each academic year"
+msgstr "各学年度のすべての学生成績の統計的平均（μ）と標準偏差（σ）を計算"
+
+#: templates/past_years/overview.html:262
+msgid "High Performers: Grades ≥ μ + 0.5σ (above statistical threshold)"
+msgstr "高パフォーマー：成績 ≥ μ + 0.5σ（統計的閾値以上）"
+
+#: templates/past_years/overview.html:263
+msgid "Low Performers: Grades ≤ μ - 0.5σ (below statistical threshold)"
+msgstr "低パフォーマー：成績 ≤ μ - 0.5σ（統計的閾値以下）"
+
+#: templates/past_years/overview.html:264
+msgid "Middle Performers: Between low and high thresholds"
+msgstr "中程度のパフォーマー：低閾値と高閾値の間"
+
+#: templates/past_years/overview.html:265
+msgid "Group sizes vary naturally based on actual grade distribution patterns"
+msgstr "グループサイズは実際の成績分布パターンに基づいて自然に変動"
+
+#: templates/past_years/overview.html:269
+msgid "Calculation example:"
+msgstr "計算例："
+
+#: templates/past_years/overview.html:271
+msgid "Year with 300 students:"
+msgstr "学生300人の年："
+
+#: templates/past_years/overview.html:272
+msgid "Mean (μ): 75 points, Std Dev (σ): 12 points"
+msgstr "平均（μ）：75ポイント、標準偏差（σ）：12ポイント"
+
+#: templates/past_years/overview.html:273
+msgid "High threshold: 75 + (0.5 × 12) = 81 points"
+msgstr "高閾値：75 + (0.5 × 12) = 81ポイント"
+
+#: templates/past_years/overview.html:274
+msgid "Low threshold: 75 - (0.5 × 12) = 69 points"
+msgstr "低閾値：75 - (0.5 × 12) = 69ポイント"
+
+#: templates/past_years/overview.html:276
+#, python-format
+msgid "High performers: 45 students (15%%)"
+msgstr "高パフォーマー：45人の学生（15%%）"
+
+#: templates/past_years/overview.html:277
+#, python-format
+msgid "Low performers: 38 students (13%%)"
+msgstr "低パフォーマー：38人の学生（13%%）"
+
+#: templates/past_years/overview.html:278
+#, python-format
+msgid "Middle performers: 217 students (72%%)"
+msgstr "中程度のパフォーマー：217人の学生（72%%）"
+
+#: templates/past_years/overview.html:284
+msgid "Key insights:"
+msgstr "主要な洞察："
+
+#: templates/past_years/overview.html:284
+msgid ""
+"Variable group sizes reveal true distribution characteristics. Years with "
+"tight clustering show smaller performer groups, while years with wide grade "
+"spreads show larger groups. Provides coefficient of variation for comparing "
+"distribution consistency across academic years."
+msgstr ""
+"可変グループサイズは真の分布特性を明らかにします。密集した年は小さなパフォー"
+"マーグループを示し、成績の幅が広い年は大きなグループを示します。学年度間の分"
+"布一貫性を比較するための変動係数を提供します。"
+
+#: templates/past_years/overview.html:287
+msgid "Statistical advantages:"
+msgstr "統計的利点："
+
+#: templates/past_years/overview.html:290
+msgid "Sensitivity to outliers:"
+msgstr "外れ値への感度："
+
+#: templates/past_years/overview.html:291
+msgid ""
+"Detects years with unusually high or low performers affecting distribution "
+"shape"
+msgstr ""
+
+#: templates/past_years/overview.html:294
+msgid "Distribution patterns:"
+msgstr ""
+
+#: templates/past_years/overview.html:295
+msgid "Reveals whether grades cluster around mean or spread across full range"
+msgstr ""
+
+#: templates/past_years/overview.html:298
+#, fuzzy
+#| msgid "Comparative Analysis Method"
+msgid "Comparative analysis:"
+msgstr "比較分析方法"
+
+#: templates/past_years/overview.html:299
+msgid "Coefficient of variation enables year-to-year consistency comparison"
+msgstr ""
+
+#: templates/past_years/overview.html:302
+msgid "Threshold transparency:"
+msgstr ""
+
+#: templates/past_years/overview.html:303
+msgid "Shows exact grade thresholds used for each academic year"
+msgstr ""
+
+#: templates/past_years/overview.html:316
+#: templates/past_years/overview.html:553
+msgid "Data Source & Methodology"
+msgstr ""
+
+#: templates/past_years/overview.html:321
+#: templates/past_years/overview.html:558
+#, fuzzy
+#| msgid "Grade"
+msgid "Grade Data:"
+msgstr "成績"
+
+#: templates/past_years/overview.html:323
+msgid "Source: Benesse course assessment results"
+msgstr ""
+
+#: templates/past_years/overview.html:324
+msgid "Categorization: By academic year in course names (e.g., '2024年度')"
+msgstr ""
+
+#: templates/past_years/overview.html:325
+#: templates/past_years/overview.html:562
+#, fuzzy
+#| msgid "• Valid grade records (0-100 scale)"
+msgid "Filtering: Valid grades only (0-100 scale)"
+msgstr "• 有効な成績記録（0-100スケール）"
+
+#: templates/past_years/overview.html:329
+#, fuzzy
+#| msgid "Academic Year"
+msgid "Academic Year:"
+msgstr "学年度"
+
+#: templates/past_years/overview.html:331
+msgid "Period: April 1st to March 31st (Japanese academic calendar)"
+msgstr ""
+
+#: templates/past_years/overview.html:332
+msgid "Students: Enrolled in courses matching the academic year pattern"
+msgstr ""
+
+#: templates/past_years/overview.html:333
+msgid "Minimum: 50+ grade records required for analysis"
+msgstr ""
+
+#: templates/past_years/overview.html:346
+msgid "Key Differences Summary"
+msgstr ""
+
+#: templates/past_years/overview.html:352
+msgid "Aspect"
+msgstr ""
+
+#: templates/past_years/overview.html:353
+#: templates/past_years/overview.html:1371
+msgid "Percentile Method"
+msgstr ""
+
+#: templates/past_years/overview.html:354
+msgid "Statistical Method"
+msgstr ""
+
+#: templates/past_years/overview.html:359
+msgid "Y-axis Shows"
+msgstr ""
+
+#: templates/past_years/overview.html:360
+#, python-format
+msgid "Average grade of top/bottom 25%% students"
+msgstr ""
+
+#: templates/past_years/overview.html:361
+msgid "Average grade of high/low performers (σ-based)"
+msgstr ""
+
+#: templates/past_years/overview.html:364
+msgid "Group Size"
+msgstr ""
+
+#: templates/past_years/overview.html:365
+#, python-format
+msgid "Fixed (25%% each)"
+msgstr ""
+
+#: templates/past_years/overview.html:366
+msgid "Variable (depends on distribution)"
+msgstr ""
+
+#: templates/past_years/overview.html:369
+#: templates/past_years/overview.html:1593
+msgid "Threshold"
+msgstr ""
+
+#: templates/past_years/overview.html:370
+msgid "Rank-based"
+msgstr ""
+
+#: templates/past_years/overview.html:371
+msgid "Statistical (mean ± 0.5σ)"
+msgstr ""
+
+#: templates/past_years/overview.html:374
+msgid "Best Use"
+msgstr ""
+
+#: templates/past_years/overview.html:375
+msgid "Consistent comparison"
+msgstr ""
+
+#: templates/past_years/overview.html:376
+msgid "Distribution analysis"
+msgstr ""
+
+#: templates/past_years/overview.html:379
+msgid "Sensitivity"
+msgstr ""
+
+#: templates/past_years/overview.html:380
+msgid "Less sensitive to outliers"
+msgstr ""
+
+#: templates/past_years/overview.html:381
+msgid "More sensitive to distribution shape"
+msgstr ""
+
+#: templates/past_years/overview.html:400
+#: templates/past_years/overview.html:2989
+msgid "Course Grades Analysis"
+msgstr ""
+
+#: templates/past_years/overview.html:401
+msgid "Average course grades per course for each academic year"
+msgstr ""
+
+#: templates/past_years/overview.html:407
+#: templates/past_years/overview.html:619
+#, fuzzy
+#| msgid "Academic Year"
+msgid "Select Academic Year"
+msgstr "学年度"
+
+#: templates/past_years/overview.html:418
+#: templates/past_years/overview.html:1781
+#: templates/past_years/overview.html:1787
+#: templates/past_years/overview.html:1974
+#: templates/past_years/year_courses.html:204
+#: templates/past_years/year_courses.html:220
+#, fuzzy
+#| msgid "Courses"
+msgid "courses"
+msgstr "コース"
+
+#: templates/past_years/overview.html:430
+#: templates/past_years/overview.html:642
+#: templates/past_years/overview.html:2402
+#: templates/past_years/overview.html:3133
+#, fuzzy
+#| msgid "Academic Year"
+msgid "Select an Academic Year"
+msgstr "学年度"
+
+#: templates/past_years/overview.html:431
+#: templates/past_years/overview.html:3134
+msgid ""
+"Choose an academic year from the dropdown above to view course grades "
+"analysis"
+msgstr ""
+
+#: templates/past_years/overview.html:450
+#, fuzzy
+#| msgid "Course title"
+msgid "Courses with grades"
+msgstr "コースカテゴリー"
+
+#: templates/past_years/overview.html:473
+#, fuzzy
+#| msgid "Students list"
+msgid "Students with grades"
+msgstr "生徒一覧"
+
+#: templates/past_years/overview.html:487
+#: templates/past_years/overview.html:2298
+#, fuzzy
+#| msgid "Total Courses"
+msgid "Total Grades"
+msgstr "コース総数"
+
+#: templates/past_years/overview.html:496
+#, fuzzy
+#| msgid "Records"
+msgid "Grade records"
+msgstr "記録"
+
+#: templates/past_years/overview.html:510
+msgid "Overall Average"
+msgstr "全体平均"
+
+#: templates/past_years/overview.html:519
+#, fuzzy
+#| msgid "Average Grade"
+msgid "Average grade"
+msgstr "平均成績"
+
+#: templates/past_years/overview.html:560
+msgid "Source: Benesse course assessment results from analysis_db"
+msgstr "ソース：analysis_dbからのベネッセコース評価結果"
+
+#: templates/past_years/overview.html:561
+msgid "Table: course_student_scores"
+msgstr "テーブル：course_student_scores"
+
+#: templates/past_years/overview.html:563
+msgid "Academic Year: Identified by course name pattern (e.g., '2024年度')"
+msgstr "学年度：コース名パターンで識別（例：'2024年度'）"
+
+#: templates/past_years/overview.html:567
+msgid "Calculation:"
+msgstr "計算："
+
+#: templates/past_years/overview.html:569
+msgid "Average Grade: AVG(quiz) per course"
+msgstr "平均成績：コースごとのAVG(quiz)"
+
+#: templates/past_years/overview.html:570
+msgid "Sorting: Alphabetical by course name"
+msgstr "ソート：コース名のアルファベット順"
+
+#: templates/past_years/overview.html:571
+msgid "Statistics: Min, max, standard deviation included"
+msgstr "統計：最小値、最大値、標準偏差を含む"
+
+#: templates/past_years/overview.html:572
+msgid "Cache: 2 hours for performance"
+msgstr "キャッシュ：パフォーマンスのため2時間"
+
+#: templates/past_years/overview.html:585
+#, fuzzy
+#| msgid "Chart Creation Error"
+msgid "Chart Interpretation"
+msgstr "チャート作成エラー"
+
+#: templates/past_years/overview.html:589
+msgid "Key Insights:"
+msgstr "主要な洞察："
+
+#: templates/past_years/overview.html:591
+msgid "X-axis:"
+msgstr "X軸："
+
+#: templates/past_years/overview.html:591
+msgid "Course names sorted alphabetically"
+msgstr "アルファベット順にソートされたコース名"
+
+#: templates/past_years/overview.html:592
+msgid "Y-axis:"
+msgstr "Y軸："
+
+#: templates/past_years/overview.html:592
+#, fuzzy
+#| msgid "• Valid grade records (0-100 scale)"
+msgid "Average grade (0-100 scale)"
+msgstr "• 有効な成績記録（0-100スケール）"
+
+#: templates/past_years/overview.html:593
+msgid "Hover tooltips:"
+msgstr "ホバーツールチップ："
+
+#: templates/past_years/overview.html:593
+msgid ""
+"Show detailed statistics including student count, grade range, and standard "
+"deviation"
+msgstr "学生数、成績範囲、標準偏差を含む詳細統計を表示"
+
+#: templates/past_years/overview.html:594
+msgid "Color coding:"
+msgstr "色分け："
+
+#: templates/past_years/overview.html:594
+msgid "Visual indication of grade performance levels"
+msgstr "成績パフォーマンスレベルの視覚的表示"
+
+#: templates/past_years/overview.html:612
+#: templates/past_years/overview.html:1970
+msgid "Time Spent vs Grade Correlation"
+msgstr "時間消費対成績相関"
+
+#: templates/past_years/overview.html:613
+msgid ""
+"Correlation analysis between student time spent on platform and their "
+"academic performance"
+msgstr "プラットフォームでの学生の時間消費と学習成績の相関分析"
+
+#: templates/past_years/overview.html:643
+#: templates/past_years/overview.html:2403
+msgid ""
+"Choose an academic year from the dropdown above to view the correlation "
+"between time spent and grades"
+msgstr "上記のドロップダウンから学年度を選択して、時間消費と成績の相関を表示"
+
+#: templates/past_years/overview.html:653
+#, fuzzy
+#| msgid "Correlation does not imply causation"
+msgid "Correlation Coefficient"
+msgstr "相関は因果関係を意味しない"
+
+#: templates/past_years/overview.html:676
+#, fuzzy
+#| msgid "Square"
+msgid "R-Squared"
+msgstr "四角"
+
+#: templates/past_years/overview.html:685
+msgid "Variance Explained"
+msgstr "説明される分散"
+
+#: templates/past_years/overview.html:699
+#: templates/past_years/overview.html:896
+#, fuzzy
+#| msgid "Years Analyzed"
+msgid "Students Analyzed"
+msgstr "分析年数"
+
+#: templates/past_years/overview.html:708
+msgid "With both data"
+msgstr "両方のデータを持つ"
+
+#: templates/past_years/overview.html:742
+#, fuzzy
+#| msgid "Comparative Analysis Method"
+msgid "Correlation Analysis Methodology"
+msgstr "比較分析方法"
+
+#: templates/past_years/overview.html:747
+msgid "Data Collection Process:"
+msgstr "データ収集プロセス："
+
+#: templates/past_years/overview.html:749
+#, python-brace-format
+msgid ""
+"Step 1: Find students with Benesse grades in courses matching academic year "
+"pattern ('{year}年度')"
+msgstr ""
+"ステップ1：学年度パターン（'{year}年度'）に一致するコースのベネッセ成績を持つ"
+"学生を見つける"
+
+#: templates/past_years/overview.html:750
+msgid ""
+"Step 2: Query ClickHouse for platform activity data using intelligent "
+"student ID matching"
+msgstr ""
+"ステップ2：インテリジェント学生IDマッチングを使用してプラットフォーム活動デー"
+"タのClickHouseクエリ"
+
+#: templates/past_years/overview.html:751
+msgid ""
+"Step 3: Apply course-specific filtering to match time spent to relevant "
+"courses"
+msgstr "ステップ3：関連コースに時間消費をマッチさせるコース固有フィルタリング適用"
+
+#: templates/past_years/overview.html:752
+msgid ""
+"Step 4: Calculate time spent with session capping (1.5hr max per session)"
+msgstr "ステップ4：セッション上限（1セッション最大1.5時間）で時間消費を計算"
+
+#: templates/past_years/overview.html:753
+msgid "Step 5: Match students who have both grade and time tracking data"
+msgstr "ステップ5：成績と時間追跡データの両方を持つ学生をマッチング"
+
+#: templates/past_years/overview.html:758
+msgid "Statistical Analysis:"
+msgstr "統計分析："
+
+#: templates/past_years/overview.html:758
+msgid ""
+"Once student data is successfully matched, the system calculates Pearson "
+"correlation coefficient (r) and R-squared (r²) to measure the linear "
+"relationship between time spent on platform and academic performance. Each "
+"data point represents one student's average grade vs. total time spent "
+"during the academic year."
+msgstr ""
+"学生データが正常にマッチされると、システムはピアソン相関係数（r）とR二乗（r²）"
+"を計算してプラットフォーム時間消費と学習成績の線形関係を測定します。各データポ"
+"イントは学年度中の1人の学生の平均成績対総時間消費を表します。"
+
+#: templates/past_years/overview.html:769
+msgid "How to Interpret the Results"
+msgstr "結果の解釈方法"
+
+#: templates/past_years/overview.html:774
+msgid "Correlation Strength (r):"
+msgstr "相関強度（r）："
+
+#: templates/past_years/overview.html:776
+msgid "Strong positive correlation"
+msgstr "強い正の相関"
+
+#: templates/past_years/overview.html:777
+msgid "Moderate positive correlation"
+msgstr "中程度の正の相関"
+
+#: templates/past_years/overview.html:778
+msgid "Weak positive correlation"
+msgstr "弱い正の相関"
+
+#: templates/past_years/overview.html:779
+msgid "No meaningful correlation"
+msgstr "意味のある相関なし"
+
+#: templates/past_years/overview.html:780
+msgid "Negative correlation"
+msgstr "負の相関"
+
+#: templates/past_years/overview.html:784
+msgid "R-Squared Interpretation (r²):"
+msgstr "R二乗解釈（r²）："
+
+#: templates/past_years/overview.html:786
+#, python-format
+msgid "R² = 25%%:"
+msgstr "R² = 25%%："
+
+#: templates/past_years/overview.html:786
+#, python-format
+msgid "Time explains 25%% of grade variance"
+msgstr "時間は成績分散の25%%を説明"
+
+#: templates/past_years/overview.html:787
+#, python-format
+msgid "R² = 50%%:"
+msgstr "R² = 50%%："
+
+#: templates/past_years/overview.html:787
+#, python-format
+msgid "Time explains 50%% of grade variance"
+msgstr "時間は成績分散の50%%を説明"
+
+#: templates/past_years/overview.html:788
+#, python-format
+msgid "R² = 75%%:"
+msgstr "R² = 75%%："
+
+#: templates/past_years/overview.html:788
+#, python-format
+msgid "Time explains 75%% of grade variance"
+msgstr "時間は成績分散の75%%を説明"
+
+#: templates/past_years/overview.html:789
+msgid "Higher R²:"
+msgstr ""
+
+#: templates/past_years/overview.html:789
+msgid "Stronger predictive relationship"
+msgstr ""
+
+#: templates/past_years/overview.html:790
+msgid "Lower R²:"
+msgstr ""
+
+#: templates/past_years/overview.html:790
+msgid "Other factors influence grades more"
+msgstr ""
+
+#: templates/past_years/overview.html:796
+msgid "Quadrant Analysis:"
+msgstr ""
+
+#: templates/past_years/overview.html:796
+msgid ""
+"The scatter plot divides students into four quadrants based on median time "
+"spent and median grade:"
+msgstr ""
+
+#: templates/past_years/overview.html:798
+#: templates/past_years/overview.html:2166
+#: templates/past_years/overview.html:2273
+msgid "Sweet Spot"
+msgstr ""
+
+#: templates/past_years/overview.html:798
+msgid ""
+"High grades with efficient time use (above median grade, below median time)"
+msgstr ""
+
+#: templates/past_years/overview.html:799
+#: templates/past_years/overview.html:2190
+#: templates/past_years/overview.html:2276
+msgid "Hard Workers"
+msgstr ""
+
+#: templates/past_years/overview.html:799
+msgid "High grades with high time investment (above median for both)"
+msgstr ""
+
+#: templates/past_years/overview.html:800
+#: templates/past_years/overview.html:2214
+#: templates/past_years/overview.html:2279
+msgid "Under-engaged"
+msgstr ""
+
+#: templates/past_years/overview.html:800
+msgid "Low grades with low time investment (below median for both)"
+msgstr ""
+
+#: templates/past_years/overview.html:801
+#: templates/past_years/overview.html:2238
+#: templates/past_years/overview.html:2282
+msgid "Struggling"
+msgstr ""
+
+#: templates/past_years/overview.html:801
+msgid ""
+"Low grades despite high time investment (below median grade, above median "
+"time)"
+msgstr ""
+
+#: templates/past_years/overview.html:820
+#: templates/past_years/overview.html:2501
+msgid "School vs Home Time Analysis"
+msgstr ""
+
+#: templates/past_years/overview.html:821
+msgid ""
+"Actual time spent analysis segmented by school hours vs home hours across "
+"academic years"
+msgstr ""
+
+#: templates/past_years/overview.html:858
+#, fuzzy
+#| msgid "Total Hours"
+msgid "Total School Hours"
+msgstr "総時間数"
+
+#: templates/past_years/overview.html:877
+#, fuzzy
+#| msgid "Total Hours"
+msgid "Total Home Hours"
+msgstr "総時間数"
+
+#: templates/past_years/overview.html:915
+#: templates/past_years/partials/engagement_vs_grade.html:127
+msgid "Years Analyzed"
+msgstr "分析年数"
+
+#: templates/past_years/overview.html:933
+#, fuzzy
+#| msgid "View Analytics"
+msgid "Time Analysis"
+msgstr "分析を表示"
+
+#: templates/past_years/overview.html:948
+#, fuzzy
+#| msgid "Adjust Configurations"
+msgid "Analysis Configuration:"
+msgstr "設定を調整"
+
+#: templates/past_years/overview.html:951
+#: templates/past_years/overview.html:2495
+#, fuzzy
+#| msgid "Total Hours"
+msgid "School Hours"
+msgstr "総時間数"
+
+#: templates/past_years/overview.html:952
+msgid "Max Session Duration"
+msgstr ""
+
+#: templates/past_years/overview.html:953
+#, fuzzy
+#| msgid "Current Activity Duration:"
+msgid "Max Activity Duration"
+msgstr "現在のアクティビティ時間："
+
+#: templates/past_years/overview.html:956
+msgid "Holidays Considered"
+msgstr ""
+
+#: templates/past_years/overview.html:957
+#, fuzzy
+#| msgid "Analysis DB (Grades):"
+msgid "Analysis Period"
+msgstr "分析DB（成績）："
+
+#: templates/past_years/overview.html:958
+msgid "Cache Duration"
+msgstr ""
+
+#: templates/past_years/overview.html:981
+msgid "Grade Data Transparency"
+msgstr ""
+
+#: templates/past_years/overview.html:982
+msgid ""
+"View which courses contributed to grade performance data for each academic "
+"year"
+msgstr ""
+
+#: templates/past_years/overview.html:988
+#, fuzzy
+#| msgid "Course title"
+msgid "Course-based categorization"
+msgstr "コースカテゴリー"
+
+#: templates/past_years/overview.html:999
+msgid "Loading course transparency data..."
+msgstr ""
+
+#: templates/past_years/overview.html:1026
+#: templates/past_years/partials/js/log_analytics.html:19
+msgid "Monthly Log Counts"
+msgstr ""
+
+#: templates/past_years/overview.html:1027
+#: templates/past_years/partials/js/log_analytics.html:20
+msgid "Yearly Log Counts"
+msgstr ""
+
+#: templates/past_years/overview.html:1028
+#: templates/past_years/partials/js/log_analytics.html:21
+msgid "Log Counts by Month"
+msgstr ""
+
+#: templates/past_years/overview.html:1029
+#: templates/past_years/partials/js/log_analytics.html:22
+#, fuzzy
+#| msgid "Academic Year"
+msgid "Log Counts by Academic Year"
+msgstr "学年度"
+
+#: templates/past_years/overview.html:1079
+#: templates/past_years/overview.html:2500
+#: templates/past_years/overview.html:2731
+#: templates/past_years/partials/js/log_analytics.html:72
+#: templates/past_years/year_courses.html:462
+#, fuzzy
+#| msgid "This Month"
+msgid "Month"
+msgstr "今月"
+
+#: templates/past_years/overview.html:1084
+#: templates/past_years/partials/js/log_analytics.html:77
+#, fuzzy
+#| msgid "Count"
+msgid "Log Count"
+msgstr "数"
+
+#: templates/past_years/overview.html:1127
+#: templates/past_years/partials/js/log_analytics.html:120
+msgid "logs"
+msgstr ""
+
+#: templates/past_years/overview.html:1185
+#: templates/past_years/partials/js/cache_clear.html:13
+#, fuzzy
+#| msgid "Clear"
+msgid "Clearing..."
+msgstr "クリア"
+
+#: templates/past_years/overview.html:1208
+#: templates/past_years/partials/js/cache_clear.html:36
+msgid "Failed to clear cache"
+msgstr ""
+
+#: templates/past_years/overview.html:1217
+#: templates/past_years/partials/js/cache_clear.html:45
+msgid "An error occurred while clearing cache"
+msgstr ""
+
+#: templates/past_years/overview.html:1254
+#: templates/past_years/partials/js/cache_clear.html:82
+msgid "Success"
+msgstr ""
+
+#: templates/past_years/overview.html:1265
+#: templates/past_years/partials/js/cache_clear.html:93
+msgid "Error"
+msgstr ""
+
+#: templates/past_years/overview.html:1306
+#, fuzzy, python-format
+#| msgid "Performance Gap"
+msgid "Top 25%% Performance"
+msgstr "パフォーマンス差"
+
+#: templates/past_years/overview.html:1307
+#, python-format
+msgid "Bottom 25%% Performance"
+msgstr ""
+
+#: templates/past_years/overview.html:1308
+msgid "High Performers (Mean + 0.5σ)"
+msgstr ""
+
+#: templates/past_years/overview.html:1309
+msgid "Low Performers (Mean - 0.5σ)"
+msgstr ""
+
+#: templates/past_years/overview.html:1311
+#: templates/past_years/overview.html:1383
+#: templates/past_years/overview.html:1436
+#: templates/past_years/overview.html:1534
+#: templates/past_years/overview.html:1590
+#: templates/past_years/overview.html:1969
+#: templates/past_years/overview.html:2296
+#: templates/past_years/overview.html:2961
+#: templates/past_years/overview.html:3028
+#: templates/past_years/overview.html:3064
+#: templates/past_years/partials/js/engagement_vs_grade.html:19
+#: templates/past_years/year_students.html:101
+msgid "Average Grade"
+msgstr "平均成績"
+
+#: templates/past_years/overview.html:1312
+#, fuzzy
+#| msgid "View Analytics"
+msgid "Percentile Analysis"
+msgstr "分析を表示"
+
+#: templates/past_years/overview.html:1313
+msgid "Normal Distribution Analysis"
+msgstr ""
+
+#: templates/past_years/overview.html:1436
+#: templates/past_years/overview.html:1590
+#: templates/past_years/overview.html:1593
+#: templates/past_years/overview.html:1973
+#: templates/past_years/overview.html:3064
+#: templates/past_years/partials/js/engagement_vs_grade.html:20
+msgid "points"
+msgstr "ポイント"
+
+#: templates/past_years/overview.html:1437
+#: templates/past_years/overview.html:1591
+#, fuzzy
+#| msgid "Students list"
+msgid "Students in Group"
+msgstr "生徒一覧"
+
+#: templates/past_years/overview.html:1439
+#: templates/past_years/overview.html:1595
+msgid "Method"
+msgstr "方法"
+
+#: templates/past_years/overview.html:1522
+msgid "Normal Distribution Method"
+msgstr "正規分布方法"
+
+#: templates/past_years/overview.html:1594
+msgid "Year Mean"
+msgstr "年間平均"
+
+#: templates/past_years/overview.html:1595
+msgid "Mean ± 0.5σ"
+msgstr "平均 ± 0.5σ"
+
+#: templates/past_years/overview.html:1722
+#, fuzzy
+#| msgid "No engagement vs grade data available"
+msgid "No grade performance data available"
+msgstr "エンゲージメント対成績データが利用できません"
+
+#: templates/past_years/overview.html:1781
+#: templates/past_years/overview.html:1868
+#, fuzzy
+#| msgid "Grade"
+msgid "grades"
+msgstr "成績"
+
+#: templates/past_years/overview.html:1797
+msgid "Courses Used in Analysis"
+msgstr "分析で使用されたコース"
+
+#: templates/past_years/overview.html:1800
+#, fuzzy
+#| msgid "All Teacher Here"
+msgid "Show All"
+msgstr "すべての教師を表示"
+
+#: templates/past_years/overview.html:1803
+msgid "Show Top 10"
+msgstr "上位10件を表示"
+
+#: templates/past_years/overview.html:1876
+#, fuzzy
+#| msgid "Grade"
+msgid "Grade file"
+msgstr "成績"
+
+#: templates/past_years/overview.html:1968
+msgid "Time Spent (Minutes)"
+msgstr "消費時間（分）"
+
+#: templates/past_years/overview.html:1971 templates/student_detail.html:10
+#, fuzzy
+#| msgid "Students"
+msgid "Student"
+msgstr "生徒"
+
+#: templates/past_years/overview.html:1972
+msgid "minutes"
+msgstr "分"
+
+#: templates/past_years/overview.html:1975
+#, fuzzy
+#| msgid "Active Students"
+msgid "active days"
+msgstr "アクティブな生徒"
+
+#: templates/past_years/overview.html:1996
+#, fuzzy
+#| msgid "No Engagement Data Available"
+msgid "No Data Available"
+msgstr "エンゲージメントデータが利用できません"
+
+#: templates/past_years/overview.html:1997
+#, fuzzy
+#| msgid "No students found with both engagement and grade data for analysis"
+msgid ""
+"No students found with both grade and time tracking data for this academic "
+"year"
+msgstr "分析用のエンゲージメントと成績データの両方を持つ生徒が見つかりません"
+
+#: templates/past_years/overview.html:2119
+#, fuzzy
+#| msgid "Median"
+msgid "Median Time"
+msgstr "中央値"
+
+#: templates/past_years/overview.html:2141
+#, fuzzy
+#| msgid "Median"
+msgid "Median Grade"
+msgstr "中央値"
+
+#: templates/past_years/overview.html:2166
+msgid "High Grade, Low Time"
+msgstr "高成績、少時間"
+
+#: templates/past_years/overview.html:2190
+msgid "High Grade, High Time"
+msgstr "高成績、多時間"
+
+#: templates/past_years/overview.html:2214
+msgid "Low Grade, Low Time"
+msgstr "低成績、少時間"
+
+#: templates/past_years/overview.html:2238
+msgid "Low Grade, High Time"
+msgstr "低成績、多時間"
+
+#: templates/past_years/overview.html:2297
+#, fuzzy
+#| msgid "Time spent:"
+msgid "Time Spent"
+msgstr "費やした時間："
+
+#: templates/past_years/overview.html:2300
+#, fuzzy
+#| msgid "Activities"
+msgid "Active Days"
+msgstr "アクティビティ"
+
+#: templates/past_years/overview.html:2301
+#, fuzzy
+#| msgid "Daily Activities"
+msgid "Daily Avg"
+msgstr "日々のアクティビティ"
+
+#: templates/past_years/overview.html:2315
+msgid "Trend Line"
+msgstr "トレンドライン"
+
+#: templates/past_years/overview.html:2355
+#, fuzzy
+#| msgid "No teachers found"
+msgid "No correlation"
+msgstr "コースカテゴリーが見つかりません"
+
+#: templates/past_years/overview.html:2359
+msgid "Positive"
+msgstr "正の相関"
+
+#: templates/past_years/overview.html:2361
+msgid "Negative"
+msgstr "負の相関"
+
+#: templates/past_years/overview.html:2425
+#, fuzzy
+#| msgid "Error Loading Data"
+msgid "Loading Data..."
+msgstr "データ読み込みエラー"
+
+#: templates/past_years/overview.html:2426
+msgid "Please wait while we load the correlation data for this academic year"
+msgstr "この学年度の相関データを読み込んでいます。お待ちください"
+
+#: templates/past_years/overview.html:2496
+#, fuzzy
+#| msgid "Total Hours"
+msgid "Home Hours"
+msgstr "総時間数"
+
+#: templates/past_years/overview.html:2497
+#, fuzzy
+#| msgid "Courses"
+msgid "hours"
+msgstr "コース"
+
+#: templates/past_years/overview.html:2502
+#: templates/past_years/partials/js/engagement_vs_grade.html:46
+msgid "Total Hours"
+msgstr "総時間数"
+
+#: templates/past_years/overview.html:2503
+#: templates/past_years/year_students.html:951
+msgid "Percentage"
+msgstr "パーセント"
+
+#: templates/past_years/overview.html:2516
+#, fuzzy
+#| msgid "No Engagement Data Available"
+msgid "No Time Data Available"
+msgstr "エンゲージメントデータが利用できません"
+
+#: templates/past_years/overview.html:2517
+msgid "No time spent data found for the selected period"
+msgstr "選択された期間の時間消費データが見つかりません"
+
+#: templates/past_years/overview.html:2527
+msgid "Rendering chart..."
+msgstr "チャートを描画中..."
+
+#: templates/past_years/overview.html:2663
+msgid "Actual time spent during school hours vs home hours by academic year"
+msgstr "学年度別の学校時間対自宅時間の実際の時間消費"
+
+#: templates/past_years/overview.html:2664
+msgid "Monthly breakdown of time spent during school hours vs home hours"
+msgstr "学校時間対自宅時間の時間消費の月別内訳"
+
+#: templates/past_years/overview.html:2813
+#: templates/past_years/overview.html:3093
+#: templates/past_years/partials/js/engagement_vs_grade.html:291
+msgid "Chart Rendering Error"
+msgstr "チャート描画エラー"
+
+#: templates/past_years/overview.html:2814
+#, fuzzy
+#| msgid ""
+#| "Unable to display the engagement vs grade chart. Please try refreshing "
+#| "the page."
+msgid ""
+"Unable to display the time analysis chart. Please try refreshing the page."
+msgstr ""
+"エンゲージメント対成績チャートを表示できません。ページを更新してください。"
+
+#: templates/past_years/overview.html:2823
+#: templates/past_years/overview.html:3103
+#: templates/past_years/partials/js/engagement_vs_grade.html:301
+msgid "Chart Creation Error"
+msgstr "チャート作成エラー"
+
+#: templates/past_years/overview.html:2824
+#, fuzzy
+#| msgid ""
+#| "Unable to create the engagement vs grade chart. Please try refreshing the "
+#| "page."
+msgid ""
+"Unable to create the time analysis chart. Please try refreshing the page."
+msgstr ""
+"エンゲージメント対成績チャートを作成できません。ページを更新してください。"
+
+#: templates/past_years/overview.html:2886
+#, fuzzy
+#| msgid "Loading Engagement vs Grade Analysis..."
+msgid "Loading Time Analysis..."
+msgstr "エンゲージメント対成績分析を読み込み中..."
+
+#: templates/past_years/overview.html:2887
+msgid "Calculating actual time spent during school hours vs home hours"
+msgstr "学校時間対自宅時間の実際の時間消費を計算中"
+
+#: templates/past_years/overview.html:2903
+#, fuzzy
+#| msgid "Chart Creation Error"
+msgid "Initialization Error"
+msgstr "チャート作成エラー"
+
+#: templates/past_years/overview.html:2904
+#, fuzzy
+#| msgid ""
+#| "Unable to create the engagement vs grade chart. Please try refreshing the "
+#| "page."
+msgid "Unable to initialize the time analysis chart. Please refresh the page."
+msgstr ""
+"エンゲージメント対成績チャートを作成できません。ページを更新してください。"
+
+#: templates/past_years/overview.html:2936
+#, fuzzy
+#| msgid "No Engagement Data Available"
+msgid "No Course Data Available"
+msgstr "エンゲージメントデータが利用できません"
+
+#: templates/past_years/overview.html:2937
+msgid "No courses found with grade data for this academic year"
+msgstr ""
+
+#: templates/past_years/overview.html:3063
+#, fuzzy
+#| msgid "Courses"
+msgid "Course ID"
+msgstr "コース"
+
+#: templates/past_years/overview.html:3066
+#, fuzzy
+#| msgid "Records"
+msgid "Grade Records"
+msgstr "記録"
+
+#: templates/past_years/overview.html:3067
+msgid "Range"
+msgstr ""
+
+#: templates/past_years/overview.html:3068
+#, fuzzy
+#| msgid "Standard Deviation"
+msgid "Std Deviation"
+msgstr "標準偏差"
+
+#: templates/past_years/overview.html:3094
+#, fuzzy
+#| msgid ""
+#| "Unable to display the engagement vs grade chart. Please try refreshing "
+#| "the page."
+msgid ""
+"Unable to display the course grades chart. Please try refreshing the page."
+msgstr ""
+"エンゲージメント対成績チャートを表示できません。ページを更新してください。"
+
+#: templates/past_years/overview.html:3104
+#, fuzzy
+#| msgid ""
+#| "Unable to create the engagement vs grade chart. Please try refreshing the "
+#| "page."
+msgid ""
+"Unable to create the course grades chart. Please try refreshing the page."
+msgstr ""
+"エンゲージメント対成績チャートを作成できません。ページを更新してください。"
+
+#: templates/past_years/overview.html:3149
+#, fuzzy
+#| msgid "Error Loading Data"
+msgid "Loading Course Data..."
+msgstr "データ読み込みエラー"
+
+#: templates/past_years/overview.html:3150
+msgid "Please wait while we load the course grades data"
+msgstr ""
+
+#: templates/past_years/overview.html:3190
+#: templates/past_years/partials/js/engagement_vs_grade.html:543
+msgid "No Data Found"
+msgstr "データが見つかりません"
+
+#: templates/past_years/overview.html:3191
+msgid "No course data available for this academic year"
+msgstr ""
+
+#: templates/past_years/overview.html:3210
+#: templates/past_years/partials/js/engagement_vs_grade.html:554
+#: templates/past_years/year_students.html:846
+msgid "Error Loading Data"
+msgstr "データ読み込みエラー"
+
+#: templates/past_years/overview.html:3211
+msgid "Unable to load course grades data. Please try again."
+msgstr ""
+
+#: templates/past_years/overview.html:3279
+msgid "Loading Timeout"
+msgstr ""
+
+#: templates/past_years/overview.html:3280
+#, fuzzy
+#| msgid ""
+#| "Unable to display the engagement vs grade chart. Please try refreshing "
+#| "the page."
+msgid ""
+"The request is taking longer than expected. Please try refreshing the page."
+msgstr ""
+"エンゲージメント対成績チャートを表示できません。ページを更新してください。"
+
+#: templates/past_years/partials/engagement_vs_grade.html:9
+msgid "Engagement vs Grade Performance"
+msgstr "エンゲージメント対成績パフォーマンス"
+
+#: templates/past_years/partials/engagement_vs_grade.html:10
+#, fuzzy, python-format
+#| msgid ""
+#| "Compare average grade scores between high engagement students (top 25%) "
+#| "vs low engagement students (bottom 25%) by academic year"
+msgid ""
+"Compare average grade scores between high engagement students (top 25%%) vs "
+"low engagement students (bottom 25%%) by academic year"
+msgstr ""
+"高エンゲージメント生徒（上位25%）と低エンゲージメント生徒（下位25%）の平均成"
+"績を学年度別に比較"
+
+#: templates/past_years/partials/engagement_vs_grade.html:17
+#: templates/past_years/partials/js/engagement_vs_grade.html:28
+#: templates/past_years/partials/js/engagement_vs_grade.html:29
+#: templates/past_years/partials/js/engagement_vs_grade.html:32
+#, fuzzy
+#| msgid "Activities & Hours"
+msgid "Activities × Hours"
+msgstr "アクティビティ & 時間"
+
+#: templates/past_years/partials/engagement_vs_grade.html:25
+#: templates/past_years/partials/js/engagement_vs_grade.html:43
+#: templates/past_years/partials/js/engagement_vs_grade.html:45
+#, fuzzy
+#| msgid "Hours Only"
+msgid "Hours"
+msgstr "時間のみ"
+
+#: templates/past_years/partials/engagement_vs_grade.html:32
+msgid "Refresh"
+msgstr "更新"
+
+#: templates/past_years/partials/engagement_vs_grade.html:44
+msgid "Loading Engagement vs Grade Analysis..."
+msgstr "エンゲージメント対成績分析を読み込み中..."
+
+#: templates/past_years/partials/engagement_vs_grade.html:45
+#: templates/past_years/partials/js/engagement_vs_grade.html:502
+msgid "Calculating engagement scores and comparing with grade performance"
+msgstr "エンゲージメントスコアを計算し、成績パフォーマンスと比較中"
+
+#: templates/past_years/partials/engagement_vs_grade.html:55
+msgid "Traditional Average-Based Analysis"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:70
+msgid "High Engagement Avg"
+msgstr "高エンゲージメント平均"
+
+#: templates/past_years/partials/engagement_vs_grade.html:89
+msgid "Low Engagement Avg"
+msgstr "低エンゲージメント平均"
+
+#: templates/past_years/partials/engagement_vs_grade.html:108
+#, fuzzy
+#| msgid "Performance Gap"
+msgid "Performance Gap (Mean)"
+msgstr "パフォーマンス差"
+
+#: templates/past_years/partials/engagement_vs_grade.html:141
+msgid "Robust Median-Based Analysis"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:142
+#, fuzzy
+#| msgid "Outlier Distortion"
+msgid "Outlier-Resistant"
+msgstr "外れ値歪み"
+
+#: templates/past_years/partials/engagement_vs_grade.html:159
+msgid "High Engagement Median"
+msgstr "高エンゲージメント中央値"
+
+#: templates/past_years/partials/engagement_vs_grade.html:183
+msgid "Low Engagement Median"
+msgstr "低エンゲージメント中央値"
+
+#: templates/past_years/partials/engagement_vs_grade.html:206
+#, fuzzy
+#| msgid "Performance Gap"
+msgid "Performance Gap (Median)"
+msgstr "パフォーマンス差"
+
+#: templates/past_years/partials/engagement_vs_grade.html:225
+msgid "Outlier Distortion"
+msgstr "外れ値歪み"
+
+#: templates/past_years/partials/engagement_vs_grade.html:248
+msgid "Statistical Comparison Insight"
+msgstr "統計比較洞察"
+
+#: templates/past_years/partials/engagement_vs_grade.html:250
+msgid "Analysis loading..."
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:279
+msgid "Engagement Score Calculation"
+msgstr "エンゲージメントスコア計算"
+
+#: templates/past_years/partials/engagement_vs_grade.html:284
+#, fuzzy
+#| msgid "Engagement"
+msgid "Engagement Formula:"
+msgstr "エンゲージメント"
+
+#: templates/past_years/partials/engagement_vs_grade.html:286
+#, fuzzy
+#| msgid "Engagement Score Calculation"
+msgid "Engagement Score ="
+msgstr "エンゲージメントスコア計算"
+
+#: templates/past_years/partials/engagement_vs_grade.html:287
+#, fuzzy
+#| msgid "Activities & Hours"
+msgid "Total Activities × Total Hours"
+msgstr "アクティビティ & 時間"
+
+#: templates/past_years/partials/engagement_vs_grade.html:289
+msgid "Where:"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:290
+msgid "Activities = Count of platform interactions"
+msgstr "アクティビティ = プラットフォーム相互作用の数"
+
+#: templates/past_years/partials/engagement_vs_grade.html:291
+msgid "Hours = Time spent on platform"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:292
+msgid "Session capping: 30 min max per activity"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:297
+#, fuzzy
+#| msgid "Engagement Score Calculation"
+msgid "Example Calculation:"
+msgstr "エンゲージメントスコア計算"
+
+#: templates/past_years/partials/engagement_vs_grade.html:299
+#, fuzzy
+#| msgid "High Engagement Avg"
+msgid "Student A (High Engagement):"
+msgstr "高エンゲージメント平均"
+
+#: templates/past_years/partials/engagement_vs_grade.html:300
+#, fuzzy
+#| msgid "Activities = Count of platform interactions"
+msgid "Activities: 450 interactions"
+msgstr "アクティビティ = プラットフォーム相互作用の数"
+
+#: templates/past_years/partials/engagement_vs_grade.html:301
+msgid "Hours: 125.5 hours"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:302
+msgid "Score: 450 × 125.5 = 56,475"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:303
+#, fuzzy
+#| msgid "Low Engagement Avg"
+msgid "Student B (Low Engagement):"
+msgstr "低エンゲージメント平均"
+
+#: templates/past_years/partials/engagement_vs_grade.html:304
+#, fuzzy
+#| msgid "Activities = Count of platform interactions"
+msgid "Activities: 85 interactions"
+msgstr "アクティビティ = プラットフォーム相互作用の数"
+
+#: templates/past_years/partials/engagement_vs_grade.html:305
+msgid "Hours: 23.2 hours"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:306
+msgid "Score: 85 × 23.2 = 1,972"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:319
+msgid "Statistical Methods: Mean vs Median Analysis"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:324
+msgid "Traditional Mean Analysis:"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:326
+msgid "Uses arithmetic average of all grade scores"
+msgstr "すべての成績の算術平均を使用"
+
+#: templates/past_years/partials/engagement_vs_grade.html:327
+msgid "Sensitive to extreme values (outliers)"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:328
+msgid "Can be distorted by a few very high or low scores"
+msgstr "極端に高いまたは低いスコアによって歪む場合がある"
+
+#: templates/past_years/partials/engagement_vs_grade.html:329
+msgid "Standard method in most educational research"
+msgstr "教育研究の標準的な方法"
+
+#: templates/past_years/partials/engagement_vs_grade.html:330
+msgid "Shown as solid lines in chart"
+msgstr "チャートでは実線で表示"
+
+#: templates/past_years/partials/engagement_vs_grade.html:333
+msgid "Grades [60, 65, 70, 75, 100] → Mean = 74"
+msgstr "成績 [60, 65, 70, 75, 100] → 平均 = 74"
+
+#: templates/past_years/partials/engagement_vs_grade.html:337
+msgid "Robust Median Analysis:"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:339
+msgid "Uses middle value when scores are sorted"
+msgstr "スコアをソートした際の中央値を使用"
+
+#: templates/past_years/partials/engagement_vs_grade.html:340
+msgid "Resistant to extreme values (outlier-proof)"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:341
+msgid "Represents typical student experience"
+msgstr "典型的な生徒の経験を表す"
+
+#: templates/past_years/partials/engagement_vs_grade.html:342
+msgid "Includes quartile ranges (Q1-Q3) for spread analysis"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:343
+msgid "Shown as dashed lines in chart"
+msgstr "チャートでは破線で表示"
+
+#: templates/past_years/partials/engagement_vs_grade.html:346
+msgid "Same Example:"
+msgstr "同じ例："
+
+#: templates/past_years/partials/engagement_vs_grade.html:346
+msgid "Grades [60, 65, 70, 75, 100] → Median = 70"
+msgstr "成績 [60, 65, 70, 75, 100] → 中央値 = 70"
+
+#: templates/past_years/partials/engagement_vs_grade.html:351
+msgid "Why Both Matter:"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:351
+msgid ""
+"Comparing mean and median reveals whether extreme scores are distorting the "
+"analysis. If they differ significantly, outliers are present and the median "
+"provides a more reliable picture of typical student performance."
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:362
+msgid "Comparative Analysis Method"
+msgstr "比較分析方法"
+
+#: templates/past_years/partials/engagement_vs_grade.html:367
+msgid "Student Categorization:"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:369
+msgid ""
+"All students with both engagement data (ClickHouse) and grade data (Analysis "
+"DB) are ranked by engagement score"
+msgstr ""
+"エンゲージメントデータ（ClickHouse）と成績データ（分析DB）の両方を持つすべて"
+"の生徒をエンゲージメントスコアでランク付け"
+
+#: templates/past_years/partials/engagement_vs_grade.html:370
+#, python-format
+msgid "Top 25%% = High engagement students (highest quarter)"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:371
+#, python-format
+msgid "Bottom 25%% = Low engagement students (lowest quarter)"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:372
+msgid "Academic year determined by course name pattern (e.g., '2024年度')"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:373
+msgid "Minimum thresholds: 5+ activities, 3+ grades, 10+ total students"
+msgstr "最小閾値：5以上のアクティビティ、3以上の成績、10以上の総生徒数"
+
+#: templates/past_years/partials/engagement_vs_grade.html:377
+msgid "Database Integration:"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:379
+msgid "ClickHouse (Engagement):"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:380
+msgid "• Pre-2025 & 2025+ databases"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:381
+msgid "• Activity logs with time tracking"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:382
+msgid "• Student ID matching via UserMatch"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:383
+msgid "Analysis DB (Grades):"
+msgstr "分析DB（成績）："
+
+#: templates/past_years/partials/engagement_vs_grade.html:384
+msgid "• Course assessment results"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:385
+msgid "• Academic year-specific filtering"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:386
+msgid "• Valid grade records (0-100 scale)"
+msgstr "• 有効な成績記録（0-100スケール）"
+
+#: templates/past_years/partials/engagement_vs_grade.html:391
+msgid "Key Insight:"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:391
+msgid ""
+"This analysis reveals whether students who spend more time and have more "
+"interactions on the platform (high engagement) actually achieve better "
+"academic outcomes compared to students with minimal platform usage (low "
+"engagement). The chart shows grade performance differences across academic "
+"years."
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:402
+#, fuzzy
+#| msgid "Data Quality Assurance"
+msgid "Data Quality & Considerations"
+msgstr "データ品質保証"
+
+#: templates/past_years/partials/engagement_vs_grade.html:407
+msgid "Quality Controls:"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:409
+msgid "Session capping prevents unrealistic time calculations"
+msgstr "セッション上限により非現実的な時間計算を防止"
+
+#: templates/past_years/partials/engagement_vs_grade.html:410
+msgid "Minimum activity thresholds ensure meaningful data"
+msgstr "最小アクティビティ閾値により意味のあるデータを保証"
+
+#: templates/past_years/partials/engagement_vs_grade.html:411
+msgid "Course-based academic year matching for accuracy"
+msgstr ""
+
+#: templates/past_years/partials/engagement_vs_grade.html:412
+msgid "Student ID validation across multiple databases"
+msgstr "複数データベース間での学生ID検証"
+
+#: templates/past_years/partials/engagement_vs_grade.html:416
+#, fuzzy
+#| msgid "Known Limitations"
+msgid "Limitations:"
+msgstr "既知の制限事項"
+
+#: templates/past_years/partials/engagement_vs_grade.html:418
+msgid "Platform usage may not reflect all learning activities"
+msgstr "プラットフォーム利用はすべての学習活動を反映しない場合がある"
+
+#: templates/past_years/partials/engagement_vs_grade.html:419
+msgid "Grade data limited to available course assessments"
+msgstr "成績データは利用可能なコース評価に限定"
+
+#: templates/past_years/partials/engagement_vs_grade.html:420
+msgid "Correlation does not imply causation"
+msgstr "相関は因果関係を意味しない"
+
+#: templates/past_years/partials/engagement_vs_grade.html:421
+msgid "External factors (study habits, support) not measured"
+msgstr ""
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:16
+#, fuzzy, python-format
+#| msgid "High Engagement Avg"
+msgid "High Engagement (Top 25%%)"
+msgstr "高エンゲージメント平均"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:17
+#, fuzzy, python-format
+#| msgid "Low Engagement Avg"
+msgid "Low Engagement (Bottom 25%%)"
+msgstr "低エンゲージメント平均"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:22
+#, fuzzy
+#| msgid "Engagement"
+msgid "Engagement Score"
+msgstr "エンゲージメント"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:31
+#, fuzzy
+#| msgid "Activities & Hours"
+msgid "Activity-Hours"
+msgstr "アクティビティ & 時間"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:35
+msgid "Activities Only"
+msgstr "アクティビティのみ"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:42
+msgid "Hours Only"
+msgstr "時間のみ"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:61
+msgid "No Engagement Data Available"
+msgstr "エンゲージメントデータが利用できません"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:62
+msgid "No students found with both engagement and grade data for analysis"
+msgstr "分析用のエンゲージメントと成績データの両方を持つ生徒が見つかりません"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:167
+msgid "Engagement vs Grade Performance Analysis"
+msgstr "エンゲージメント対成績パフォーマンス分析"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:171
+msgid ""
+"Comparison of average grades between high and low engagement student groups "
+"using"
+msgstr ""
+"高エンゲージメントと低エンゲージメント学生グループ間の平均成績比較（使用方"
+"法："
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:248
+msgid "Q1-Q3 Range"
+msgstr ""
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:249
+msgid "Outliers Detected"
+msgstr "検出された外れ値"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:261
+msgid "Grade"
+msgstr "成績"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:264
+msgid "Engagement"
+msgstr "エンゲージメント"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:292
+msgid ""
+"Unable to display the engagement vs grade chart. Please try refreshing the "
+"page."
+msgstr ""
+"エンゲージメント対成績チャートを表示できません。ページを更新してください。"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:302
+msgid ""
+"Unable to create the engagement vs grade chart. Please try refreshing the "
+"page."
+msgstr ""
+"エンゲージメント対成績チャートを作成できません。ページを更新してください。"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:404
+msgid "High Impact"
+msgstr "高影響"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:405
+msgid "Medium Impact"
+msgstr "中程度影響"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:406
+msgid "Low Impact"
+msgstr "低影響"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:409
+msgid "Unknown"
+msgstr "不明"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:424
+#: templates/past_years/partials/js/engagement_vs_grade.html:431
+msgid "Q1-Q3"
+msgstr ""
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:440
+msgid "The mean and median differences are very similar"
+msgstr "平均と中央値の差は非常に似ている"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:440
+#: templates/past_years/partials/js/engagement_vs_grade.html:442
+#: templates/past_years/partials/js/engagement_vs_grade.html:444
+msgid "pts apart"
+msgstr "ポイント差"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:440
+msgid ""
+"indicating that outliers have minimal impact on the engagement-grade "
+"relationship. The analysis is statistically robust."
+msgstr ""
+"外れ値がエンゲージメント-成績関係に最小限の影響を与えることを示しており、分析"
+"は統計的に堅牢です。"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:442
+msgid "There is a moderate difference between mean and median results"
+msgstr "平均と中央値の結果に適度な差がある"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:442
+msgid ""
+"Some outliers may be influencing the average, but the overall pattern "
+"remains consistent."
+msgstr ""
+"一部の外れ値が平均に影響を与えている可能性があるが、全体的なパターンは一貫し"
+"ている。"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:444
+msgid "Significant difference detected between mean and median analysis"
+msgstr "平均と中央値分析間に有意な差が検出された"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:444
+msgid ""
+"Outliers are substantially distorting the average-based results. The median-"
+"based analysis provides a more reliable picture of the typical student "
+"experience."
+msgstr ""
+"外れ値が平均ベースの結果を大幅に歪めている。中央値ベースの分析は、典型的な学"
+"生体験のより信頼性の高い描写を提供する。"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:449
+msgid "Recommendation: Focus on median results for decision-making."
+msgstr ""
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:451
+msgid "Both mean and median results can be trusted for decision-making."
+msgstr ""
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:501
+#, fuzzy
+#| msgid "Loading Engagement vs Grade Analysis..."
+msgid "Loading Engagement Analysis..."
+msgstr "エンゲージメント対成績分析を読み込み中..."
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:503
+msgid "Using"
+msgstr ""
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:544
+msgid "No engagement vs grade data available"
+msgstr "エンゲージメント対成績データが利用できません"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:555
+#, fuzzy
+#| msgid ""
+#| "Unable to display the engagement vs grade chart. Please try refreshing "
+#| "the page."
+msgid "Unable to load engagement vs grade data. Please try again."
+msgstr ""
+"エンゲージメント対成績チャートを表示できません。ページを更新してください。"
+
+#: templates/past_years/partials/js/engagement_vs_grade.html:582
+#, fuzzy
+#| msgid "Refresh"
+msgid "Refreshing..."
+msgstr "更新"
+
+#: templates/past_years/year_analysis.html:44
+#, fuzzy
+#| msgid "Course title"
+msgid "Course Analysis"
+msgstr "コース統計"
+
+#: templates/past_years/year_analysis.html:58
+#, fuzzy
+#| msgid "Student Activity Distribution"
+msgid "Student Activity"
+msgstr "生徒アクティビティ分布"
+
+#: templates/past_years/year_analysis.html:72
+#, fuzzy
+#| msgid "Teacher list"
+msgid "Teacher Activity"
+msgstr "教師一覧"
+
+#: templates/past_years/year_analysis.html:86
+#, fuzzy
+#| msgid "View Analytics"
+msgid "Advanced Analytics"
+msgstr "分析を表示"
+
+#: templates/past_years/year_analysis.html:100
+#, fuzzy, python-format
+#| msgid "Analysis DB (Grades):"
+msgid "Analysis for %(year)s"
+msgstr "分析DB（成績）："
+
+#: templates/past_years/year_analysis.html:103
+#, python-format
+msgid ""
+"This page will contain comprehensive analysis and statistics for the "
+"academic year %(year)s. Use the navigation above to explore specific areas."
+msgstr ""
+
+#: templates/past_years/year_analysis.html:106
+msgid "Data integration and visualization features will be implemented here."
+msgstr ""
+
+#: templates/past_years/year_analytics.html:41
+msgid ""
+"Advanced analytics and detailed insights for this year will be displayed "
+"here."
+msgstr ""
+
+#: templates/past_years/year_courses.html:74
+#, fuzzy
+#| msgid "Course title"
+msgid "Courses with Activity"
+msgstr "コースタイトル"
+
+#: templates/past_years/year_courses.html:138
+#, fuzzy
+#| msgid "Daily Activities"
+msgid "Daily Activity Trends"
+msgstr "日々のアクティビティ"
+
+#: templates/past_years/year_courses.html:139
+#, fuzzy
+#| msgid "Student Activity Distribution"
+msgid "Student activity over time"
+msgstr "生徒アクティビティ分布"
+
+#: templates/past_years/year_courses.html:150
+#, fuzzy
+#| msgid "Activities & Hours"
+msgid "Activity by Hour"
+msgstr "アクティビティ & 時間"
+
+#: templates/past_years/year_courses.html:151
+msgid "When students are most active"
+msgstr ""
+
+#: templates/past_years/year_courses.html:162
+msgid "Top Operations"
+msgstr ""
+
+#: templates/past_years/year_courses.html:163
+#: templates/past_years/year_students.html:200
+#, fuzzy
+#| msgid "About Student Activity Metrics"
+msgid "Most common student activities"
+msgstr "学生活動指標について"
+
+#: templates/past_years/year_courses.html:174
+msgid "Monthly Trends"
+msgstr ""
+
+#: templates/past_years/year_courses.html:175
+msgid "Activity trends by month"
+msgstr ""
+
+#: templates/past_years/year_courses.html:190
+#, fuzzy
+#| msgid "Browse courses organized by categories"
+msgid "Courses organized by category for"
+msgstr "カテゴリー別にコースを閲覧する"
+
+#: templates/past_years/year_courses.html:230
+#, fuzzy
+#| msgid "Course title"
+msgid "Course Name"
+msgstr "コースタイトル"
+
+#: templates/past_years/year_courses.html:233
+#, fuzzy
+#| msgid "Content Name"
+msgid "Short Name"
+msgstr "コンテンツ名"
+
+#: templates/past_years/year_courses.html:236
+#, fuzzy
+#| msgid "Created:"
+msgid "Created"
+msgstr "作成日："
+
+#: templates/past_years/year_courses.html:297
+#, fuzzy
+#| msgid "No courses in this category"
+msgid "No courses found in this category."
+msgstr "このカテゴリーにコースがありません"
+
+#: templates/past_years/year_courses.html:302
+#, fuzzy
+#| msgid "No teachers found"
+msgid "No subcategories found."
+msgstr "コースカテゴリーが見つかりません"
+
+#: templates/past_years/year_courses.html:312
+#, fuzzy
+#| msgid "No teachers found"
+msgid "No Course Categories Found"
+msgstr "コースカテゴリーが見つかりません"
+
+#: templates/past_years/year_courses.html:313
+#, fuzzy
+#| msgid "No teachers found"
+msgid "No course categories found for this academic year."
+msgstr "コースカテゴリーが見つかりません"
+
+#: templates/past_years/year_courses.html:338
+#, python-format
+msgid "No course data found for the academic year %(year)s. This could mean:"
+msgstr ""
+
+#: templates/past_years/year_courses.html:341
+msgid "No courses were created for this academic year"
+msgstr ""
+
+#: templates/past_years/year_courses.html:342
+msgid "Course categories don't follow the expected naming pattern (YYYY年度)"
+msgstr ""
+
+#: templates/past_years/year_courses.html:343
+msgid "Courses are not visible or have been archived"
+msgstr ""
+
+#: templates/past_years/year_courses.html:387
+#: templates/past_years/year_courses.html:465
+#: templates/past_years/year_students.html:919
+msgid "Count"
+msgstr "数"
+
+#: templates/past_years/year_courses.html:409
+msgid "Hour of Day (JST)"
+msgstr ""
+
+#: templates/past_years/year_courses.html:412
+#: templates/past_years/year_courses.html:424
+#: templates/past_years/year_courses.html:437
+#: templates/past_years/year_students.html:1056 templates/teacher_list.html:391
+#, fuzzy
+#| msgid "Active Courses"
+msgid "Activity Count"
+msgstr "アクティブなコース"
+
+#: templates/past_years/year_courses.html:434
+msgid "Operation Type"
+msgstr ""
+
+#: templates/past_years/year_courses.html:481
+msgid ""
+"Are you sure you want to clear the cache for this academic year? This will "
+"refresh all course data."
+msgstr ""
+
+#: templates/past_years/year_students.html:31
+#, fuzzy
+#| msgid "Activities"
+msgid "Activities:"
+msgstr "アクティビティ"
+
+#: templates/past_years/year_students.html:38
+#, fuzzy
+#| msgid "Activities"
+msgid "All Activities"
+msgstr "アクティビティ"
+
+#: templates/past_years/year_students.html:43
+#, fuzzy
+#| msgid "Enrolled Courses"
+msgid "Graded Courses Only"
+msgstr "登録済みコース"
+
+#: templates/past_years/year_students.html:53
+msgid "Cached Data"
+msgstr ""
+
+#: templates/past_years/year_students.html:63
+msgid ""
+"Clear all cached data for this academic year including student analytics, "
+"charts, and course distributions"
+msgstr ""
+
+#: templates/past_years/year_students.html:81
+#, fuzzy
+#| msgid "Students list"
+msgid "Students with Grades"
+msgstr "生徒一覧"
+
+#: templates/past_years/year_students.html:124
+#, fuzzy
+#| msgid "Courses"
+msgid "All Courses"
+msgstr "コース"
+
+#: templates/past_years/year_students.html:126
+#, fuzzy
+#| msgid "Grade"
+msgid "Graded Only"
+msgstr "成績"
+
+#: templates/past_years/year_students.html:136
+msgid "All activities in academic year"
+msgstr ""
+
+#: templates/past_years/year_students.html:139
+#, fuzzy
+#| msgid "Activities & Hours"
+msgid "Activities in courses with grades"
+msgstr "アクティビティ & 時間"
+
+#: templates/past_years/year_students.html:141
+msgid "of"
+msgstr "の"
+
+#: templates/past_years/year_students.html:142
+msgid "courses have activity data"
+msgstr ""
+
+#: templates/past_years/year_students.html:157
+#, fuzzy
+#| msgid "Course title"
+msgid "Courses with Grades"
+msgstr "コースタイトル"
+
+#: templates/past_years/year_students.html:184
+#: templates/past_years/year_students.html:820
+#: templates/past_years/year_students.html:2195
+#, fuzzy
+#| msgid "Student Activity Distribution"
+msgid "Grade Distribution"
+msgstr "生徒アクティビティ分布"
+
+#: templates/past_years/year_students.html:185
+msgid "Distribution of student grades by range"
+msgstr ""
+
+#: templates/past_years/year_students.html:199
+#, fuzzy
+#| msgid "About Student Activity Metrics"
+msgid "Student Activity Types"
+msgstr "学生活動指標について"
+
+#: templates/past_years/year_students.html:214
+msgid "Individual Student: Activities vs Grades"
+msgstr ""
+
+#: templates/past_years/year_students.html:215
+msgid ""
+"Toggle activity types to see how different types of student engagement "
+"relate to academic performance"
+msgstr ""
+
+#: templates/past_years/year_students.html:221
+#, fuzzy
+#| msgid "Chart Creation Error"
+msgid "Chart Controls"
+msgstr "チャート作成エラー"
+
+#: templates/past_years/year_students.html:225
+msgid "Scale:"
+msgstr ""
+
+#: templates/past_years/year_students.html:230
+#: templates/past_years/year_students.html:2018
+msgid "Logarithmic"
+msgstr ""
+
+#: templates/past_years/year_students.html:236
+msgid "Select All"
+msgstr ""
+
+#: templates/past_years/year_students.html:239
+msgid "Deselect All"
+msgstr ""
+
+#: templates/past_years/year_students.html:247
+#: templates/past_years/year_students.html:1300
+msgid "Logarithmic Scale Active:"
+msgstr ""
+
+#: templates/past_years/year_students.html:247
+msgid ""
+"This view compresses large values to better show data distribution. Extreme "
+"outliers are scaled down to reveal patterns in the majority of data points."
+msgstr ""
+
+#: templates/past_years/year_students.html:252
+#, fuzzy
+#| msgid "Activities"
+msgid "Activity Types"
+msgstr "アクティビティ"
+
+#: templates/past_years/year_students.html:257
+msgid ""
+"Select which activity types to include in the analysis. The chart will "
+"update automatically to show only the selected activities."
+msgstr ""
+
+#: templates/past_years/year_students.html:287
+msgid "Activity Count Range Filter"
+msgstr ""
+
+#: templates/past_years/year_students.html:288
+msgid ""
+"Drag the sliders to focus on specific activity ranges and filter out outliers"
+msgstr ""
+
+#: templates/past_years/year_students.html:301
+#: templates/past_years/year_students.html:335
+#: templates/past_years/year_students.html:1370
+msgid "High Activity, High Grade"
+msgstr ""
+
+#: templates/past_years/year_students.html:305
+#: templates/past_years/year_students.html:355
+#: templates/past_years/year_students.html:1375
+msgid "High Activity, Low Grade"
+msgstr ""
+
+#: templates/past_years/year_students.html:309
+#: templates/past_years/year_students.html:375
+#: templates/past_years/year_students.html:1380
+msgid "Low Activity, High Grade"
+msgstr ""
+
+#: templates/past_years/year_students.html:313
+#: templates/past_years/year_students.html:395
+#: templates/past_years/year_students.html:1385
+msgid "Low Activity, Low Grade"
+msgstr ""
+
+#: templates/past_years/year_students.html:328
+#, fuzzy
+#| msgid "Course title"
+msgid "Course Engagement Categories"
+msgstr "コースカテゴリー"
+
+#: templates/past_years/year_students.html:329
+msgid "Courses categorized by student engagement and performance"
+msgstr ""
+
+#: templates/past_years/year_students.html:336
+msgid "Optimal"
+msgstr ""
+
+#: templates/past_years/year_students.html:356
+#, fuzzy
+#| msgid "Overview"
+msgid "Review"
+msgstr "概要"
+
+#: templates/past_years/year_students.html:376
+msgid "Efficient"
+msgstr ""
+
+#: templates/past_years/year_students.html:396
+#, fuzzy
+#| msgid "Action"
+msgid "Attention"
+msgstr "アクション"
+
+#: templates/past_years/year_students.html:421
+msgid " Do More Activities Lead to Higher Grades?"
+msgstr ""
+
+#: templates/past_years/year_students.html:422
+msgid ""
+"Statistical analysis of the relationship between student activities and "
+"academic performance"
+msgstr ""
+
+#: templates/past_years/year_students.html:440
+msgid "Methodology"
+msgstr ""
+
+#: templates/past_years/year_students.html:443
+msgid ""
+"Students are categorized based on median activity and grade thresholds. Each "
+"point in the scatter plot represents one student's performance in one course."
+msgstr ""
+
+#: templates/past_years/year_students.html:446
+msgid "Important:"
+msgstr ""
+
+#: templates/past_years/year_students.html:446
+msgid ""
+"The counts below represent student-course combinations, not unique students. "
+"A single student may appear in multiple categories if they take multiple "
+"courses with different performance patterns."
+msgstr ""
+
+#: templates/past_years/year_students.html:453
+msgid "Supporting Evidence"
+msgstr ""
+
+#: templates/past_years/year_students.html:454
+msgid "High Activity + High Grade"
+msgstr ""
+
+#: templates/past_years/year_students.html:455
+#: templates/past_years/year_students.html:462
+#: templates/past_years/year_students.html:469
+#: templates/past_years/year_students.html:476
+msgid "Student-course records"
+msgstr ""
+
+#: templates/past_years/year_students.html:460
+msgid "Contradicting Evidence"
+msgstr ""
+
+#: templates/past_years/year_students.html:461
+msgid "High Activity + Low Grade"
+msgstr ""
+
+#: templates/past_years/year_students.html:467
+msgid "Efficient Learning"
+msgstr ""
+
+#: templates/past_years/year_students.html:468
+msgid "Low Activity + High Grade"
+msgstr ""
+
+#: templates/past_years/year_students.html:474
+#, fuzzy
+#| msgid "Performance Gap"
+msgid "Low Performance"
+msgstr "パフォーマンス差"
+
+#: templates/past_years/year_students.html:475
+msgid "Low Activity + Low Grade"
+msgstr ""
+
+#: templates/past_years/year_students.html:481
+msgid "Hypothesis Strength"
+msgstr ""
+
+#: templates/past_years/year_students.html:491
+#: templates/past_years/year_students.html:632
+msgid "Calculating..."
+msgstr ""
+
+#: templates/past_years/year_students.html:507
+msgid "Quartile Analysis: Most Active vs Least Active Students"
+msgstr ""
+
+#: templates/past_years/year_students.html:508
+#, python-format
+msgid ""
+"Direct comparison between top 25%% and bottom 25%% most active students to "
+"test if more activities lead to higher grades"
+msgstr ""
+
+#: templates/past_years/year_students.html:514
+#: templates/past_years/year_students.html:2043
+#, fuzzy
+#| msgid "View Analytics"
+msgid "Show Analysis"
+msgstr "分析を表示"
+
+#: templates/past_years/year_students.html:526
+msgid "Quartile Methodology"
+msgstr ""
+
+#: templates/past_years/year_students.html:529
+#, python-format
+msgid ""
+"This analysis compares the extremes: the 25%% most active students vs the "
+"25%% least active students. This provides a clearer test of whether high "
+"activity levels are associated with better academic performance."
+msgstr ""
+
+#: templates/past_years/year_students.html:532
+msgid "Advantage over median analysis:"
+msgstr ""
+
+#: templates/past_years/year_students.html:532
+#, python-format
+msgid ""
+"By focusing on the extremes, we remove the 'middle 50%%' of students who "
+"might have mixed patterns, giving a clearer signal of the activity-grade "
+"relationship."
+msgstr ""
+
+#: templates/past_years/year_students.html:547
+#, python-format
+msgid "Top 25%% Most Active"
+msgstr ""
+
+#: templates/past_years/year_students.html:548
+#, fuzzy
+#| msgid "Most Active Students"
+msgid "Highest activity students"
+msgstr "最もアクティブな生徒"
+
+#: templates/past_years/year_students.html:554
+#: templates/past_years/year_students.html:588
+#, fuzzy
+#| msgid "Return to Course Categories"
+msgid "Student-Course Records:"
+msgstr "コースカテゴリーに戻る"
+
+#: templates/past_years/year_students.html:558
+#: templates/past_years/year_students.html:592
+#, fuzzy
+#| msgid "Average Grade"
+msgid "Average Grade:"
+msgstr "平均成績"
+
+#: templates/past_years/year_students.html:562
+#: templates/past_years/year_students.html:596
+#, fuzzy
+#| msgid "Activities"
+msgid "Activity Range:"
+msgstr "アクティビティ"
+
+#: templates/past_years/year_students.html:566
+msgid "Min Threshold:"
+msgstr ""
+
+#: templates/past_years/year_students.html:581
+#, python-format
+msgid "Bottom 25%% Least Active"
+msgstr ""
+
+#: templates/past_years/year_students.html:582
+#, fuzzy
+#| msgid "Most Active Students"
+msgid "Lowest activity students"
+msgstr "最もアクティブな生徒"
+
+#: templates/past_years/year_students.html:600
+msgid "Max Threshold:"
+msgstr ""
+
+#: templates/past_years/year_students.html:609
+#, fuzzy
+#| msgid "Statistical Comparison Insight"
+msgid "Quartile Comparison Results"
+msgstr "統計比較洞察"
+
+#: templates/past_years/year_students.html:614
+#, python-format
+msgid "Grade Difference (Top 25%% - Bottom 25%%):"
+msgstr ""
+
+#: templates/past_years/year_students.html:621
+msgid "No difference"
+msgstr ""
+
+#: templates/past_years/year_students.html:622
+msgid "Strong difference"
+msgstr ""
+
+#: templates/past_years/year_students.html:629
+msgid "Effect Size:"
+msgstr ""
+
+#: templates/past_years/year_students.html:637
+msgid "Quartile Hypothesis Test"
+msgstr ""
+
+#: templates/past_years/year_students.html:640
+msgid "Sample Sizes:"
+msgstr ""
+
+#: templates/past_years/year_students.html:644
+msgid "Confidence Level:"
+msgstr ""
+
+#: templates/past_years/year_students.html:648
+msgid "Calculating statistical significance..."
+msgstr ""
+
+#: templates/past_years/year_students.html:656
+#, fuzzy
+#| msgid "Comparative Analysis Method"
+msgid "Quartile Analysis Insights"
+msgstr "比較分析方法"
+
+#: templates/past_years/year_students.html:672
+msgid "Key Insights"
+msgstr ""
+
+#: templates/past_years/year_students.html:673
+msgid "Automated insights from the data analysis"
+msgstr ""
+
+#: templates/past_years/year_students.html:698
+#, fuzzy
+#| msgid "Performance Gap"
+msgid "Course Performance Summary"
+msgstr "パフォーマンス差"
+
+#: templates/past_years/year_students.html:699
+msgid "Detailed statistics for each course"
+msgstr ""
+
+#: templates/past_years/year_students.html:706
+#: templates/teacher_detail.html:195
+#, fuzzy
+#| msgid "Courses"
+msgid "Course"
+msgstr "コース"
+
+#: templates/past_years/year_students.html:708
+#, fuzzy
+#| msgid "Average Grade"
+msgid "Avg Grade"
+msgstr "平均成績"
+
+#: templates/past_years/year_students.html:709
+#, fuzzy
+#| msgid "Grade"
+msgid "Min Grade"
+msgstr "成績"
+
+#: templates/past_years/year_students.html:710
+#, fuzzy
+#| msgid "Grade"
+msgid "Max Grade"
+msgstr "成績"
+
+#: templates/past_years/year_students.html:712
+#: templates/past_years/year_students.html:753
+#, fuzzy
+#| msgid "Outlier Distortion"
+msgid "Distribution"
+msgstr "外れ値歪み"
+
+#: templates/past_years/year_students.html:749
+#, fuzzy
+#| msgid "Instructors for this course"
+msgid "View grade distribution chart for this course"
+msgstr "このコースの講師"
+
+#: templates/past_years/year_students.html:765
+#, fuzzy
+#| msgid "Performance Gap"
+msgid "No Course Performance Data"
+msgstr "パフォーマンス差"
+
+#: templates/past_years/year_students.html:766
+msgid "No courses with Benesse grade data found for this academic year."
+msgstr ""
+
+#: templates/past_years/year_students.html:797
+msgid ""
+"No student data available for this academic year. This could be because:"
+msgstr ""
+
+#: templates/past_years/year_students.html:799
+msgid "No grades have been recorded yet"
+msgstr ""
+
+#: templates/past_years/year_students.html:800
+#, fuzzy
+#| msgid "All students activity dashboard."
+msgid "No student activity data is available"
+msgstr "すべての生徒のアクティビティダッシュボード。"
+
+#: templates/past_years/year_students.html:801
+msgid "Data is still being processed"
+msgstr ""
+
+#: templates/past_years/year_students.html:823
+msgid "Loading course data..."
+msgstr ""
+
+#: templates/past_years/year_students.html:836
+msgid "Loading grade distribution data..."
+msgstr ""
+
+#: templates/past_years/year_students.html:860
+#, fuzzy
+#| msgid "Average Grade"
+msgid "Average"
+msgstr "平均成績"
+
+#: templates/past_years/year_students.html:880
+msgid "Middle"
+msgstr ""
+
+#: templates/past_years/year_students.html:900
+msgid "Spread"
+msgstr ""
+
+#: templates/past_years/year_students.html:920 templates/teacher_list.html:438
+#, fuzzy
+#| msgid "Total Hours"
+msgid "Total"
+msgstr "総時間数"
+
+#: templates/past_years/year_students.html:944
+msgid "Distribution Breakdown"
+msgstr ""
+
+#: templates/past_years/year_students.html:949
+#: templates/past_years/year_students.html:2189
+#, fuzzy
+#| msgid "Grade"
+msgid "Grade Range"
+msgstr "成績"
+
+#: templates/past_years/year_students.html:966
+msgid "Close"
+msgstr "閉じる"
+
+#: templates/past_years/year_students.html:1069
+#, fuzzy
+#| msgid "Average Activities"
+msgid "Number of Activities"
+msgstr "平均アクティビティ数"
+
+#: templates/past_years/year_students.html:1268
+#, fuzzy
+#| msgid "Number of students by activity range"
+msgid "Number of Selected Activities"
+msgstr "アクティビティ範囲別の生徒数"
+
+#: templates/past_years/year_students.html:1272
+#, fuzzy
+#| msgid "Total Activities"
+msgid "Total Activities (All Types)"
+msgstr "総アクティビティ数"
+
+#: templates/past_years/year_students.html:1280
+msgid "(Log Scale)"
+msgstr ""
+
+#: templates/past_years/year_students.html:1300
+msgid ""
+"X-axis values are transformed using log₁₀(activity + 1) to compress large "
+"values and reveal data patterns. Hover over points to see original values."
+msgstr ""
+
+#: templates/past_years/year_students.html:1304
+msgid "(Linear Scale)"
+msgstr ""
+
+#: templates/past_years/year_students.html:1323
+msgid "Linear Scale Active:"
+msgstr ""
+
+#: templates/past_years/year_students.html:1323
+msgid ""
+"X-axis shows actual activity counts without transformation. May be difficult "
+"to see patterns due to extreme outliers."
+msgstr ""
+
+#: templates/past_years/year_students.html:1445
+#, fuzzy, python-format
+#| msgid "Average Grade"
+msgid "Average Grade (%%)"
+msgstr "平均成績"
+
+#: templates/past_years/year_students.html:1517
+#, fuzzy
+#| msgid "Activities"
+msgid "Activity Threshold"
+msgstr "アクティビティ"
+
+#: templates/past_years/year_students.html:1533
+msgid "Grade Threshold"
+msgstr ""
+
+#: templates/past_years/year_students.html:1583
+msgid ""
+"Strong evidence supports the hypothesis. Students with more activities tend "
+"to achieve higher grades."
+msgstr ""
+
+#: templates/past_years/year_students.html:1586
+msgid ""
+"Moderate evidence supports the hypothesis. The relationship exists but other "
+"factors also influence grades."
+msgstr ""
+
+#: templates/past_years/year_students.html:1589
+msgid ""
+"Weak evidence for the hypothesis. Activity level alone may not be a strong "
+"predictor of grades."
+msgstr ""
+
+#: templates/past_years/year_students.html:1757
+msgid "Negligible effect - activity level has minimal impact on grades"
+msgstr ""
+
+#: templates/past_years/year_students.html:1759
+#, fuzzy
+#| msgid ""
+#| "Comparison of average grades between high and low engagement student "
+#| "groups using"
+msgid "No meaningful difference found between high and low activity students"
+msgstr ""
+"高エンゲージメントと低エンゲージメント学生グループ間の平均成績比較（使用方"
+"法："
+
+#: templates/past_years/year_students.html:1761
+msgid "Small effect - weak relationship between activity and grades"
+msgstr ""
+
+#: templates/past_years/year_students.html:1763
+msgid "Small but measurable difference between activity levels"
+msgstr ""
+
+#: templates/past_years/year_students.html:1765
+msgid "Medium effect - moderate relationship between activity and grades"
+msgstr ""
+
+#: templates/past_years/year_students.html:1767
+msgid "Moderate evidence that activity level affects academic performance"
+msgstr ""
+
+#: templates/past_years/year_students.html:1769
+msgid "Large effect - strong relationship between activity and grades"
+msgstr ""
+
+#: templates/past_years/year_students.html:1771
+msgid "Strong evidence that high activity leads to better grades"
+msgstr ""
+
+#: templates/past_years/year_students.html:1810
+msgid ""
+"High-activity students significantly outperform low-activity students by"
+msgstr ""
+
+#: templates/past_years/year_students.html:1811
+msgid "percentage points on average."
+msgstr ""
+
+#: templates/past_years/year_students.html:1813
+msgid "High-activity students marginally outperform low-activity students by"
+msgstr ""
+
+#: templates/past_years/year_students.html:1814
+msgid "percentage points."
+msgstr ""
+
+#: templates/past_years/year_students.html:1816
+msgid ""
+"Low-activity students actually perform better than high-activity students by"
+msgstr ""
+
+#: templates/past_years/year_students.html:1817
+msgid "percentage points, contradicting the hypothesis."
+msgstr ""
+
+#: templates/past_years/year_students.html:1823
+#, fuzzy
+#| msgid "No students found"
+msgid "Top quartile students engage in"
+msgstr "アクティブな生徒が見つかりません"
+
+#: templates/past_years/year_students.html:1824
+msgid "more activities than bottom quartile students."
+msgstr ""
+
+#: templates/past_years/year_students.html:1830
+msgid "Small sample sizes (n="
+msgstr ""
+
+#: templates/past_years/year_students.html:1831
+msgid ") may limit the reliability of these findings."
+msgstr ""
+
+#: templates/past_years/year_students.html:1833
+msgid "Analysis based on substantial sample sizes provides reliable results."
+msgstr ""
+
+#: templates/past_years/year_students.html:1841
+msgid ""
+"High-activity students show more consistent performance (less grade "
+"variation)."
+msgstr ""
+
+#: templates/past_years/year_students.html:1843
+msgid ""
+"Low-activity students show more consistent performance (less grade "
+"variation)."
+msgstr ""
+
+#: templates/past_years/year_students.html:1887
+#, fuzzy
+#| msgid "Details"
+msgid "Hide Details"
+msgstr "詳細"
+
+#: templates/past_years/year_students.html:2018
+msgid "Linear"
+msgstr ""
+
+#: templates/past_years/year_students.html:2038
+#, fuzzy
+#| msgid "View Analytics"
+msgid "Hide Analysis"
+msgstr "分析を表示"
+
+#: templates/past_years/year_students.html:2192
+#, fuzzy
+#| msgid "Number of students by activity range"
+msgid "Number of Students"
+msgstr "アクティビティ範囲別の生徒数"
+
+#: templates/past_years/year_teachers.html:41
+msgid ""
+"Teacher activity data and course management analytics for this year will be "
+"displayed here."
+msgstr ""
+
+#: templates/student_activity_live.html:40
 msgid "Live Activity Timeline"
 msgstr "アクティビティタイムライン"
 
+#: templates/student_activity_live.html:42
 msgid ""
 "This live view enables seamless monitoring of students' real-time activities "
 "and actions."
@@ -421,105 +4391,277 @@ msgstr ""
 "このライブビューでは、生徒のリアルタイムの活動や行動をシームレスにモニタリン"
 "グできます。"
 
+#: templates/student_activity_live.html:46
 msgid "Current Activity Duration:"
 msgstr "現在のアクティビティ時間："
 
-#, fuzzy
-#| msgid "Students"
-msgid "Student"
-msgstr "生徒"
+#: templates/student_activity_live.html:59
+msgid "Time spent:"
+msgstr "費やした時間："
 
+#: templates/student_detail.html:16
 #, fuzzy
 #| msgid "Dashboard"
 msgid "Student Dashboard"
 msgstr "生徒ダッシュボード"
 
+#: templates/student_detail.html:20
 msgid "View Live Activities"
 msgstr "アクティビティをライブで表示"
 
+#: templates/student_detail.html:57 templates/teacher_detail.html:57
 msgid "About"
 msgstr "概要"
 
+#: templates/student_detail.html:62 templates/student_list.html:36
+#: templates/teacher_detail.html:62
 msgid "Email"
 msgstr "メール"
 
+#: templates/student_detail.html:67 templates/student_detail.html:80
+#: templates/student_detail.html:219 templates/teacher_detail.html:196
 msgid "Last Access"
 msgstr "最終アクセス"
 
+#: templates/student_detail.html:75
 msgid "Sub Content"
 msgstr "サブコンテンツ"
 
+#: templates/student_detail.html:101 templates/student_list.html:37
+#: templates/teacher_detail.html:98 templates/teacher_list.html:122
 msgid "Active Courses"
 msgstr "アクティブなコース"
 
+#: templates/student_detail.html:108
 msgid "Archived course"
 msgstr "アーカイブされたコース"
 
+#: templates/student_detail.html:115
 msgid "Accessed Contents"
 msgstr "アクセスしたコンテンツ"
 
+#: templates/student_detail.html:122
 msgid "Quiz Answers"
 msgstr "クイズの回答"
 
+#: templates/student_detail.html:145
 msgid "Enrolled Courses"
 msgstr "登録済みコース"
 
+#: templates/student_detail.html:152 templates/student_detail.html:217
 msgid "Course title"
 msgstr "コースタイトル"
 
+#: templates/student_detail.html:153 templates/student_detail.html:218
 msgid "Category"
 msgstr "カテゴリー"
 
+#: templates/student_detail.html:154 templates/teacher_detail.html:132
+#: templates/teacher_detail.html:197
 msgid "Action"
 msgstr "アクション"
 
+#: templates/student_detail.html:173
 msgid "View course"
 msgstr "コースを表示"
 
+#: templates/student_detail.html:210
 msgid "Recently Visited Courses"
 msgstr "最近閲覧したコース"
 
+#: templates/student_list.html:9
 msgid "Students list"
 msgstr "生徒一覧"
 
+#: templates/student_list.html:10
 msgid "All Students Here"
 msgstr "全生徒一覧"
 
+#: templates/student_list.html:17 templates/teacher_list.html:82
 msgid "Search..."
 msgstr "検索..."
 
+#: templates/student_list.html:35 templates/teacher_list.html:107
 msgid "Name"
 msgstr "名前"
 
+#: templates/student_list.html:38 templates/teacher_detail.html:105
+#: templates/teacher_list.html:137
 msgid "Archived Courses"
 msgstr "アーカイブされたコース"
 
+#: templates/student_list.html:40 templates/teacher_detail.html:131
 msgid "Status"
 msgstr "ステータス"
 
+#: templates/student_list.html:85
 msgid "Online"
 msgstr "オンライン"
 
+#: templates/student_list.html:87
 msgid "Offline"
 msgstr "オフライン"
 
+#: templates/student_list.html:216
 msgid "No students found"
 msgstr "生徒が見つかりません"
 
+#: templates/teacher_detail.html:10 templates/teacher_detail.html:152
+#, fuzzy
+#| msgid "Teachers"
+msgid "Teacher"
+msgstr "教師"
+
+#: templates/teacher_detail.html:19
+msgid "Teacher Dashboard"
+msgstr "教師ダッシュボード"
+
+#: templates/teacher_detail.html:25
+#, fuzzy
+#| msgid "Open in Moodle"
+msgid "View in Moodle"
+msgstr "Moodleで開く"
+
+#: templates/teacher_detail.html:67
+msgid "Username"
+msgstr ""
+
+#: templates/teacher_detail.html:73
+msgid "Last Login"
+msgstr ""
+
+#: templates/teacher_detail.html:80
+msgid "Member Since"
+msgstr ""
+
+#: templates/teacher_detail.html:122
+#, fuzzy
+#| msgid "Total Courses"
+msgid "Teaching Courses"
+msgstr "コース総数"
+
+#: templates/teacher_detail.html:129
+#, fuzzy
+#| msgid "Course title"
+msgid "Course Title"
+msgstr "コースタイトル"
+
+#: templates/teacher_detail.html:130
+msgid "Role"
+msgstr ""
+
+#: templates/teacher_detail.html:150
+#, fuzzy
+#| msgid "Teachers"
+msgid "Editing Teacher"
+msgstr "教師"
+
+#: templates/teacher_detail.html:157
+#, fuzzy
+#| msgid "Activities"
+msgid "Active"
+msgstr "アクティビティ"
+
+#: templates/teacher_detail.html:159
+msgid "Hidden"
+msgstr ""
+
+#: templates/teacher_detail.html:165 templates/teacher_detail.html:219
+msgid "View"
+msgstr ""
+
+#: templates/teacher_detail.html:168 templates/teacher_detail.html:222
+msgid "N/A"
+msgstr ""
+
+#: templates/teacher_detail.html:175
+#, fuzzy
+#| msgid "No teachers found"
+msgid "No courses found"
+msgstr "コースカテゴリーが見つかりません"
+
+#: templates/teacher_detail.html:187
+#, fuzzy
+#| msgid "Recently Visited Courses"
+msgid "Recent Course Access"
+msgstr "最近閲覧したコース"
+
+#: templates/teacher_detail.html:188
+msgid "Last 30 days"
+msgstr ""
+
+#: templates/teacher_detail.html:229
+#, fuzzy
+#| msgid "No teachers found"
+msgid "No recent course access found"
+msgstr "コースカテゴリーが見つかりません"
+
+#: templates/teacher_list.html:10 templates/teacher_list.html:74
 msgid "Teacher list"
 msgstr "教師一覧"
 
+#: templates/teacher_list.html:41
+#, fuzzy
+#| msgid "Most Active Contents"
+msgid "Most Active Teachers"
+msgstr "最もアクティブなコンテンツ"
+
+#: templates/teacher_list.html:42
+msgid "Teacher activity statistics"
+msgstr ""
+
+#: templates/teacher_list.html:46
+#, fuzzy
+#| msgid "Time spent:"
+msgid "Time Period:"
+msgstr "費やした時間："
+
+#: templates/teacher_list.html:75
 msgid "All Teacher Here"
 msgstr "全教師一覧"
 
+#: templates/teacher_list.html:152
 msgid "Total Course"
 msgstr "コース合計"
 
+#: templates/teacher_list.html:173
 msgid "instructor"
 msgstr "教師"
 
+#: templates/teacher_list.html:311
 msgid "No teachers found"
 msgstr "教師が見つかりません"
+
+#~ msgid "Activity Count: Total number of tracked interactions per student"
+#~ msgstr "アクティビティ数：学生ごとの追跡された相互作用の総数"
+
+#~ msgid ""
+#~ "A count of zero indicates a student who is enrolled but has not accessed "
+#~ "course content"
+#~ msgstr ""
+#~ "ゼロのカウントは、登録済みだがコースのコンテンツにアクセスしていない学生を"
+#~ "示します"
+
+#~ msgid "Student Name"
+#~ msgstr "生徒名"
+
+#~ msgid "Search and view students by activity frequency"
+#~ msgstr "アクティビティ頻度による生徒の検索と表示"
+
+#~ msgid "Search by student name..."
+#~ msgstr "生徒名で検索..."
+
+#~ msgid "Unique"
+#~ msgstr "ユニーク"
+
+#~ msgid "Showing"
+#~ msgstr "表示中"
+
+#~ msgid "entries"
+#~ msgstr "エントリ"
+
+#~ msgid "Median Performance Gap"
+#~ msgstr "中央値パフォーマンス差"
 
 #, python-format
 #~ msgid "Page %(current_page)s of %(total_pages)s"

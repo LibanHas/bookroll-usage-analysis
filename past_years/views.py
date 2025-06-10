@@ -821,7 +821,7 @@ class EngagementVsGradeDataView(LoginRequiredMixin, View):
                 start_year=start_year,
                 end_year=end_year,
                 engagement_metric=engagement_metric,
-                cache_timeout=7200  # 2 hours cache
+                cache_timeout=86400  # 24 hours cache for historical data
             )
 
             if engagement_data and engagement_data.get('yearly_data'):
