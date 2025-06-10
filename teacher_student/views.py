@@ -20,17 +20,22 @@ class TeacherListView(ListView):
     paginate_by = 50  # Number of teachers per page
 
     def get_queryset(self):
-        search_term = self.request.GET.get('search', '')
-        sort_by = self.request.GET.get('sort_by', '')
-        sort_order = self.request.GET.get('sort_order', 'asc')
+        # Check if user is staff or admin
+        user = self.request.user
+        is_staff_or_admin = user.is_authenticated and (user.is_staff or user.is_superuser)
+
+        # Only allow search for staff/admin users
+        search_term = self.request.GET.get('search', '') if is_staff_or_admin else ''
+        sort_by = self.request.GET.get('sort_by', 'active_courses')  # Default to active_courses
+        sort_order = self.request.GET.get('sort_order', 'desc')      # Default to desc for active courses
 
         # Validate sort parameters
         valid_sort_fields = ['active_courses', 'archived_courses', 'total_courses', 'name']
         if sort_by not in valid_sort_fields:
-            sort_by = None
+            sort_by = 'active_courses'  # Default fallback
 
         if sort_order not in ['asc', 'desc']:
-            sort_order = 'asc'
+            sort_order = 'desc'  # Default to desc for better UX
 
         teachers = Teacher.get_teacher_data(
             sort_by=sort_by,
@@ -38,8 +43,8 @@ class TeacherListView(ListView):
             use_cache=True
         )
 
-        # Apply search filter if search term is provided
-        if search_term:
+        # Apply search filter if search term is provided and user is staff/admin
+        if search_term and is_staff_or_admin:
             filtered_teachers = []
             search_term_lower = search_term.lower()
             for teacher in teachers:
@@ -52,12 +57,51 @@ class TeacherListView(ListView):
             return filtered_teachers
         return teachers
 
+    def _anonymize_teacher_names(self, teachers):
+        """
+        Anonymize teacher names for non-staff users.
+        Returns list with anonymized names like 'Teacher 1', 'Teacher 2', etc.
+        """
+        anonymized_teachers = []
+        for index, teacher in enumerate(teachers, 1):
+            teacher_copy = teacher.copy()
+            teacher_copy['display_name'] = f"Teacher {index}"
+            teacher_copy['original_firstname'] = teacher['firstname']
+            teacher_copy['original_lastname'] = teacher['lastname']
+            anonymized_teachers.append(teacher_copy)
+        return anonymized_teachers
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['additional_info'] = "This is additional context data"
-        context['search_term'] = self.request.GET.get('search', '')
-        context['current_sort_by'] = self.request.GET.get('sort_by', '')
-        context['current_sort_order'] = self.request.GET.get('sort_order', 'asc')
+
+        # Check if user is staff or admin (do this once)
+        user = self.request.user
+        is_staff_or_admin = user.is_authenticated and (user.is_staff or user.is_superuser)
+
+        # Only pass search term to template if user is staff/admin
+        context['search_term'] = self.request.GET.get('search', '') if is_staff_or_admin else ''
+        context['current_sort_by'] = self.request.GET.get('sort_by', 'active_courses')
+        context['current_sort_order'] = self.request.GET.get('sort_order', 'desc')
+
+        # Check if staff user wants to show real names (default to False for privacy)
+        show_names = self.request.GET.get('show_names', 'false').lower() == 'true'
+
+        # Apply name anonymization logic
+        teachers = context['teachers']
+        if not is_staff_or_admin or (is_staff_or_admin and not show_names):
+            # Anonymize names for regular users or staff users who haven't toggled to show names
+            teachers = self._anonymize_teacher_names(teachers)
+            context['names_anonymized'] = True
+        else:
+            # Staff users with show_names=true see real names
+            for teacher in teachers:
+                teacher['display_name'] = f"{teacher['firstname']} {teacher['lastname']}"
+            context['names_anonymized'] = False
+
+        context['teachers'] = teachers
+        context['is_staff_or_admin'] = is_staff_or_admin
+        context['show_names'] = show_names
 
         # Add breadcrumbs
         context['breadcrumbs'] = [
@@ -70,6 +114,13 @@ class TeacherListView(ListView):
 
         # Get teacher activity data for chart (now returns stacked data)
         activity_data = Teacher.get_teacher_activity_data(time_filter=chart_time_filter)
+
+        # Apply name anonymization to chart data as well
+        if not is_staff_or_admin or (is_staff_or_admin and not show_names):
+            # Anonymize chart categories (teacher names)
+            chart_categories = activity_data.get('categories', [])
+            anonymized_categories = [f"Teacher {i+1}" for i in range(len(chart_categories))]
+            activity_data['categories'] = anonymized_categories
 
         # Prepare chart data for stacked bars
         context['chart_time_filter'] = chart_time_filter
