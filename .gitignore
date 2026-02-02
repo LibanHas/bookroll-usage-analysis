@@ -1,62 +1,76 @@
-.envrc
-.volumes
-
-# General Python
-*.pyc
-*.pyo
-*.pyd
+# ======================
+# Python
+# ======================
 __pycache__/
-*.swp
-*.swo
-*.egg
-*.egg-info/
-dist/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / packaging
 build/
+dist/
+*.egg-info/
+.eggs/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+.coverage
+.coverage.*
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+htmlcov/
+
+# Logs
 *.log
 
-# Virtualenv
-env/
-venv/
-ENV/
-.venv/
+# Jupyter
+.ipynb_checkpoints/
 
-# Django
-*.sqlite3
-db.sqlite3
-media/
-staticfiles/
-*.pot
-
-# Secrets
-*.env
-
-# direnv
-.envrc
-
-# VSCode
-.vscode/
-*.code-workspace
-
+# ======================
 # macOS
+# ======================
 .DS_Store
+.AppleDouble
+.LSOverride
 
-# Windows
-Thumbs.db
-desktop.ini
-project.md
-# IDEs
-.idea/
-*.iml
+# Thumbnails
+._*
 
-# Node.js (if applicable)
-node_modules/
-npm-debug.log
-yarn-error.log
+# Spotlight
+.Spotlight-V100
 
+# Trash
+.Trashes
 
-.cursor/
-.cursorrules
-.cursorignore
+# ======================
+# VS Code
+# ======================
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
 
+# ======================
+# Environment variables
+# ======================
+.env
+.env.*
 
-*.sql
+# ======================
+# OS / Editor swap files
+# ======================
+*~
+*.swp
+*.swo
