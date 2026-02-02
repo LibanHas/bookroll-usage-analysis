@@ -112,15 +112,10 @@ def chunked(seq, size: int):
 
 def query_usage_hours_by_student(conn, student_ids, start, end, subject_slug):
     """
-    Return raw and capped BookRoll usage hours per student.
-
-    - hours_raw: SUM(diftime)
-    - hours_capped: SUM(LEAST(diftime, 1800))  # cap each event at 30 minutes
-
-    Time window: [start, end] inclusive (implemented as half-open).
+    Sum BookRoll diftime (hours) per student inside [start, end] (inclusive) by using a half-open interval.
     """
     if not student_ids:
-        return pd.DataFrame(columns=["student_id", "hours_raw", "hours_capped"])
+        return pd.DataFrame(columns=["student_id", "hours"])
 
     subject_filter = build_subject_filter_for_bookroll(subject_slug)
     all_rows = []
@@ -134,8 +129,7 @@ def query_usage_hours_by_student(conn, student_ids, start, end, subject_slug):
         q = f"""
             SELECT
                 CAST(ssokid AS UNSIGNED) AS student_id,
-                SUM(diftime) / 3600.0 AS hours_raw,
-                SUM(LEAST(diftime, 1800)) / 3600.0 AS hours_capped
+                SUM(diftime) / 3600.0 AS hours
             FROM artsci_bookroll_difftimes
             WHERE
                 operationdate >= '{start_dt}'
@@ -150,28 +144,18 @@ def query_usage_hours_by_student(conn, student_ids, start, end, subject_slug):
                 )
             GROUP BY ssokid
         """
-
         df = pd.read_sql(q, conn)
         if not df.empty:
             df = coerce_student_id_int(df, "student_id")
-            df["hours_raw"] = pd.to_numeric(df["hours_raw"], errors="coerce").fillna(0.0)
-            df["hours_capped"] = pd.to_numeric(df["hours_capped"], errors="coerce").fillna(0.0)
+            df["hours"] = pd.to_numeric(df["hours"], errors="coerce").fillna(0.0)
             all_rows.append(df)
 
     if not all_rows:
-        return pd.DataFrame(columns=["student_id", "hours_raw", "hours_capped"])
+        return pd.DataFrame(columns=["student_id", "hours"])
 
     out = pd.concat(all_rows, ignore_index=True)
-
-    # Safety: if a student appears in multiple chunks (shouldn’t, but be robust)
-    out = (
-        out.groupby("student_id", as_index=False)
-           .agg(hours_raw=("hours_raw", "sum"),
-                hours_capped=("hours_capped", "sum"))
-    )
-
+    out = out.groupby("student_id", as_index=False)["hours"].sum()
     return out
-
 
 
 # --------------------------------------
@@ -456,21 +440,13 @@ def main():
         df_point = coerce_student_id_int(df_point, "student_id")
         student_ids = df_point["student_id"].astype(int).tolist()
 
-        df_usage = query_usage_hours_by_student(
-        conn,
-        df_point.student_id.tolist(),
-        start,
-        end,
-        subject_slug,
-        )
+        df_usage = query_usage_hours_by_student(conn, student_ids, start, end, subject_slug).rename(columns={"hours": "total_hours"})
+        df_usage = coerce_student_id_int(df_usage, "student_id")
 
         df = df_point.merge(df_usage, on="student_id", how="left")
+        df["total_hours"] = pd.to_numeric(df["total_hours"], errors="coerce").fillna(0.0)
 
-        df["hours_raw"] = pd.to_numeric(df["hours_raw"], errors="coerce").fillna(0.0)
-        df["hours_capped"] = pd.to_numeric(df["hours_capped"], errors="coerce").fillna(0.0)
-
-        # 🔑 Quartiles based on capped usage
-        df["usage_quartile"] = assign_quartiles(df["hours_capped"])
+        df["usage_quartile"] = assign_quartiles(df["total_hours"])
         df = df.dropna(subset=["usage_quartile"]).copy()
 
         if args.score_stat == "median":

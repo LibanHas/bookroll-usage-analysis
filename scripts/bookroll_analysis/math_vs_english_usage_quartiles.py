@@ -5,7 +5,6 @@ import importlib.util
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 import mysql.connector
 
 # --------------------------------------
@@ -42,7 +41,7 @@ from plot_scores_by_usage_quartile import (
 )
 
 # --------------------------------------
-# Quartile labels
+# Quartile labels (JP, explicit)
 # --------------------------------------
 QUARTILE_LABELS_JP = {
     "Q1": "利用時間 最少（下位25％）",
@@ -52,7 +51,6 @@ QUARTILE_LABELS_JP = {
 }
 
 QUARTILE_ORDER = ["Q1", "Q2", "Q3", "Q4"]
-
 QUARTILE_COLORS = {
     "Q1": "#4c72b0",
     "Q2": "#dd8452",
@@ -61,7 +59,7 @@ QUARTILE_COLORS = {
 }
 
 # --------------------------------------
-# Core computation
+# Core computation (subject-specific)
 # --------------------------------------
 def compute_figures(conn, cohort_start_year, start_grade, subject_slug):
 
@@ -110,41 +108,22 @@ def compute_figures(conn, cohort_start_year, start_grade, subject_slug):
             .merge(df_usage, on="student_id", how="left")
         )
 
-        # -----------------------------
-        # Raw + capped usage
-        # -----------------------------
-        df["hours_raw"] = pd.to_numeric(df["hours_raw"], errors="coerce").fillna(0.0)
-
-
-        # Conservative cap (30 min per event equivalent)
-        # NOTE: # Raw vs capped usage (capping already applied per-event in SQL)
-        df["hours_capped"] = pd.to_numeric(df["hours_capped"], errors="coerce").fillna(0.0)
-
-
-        # Quartiles based on capped hours
-        df["usage_quartile"] = assign_quartiles(df["hours_capped"])
+        df["hours"] = pd.to_numeric(df["hours"], errors="coerce").fillna(0.0)
+        df["usage_quartile"] = assign_quartiles(df["hours"])
         df = df.dropna(subset=["usage_quartile"])
 
         agg = (
             df.groupby("usage_quartile", as_index=False)
               .agg(
-                  median_score=("score", "median"),
+                  score=("score", "median"),
                   n_students=("student_id", "nunique"),
-                  total_hours_raw=("hours_raw", "sum"),
-                  total_hours_capped=("hours_capped", "sum"),
+                  total_hours=("hours", "sum"),
               )
         )
 
         agg["weeks"] = weeks
-
-        agg["avg_weekly_hours_raw"] = agg.apply(
-            lambda r: (r["total_hours_raw"] / (r["n_students"] * weeks))
-            if r["n_students"] and weeks else 0.0,
-            axis=1,
-        )
-
-        agg["avg_weekly_hours_capped"] = agg.apply(
-            lambda r: (r["total_hours_capped"] / (r["n_students"] * weeks))
+        agg["avg_weekly_hours"] = agg.apply(
+            lambda r: (r["total_hours"] / (r["n_students"] * weeks))
             if r["n_students"] and weeks else 0.0,
             axis=1,
         )
@@ -155,13 +134,11 @@ def compute_figures(conn, cohort_start_year, start_grade, subject_slug):
                     agg,
                     pd.DataFrame([{
                         "usage_quartile": q,
-                        "median_score": float("nan"),
+                        "score": float("nan"),
                         "n_students": 0,
-                        "total_hours_raw": 0.0,
-                        "total_hours_capped": 0.0,
+                        "total_hours": 0.0,
                         "weeks": weeks,
-                        "avg_weekly_hours_raw": 0.0,
-                        "avg_weekly_hours_capped": 0.0,
+                        "avg_weekly_hours": 0.0,
                     }])
                 ])
 
@@ -171,42 +148,14 @@ def compute_figures(conn, cohort_start_year, start_grade, subject_slug):
                 "test_label": label,
                 "usage_quartile": r["usage_quartile"],
                 "usage_quartile_jp": QUARTILE_LABELS_JP[r["usage_quartile"]],
-                "median_score": r["median_score"],
+                "median_score": r["score"],
                 "n_students": int(r["n_students"]),
+                "total_hours": float(r["total_hours"]),
                 "weeks": int(r["weeks"]),
-                "total_hours_raw": float(r["total_hours_raw"]),
-                "total_hours_capped": float(r["total_hours_capped"]),
-                "avg_weekly_hours_raw": float(r["avg_weekly_hours_raw"]),
-                "avg_weekly_hours_capped": float(r["avg_weekly_hours_capped"]),
+                "avg_weekly_hours": float(r["avg_weekly_hours"]),
             })
 
     return pd.DataFrame(rows)
-
-# --------------------------------------
-# Seaborn table (heatmap-style)
-# --------------------------------------
-def plot_usage_table(df, subject, value_col, title_suffix, out_path):
-    d = df[df["subject"] == subject].copy()
-    table = (
-        d.pivot(index="test_label", columns="usage_quartile", values=value_col)
-         .reindex(columns=QUARTILE_ORDER)
-         .round(2)
-    )
-
-    plt.figure(figsize=(10, max(3, 0.5 * len(table))))
-    
-
-    ax = sns.heatmap(
-        table, annot=True, fmt=".2f", cmap="Blues",
-        cbar_kws={"label": title_suffix},
-        linewidths=0.5,
-    )
-    ax.set_title(f"{'数学' if subject=='math' else '英語'}：BookRoll利用時間（四分位）\n{title_suffix}", pad=12)
-    ax.set_xlabel("利用時間 四分位")
-    ax.set_ylabel("ベネッセ実施回")
-    plt.tight_layout()
-    plt.savefig(out_path, dpi=200)
-    plt.close()
 
 
 # --------------------------------------
@@ -219,10 +168,7 @@ def main():
     args = parser.parse_args()
 
     setup_japanese_font()
-    sns.set_theme(style="white")
-    setup_japanese_font()   # ← re-assert after seaborn
     conn = mysql.connector.connect(**DB_CONFIG)
-
 
     df_math = compute_figures(conn, args.cohort_start_year, args.start_grade, "math")
     df_eng  = compute_figures(conn, args.cohort_start_year, args.start_grade, "english")
@@ -231,25 +177,57 @@ def main():
 
     df_all = pd.concat([df_math, df_eng], ignore_index=True)
 
-    # ---------------- CSV ----------------
+    # ---------------- CSV (FIGURES) ----------------
     out_csv = ROOT_DIR / f"math_english_{args.cohort_start_year}_bookroll_figures.csv"
     df_all.to_csv(out_csv, index=False, encoding="utf-8-sig")
     print(f"📊 Figures saved to: {out_csv.resolve()}")
 
-    # ---------------- TABLE FIGURES ----------------
-    plot_usage_table(df_all, "math", "avg_weekly_hours_capped", "時間／学生／週（diftime 30分上限）",
-                 ROOT_DIR / f"math_usage_table_capped_{args.cohort_start_year}.png")
-    plot_usage_table(df_all, "math", "avg_weekly_hours_raw", "時間／学生／週（生diftime・上限なし）",
-                 ROOT_DIR / f"math_usage_table_raw_{args.cohort_start_year}.png")
+    # ---------------- PLOT ----------------
+    order = sorted(set(df_math["test_label"]).intersection(df_eng["test_label"]))
+    x_map = {lbl: i for i, lbl in enumerate(order)}
 
+    fig, axes = plt.subplots(2, 1, figsize=(13, 8), sharex=True, sharey=True)
 
-    plot_usage_table(df_all, "english", "avg_weekly_hours_capped", "時間／学生／週（diftime 30分上限）",
-                 ROOT_DIR / f"english_usage_table_capped_{args.cohort_start_year}.png")
-    plot_usage_table(df_all, "english", "avg_weekly_hours_raw", "時間／学生／週（生diftime・上限なし）",
-                 ROOT_DIR / f"english_usage_table_raw_{args.cohort_start_year}.png")
+    for ax, (df, title) in zip(axes, [(df_math, "数学"), (df_eng, "英語")]):
+        bar_width = 0.18
+        offsets = {"Q1": -1.5, "Q2": -0.5, "Q3": 0.5, "Q4": 1.5}
 
+        for q in QUARTILE_ORDER:
+            d = df[df["usage_quartile"] == q].copy()
+            d["x"] = d["test_label"].map(x_map)
+            xs = [x + offsets[q] * bar_width for x in d["x"]]
+            ax.bar(xs, d["median_score"], width=bar_width,
+                   color=QUARTILE_COLORS[q],
+                   label=QUARTILE_LABELS_JP[q] if ax is axes[0] else None)
 
-    print("📋 Usage tables saved (seaborn)")
+        ax.set_title(title)
+        ax.set_ylabel("ベネッセ得点（中央値）")
+
+    axes[-1].set_xticks(range(len(order)))
+    axes[-1].set_xticklabels(order, rotation=30, ha="right")
+    axes[-1].set_xlabel("ベネッセ実施回（年 × 回）")
+
+    fig.legend(
+        title="BookRoll利用時間（授業時間外）",
+        loc="lower center",
+        ncol=2,
+        frameon=True,
+    )
+
+    fig.suptitle(
+        f"コホート {args.cohort_start_year}（開始学年：中学{args.start_grade}年）\n"
+        "BookRoll利用時間（授業時間外）の四分位ごとのベネッセ得点：数学／英語",
+        y=0.98
+    )
+
+    fig.tight_layout(rect=[0, 0.12, 1, 0.95])
+
+    out_png = ROOT_DIR / f"math_vs_english_{args.cohort_start_year}_usage_quartile_scores.png"
+    fig.savefig(out_png, dpi=200)
+    print(f"📈 Plot saved to: {out_png.resolve()}")
+
+    plt.show()
+
 
 if __name__ == "__main__":
     main()
